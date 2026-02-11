@@ -21,7 +21,7 @@ for dir_path in [DATA_DIR, MODELS_DIR, TRAINING_DATA_DIR]:
 
 API_CONFIG = {
     "host": "0.0.0.0",  # Listen on all network interfaces
-    "port": 5001,       # Default Flask port
+    "port": int(os.environ.get("PORT", 5001)),  # Use Render's PORT env var, fallback to 5001
     "debug": False,     # Set to False in production
     "max_content_length": 16 * 1024 * 1024,  # 16 MB max file upload
 }
