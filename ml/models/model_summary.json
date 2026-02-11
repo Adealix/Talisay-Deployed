@@ -1,0 +1,31 @@
+{
+  "system_version": "2.1.0",
+  "created": "2026-01-30T19:41:31.662318",
+  "models": {
+    "Oil Yield Predictor": {
+      "file": "oil_yield_predictor.joblib",
+      "size_bytes": 3227315,
+      "exists": true
+    },
+    "Color Classifier (DL)": {
+      "file": "color_classifier_kaggle.keras",
+      "size_bytes": 23891386,
+      "exists": true
+    },
+    "Color Classifier (Best)": {
+      "file": "color_classifier_best.keras",
+      "size_bytes": 11657105,
+      "exists": true
+    },
+    "System Config": {
+      "file": "system_config.json",
+      "size_bytes": 2915,
+      "exists": true
+    },
+    "Class Indices": {
+      "file": "class_indices.json",
+      "size_bytes": 165,
+      "exists": true
+    }
+  }
+}
