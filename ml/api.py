@@ -52,20 +52,42 @@ CORS(app, resources={
 # Set max content length
 app.config["MAX_CONTENT_LENGTH"] = API_CONFIG["max_content_length"]
 
-# Initialize predictor with YOLO + CNN + HSV ensemble (auto-detects all models)
-predictor = TalisayPredictor(
-    use_simple_color=True,           # HSV-based (always available, fast)
-    use_deep_learning_color=True,    # Deep learning (mobile-optimized if available)
-    enable_segmentation=True,        # Advanced background removal
-    reference_coin="peso_5",         # Default coin reference
-    use_yolo=True,                   # YOLOv8 object detection (coin + fruit)
-    use_cnn=True                     # Enhanced CNN color classification
-)
+# Initialize predictor with robust error handling for production
+predictor = None
+predictor_error = None
+
+try:
+    print("Initializing TalisayPredictor...")
+    predictor = TalisayPredictor(
+        use_simple_color=True,           # HSV-based (always available, fast)
+        use_deep_learning_color=True,    # Deep learning (mobile-optimized if available)
+        enable_segmentation=True,        # Advanced background removal
+        reference_coin="peso_5",         # Default coin reference
+        use_yolo=True,                   # YOLOv8 object detection (coin + fruit)
+        use_cnn=True                     # Enhanced CNN color classification
+    )
+    print("✓ TalisayPredictor initialized successfully")
+except Exception as e:
+    predictor_error = str(e)
+    print(f"⚠️  Failed to initialize predictor: {e}")
+    print("⚠️  API will start in limited mode (health check only)")
+    import traceback
+    traceback.print_exc()
 
 
 @app.route("/", methods=["GET"])
 def health_check():
     """Health check endpoint."""
+    if predictor is None:
+        return jsonify({
+            "status": "limited",
+            "service": "Talisay Oil Yield Prediction API",
+            "version": "3.0.0 (YOLO + CNN)",
+            "error": "Predictor initialization failed",
+            "details": predictor_error,
+            "note": "API is running but predictions are unavailable"
+        }), 503
+    
     return jsonify({
         "status": "healthy",
         "service": "Talisay Oil Yield Prediction API",
@@ -95,6 +117,13 @@ def predict_from_image():
     Returns:
         JSON with prediction results
     """
+    if predictor is None:
+        return jsonify({
+            "error": "Predictor not available",
+            "details": predictor_error,
+            "message": "Model initialization failed. Please check server logs."
+        }), 503
+    
     try:
         data = request.get_json()
         
@@ -542,8 +571,14 @@ def internal_error(error):
 
 
 if __name__ == "__main__":
+    print("="*60)
     print("Starting Talisay Oil Yield Prediction API...")
-    print(f"Server running on http://{API_CONFIG['host']}:{API_CONFIG['port']}")
+    print(f"Server will bind to: http://{API_CONFIG['host']}:{API_CONFIG['port']}")
+    print(f"PORT env variable: {os.environ.get('PORT', 'not set')}")
+    print(f"Predictor status: {'✓ Ready' if predictor else '✗ Failed'}")
+    if predictor_error:
+        print(f"Predictor error: {predictor_error}")
+    print("="*60)
     print("\nEndpoints:")
     print("  GET  /                     - Health check")
     print("  POST /api/predict/image    - Predict from image")
@@ -552,6 +587,8 @@ if __name__ == "__main__":
     print("  GET  /api/color-guide      - Get color classification guide")
     print("  GET  /api/dimensions-guide - Get measurement guide")
     print("  GET  /api/existing-dataset/average - Get pre-computed baseline averages")
+    print("="*60)
+    print(f"Starting Flask server now...")
     
     app.run(
         host=API_CONFIG["host"],
