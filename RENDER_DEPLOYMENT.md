@@ -99,17 +99,17 @@ Click **"Advanced"** → **"Add Environment Variable"**:
 
 ```env
 PORT=10000
-MONGODB_URI=mongodb+srv://talisay_user:PASSWORD@cluster0.xxxxx.mongodb.net/talisay?retryWrites=true&w=majority
-JWT_SECRET=your-random-secret-key-min-32-characters
+MONGODB_URI=mongodb+srv://talisay_user:YOUR_PASSWORD@cluster0.xxxxx.mongodb.net/talisay?retryWrites=true&w=majority
+JWT_SECRET=your-random-secret-key-min-32-characters-REPLACE-THIS
 SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
-SMTP_EMAIL=pro.gadgetessence@gmail.com
-SMTP_PASSWORD=sdcayquwhopecnfs
-SMTP_FROM_EMAIL=pro.gadgetessence@gmail.com
+SMTP_EMAIL=your-email@gmail.com
+SMTP_PASSWORD=your-gmail-app-password-16-chars
+SMTP_FROM_EMAIL=your-email@gmail.com
 SMTP_FROM_NAME=TalisayAI
-CLOUDINARY_CLOUD_NAME=df6krceo0
-CLOUDINARY_API_KEY=465713312957459
-CLOUDINARY_API_SECRET=gK0WkuGPoUtjo69Ep4L8Yk0Pjhs
+CLOUDINARY_CLOUD_NAME=your-cloud-name
+CLOUDINARY_API_KEY=your-api-key
+CLOUDINARY_API_SECRET=your-api-secret
 CLOUDINARY_FOLDER=talisay
 ```
 
