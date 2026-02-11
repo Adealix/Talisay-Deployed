@@ -5,6 +5,13 @@ Provides REST endpoints for the mobile/web application
 
 import os
 import sys
+
+# Configure environment BEFORE any imports
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'  # Suppress TensorFlow warnings
+os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'  # Disable oneDNN custom operations
+os.environ['YOLO_VERBOSE'] = 'False'  # Suppress YOLO verbose output
+os.environ['ULTRALYTICS_OFFLINE'] = '1'  # Prevent YOLO from downloading models
+
 from pathlib import Path
 from flask import Flask, request, jsonify
 from flask.json.provider import DefaultJSONProvider
@@ -16,7 +23,17 @@ import numpy as np
 sys.path.append(str(Path(__file__).parent))
 
 from config import API_CONFIG
-from predict import TalisayPredictor
+
+# Import predictor with detailed error handling
+try:
+    from predict import TalisayPredictor
+    PREDICTOR_IMPORT_ERROR = None
+except Exception as e:
+    TalisayPredictor = None
+    PREDICTOR_IMPORT_ERROR = str(e)
+    print(f"⚠️  Failed to import TalisayPredictor: {e}")
+    import traceback
+    traceback.print_exc()
 
 
 # Custom JSON provider to handle NumPy types
@@ -56,23 +73,33 @@ app.config["MAX_CONTENT_LENGTH"] = API_CONFIG["max_content_length"]
 predictor = None
 predictor_error = None
 
-try:
-    print("Initializing TalisayPredictor...")
-    predictor = TalisayPredictor(
-        use_simple_color=True,           # HSV-based (always available, fast)
-        use_deep_learning_color=True,    # Deep learning (mobile-optimized if available)
-        enable_segmentation=True,        # Advanced background removal
-        reference_coin="peso_5",         # Default coin reference
-        use_yolo=True,                   # YOLOv8 object detection (coin + fruit)
-        use_cnn=True                     # Enhanced CNN color classification
-    )
-    print("✓ TalisayPredictor initialized successfully")
-except Exception as e:
-    predictor_error = str(e)
-    print(f"⚠️  Failed to initialize predictor: {e}")
-    print("⚠️  API will start in limited mode (health check only)")
-    import traceback
-    traceback.print_exc()
+if TalisayPredictor is None:
+    predictor_error = f"Failed to import TalisayPredictor: {PREDICTOR_IMPORT_ERROR}"
+    print(f"⚠️  {predictor_error}")
+else:
+    try:
+        print("="*60)
+        print("Initializing TalisayPredictor...")
+        print("="*60)
+        predictor = TalisayPredictor(
+            use_simple_color=True,           # HSV-based (always available, fast)
+            use_deep_learning_color=True,    # Deep learning (mobile-optimized if available)
+            enable_segmentation=True,        # Advanced background removal
+            reference_coin="peso_5",         # Default coin reference
+            use_yolo=True,                   # YOLOv8 object detection (coin + fruit)
+            use_cnn=True                     # Enhanced CNN color classification
+        )
+        print("="*60)
+        print("✓ TalisayPredictor initialized successfully")
+        print("="*60)
+    except Exception as e:
+        predictor_error = str(e)
+        print("="*60)
+        print(f"⚠️  Failed to initialize predictor: {e}")
+        print("⚠️  API will start in limited mode (health check only)")
+        print("="*60)
+        import traceback
+        traceback.print_exc()
 
 
 @app.route("/", methods=["GET"])
