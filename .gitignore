@@ -83,34 +83,22 @@ ml/baseline_green.jpg
 # YOLO training runs (large artifacts)
 ml/runs/
 
-# Large pretrained YOLO weights (download when needed)
-ml/*.pt
-ml/yolo*.pt
-ml/models/yolo_talisay.pt
+# Large pretrained YOLO base weights (can download when needed)
+# Keep our trained yolo_talisay.pt - it's essential!
+ml/yolov8n.pt
+ml/yolo26n.pt
 
 # Keep trained models (.keras, .joblib are essential for API)
-# But exclude large alternate formats and backups
+# Exclude only truly unnecessary formats
 ml/models/*.h5
 ml/models/*.tflite
 ml/models/*.onnx
-ml/models/*_backup.keras
-ml/models/*_phase*.keras
-ml/models/color_classifier_enhanced.keras
-ml/models/color_classifier_finetuned.keras
-ml/models/color_classifier_kaggle.keras
-ml/models/color_classifier_mobile_optimized.keras
-ml/models/cnn_color_classifier_phase1.keras
-ml/models/high_confidence_model.keras
 ml/models/logs/
 ml/models/saved_models/
 ml/models/confusion_matrix.png
 
-# Keep ONLY these essential models (uncomment if you want to be very selective):
-# ml/models/cnn_color_classifier_best.keras    # Best CNN model
-# ml/models/best_model.keras                   # Best overall model
-# ml/models/color_classifier_best.keras        # Best color classifier
-# ml/models/oil_yield_predictor.joblib         # Yield predictor
-# Everything else will be excluded
+# All .keras models are now included for redundancy and failsafes
+# This ensures the ML image processing (core feature) has backups
 
 # Training/Testing/Debug Scripts (not needed for deployment)
 ml/train*.py
