@@ -11,6 +11,7 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'  # Suppress TensorFlow warnings
 os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'  # Disable oneDNN custom operations
 os.environ['YOLO_VERBOSE'] = 'False'  # Suppress YOLO verbose output
 os.environ['ULTRALYTICS_OFFLINE'] = '1'  # Prevent YOLO from downloading models
+os.environ['MPLBACKEND'] = 'Agg'  # Use non-interactive matplotlib backend (headless server)
 
 from pathlib import Path
 from flask import Flask, request, jsonify
@@ -69,18 +70,29 @@ CORS(app, resources={
 # Set max content length
 app.config["MAX_CONTENT_LENGTH"] = API_CONFIG["max_content_length"]
 
-# Initialize predictor with robust error handling for production
+# Lazy predictor initialization — defer heavy model loading so Flask can
+# bind to the PORT immediately (required by Render's port-scan health check).
 predictor = None
 predictor_error = None
+_predictor_initialized = False  # guard flag
 
-if TalisayPredictor is None:
-    predictor_error = f"Failed to import TalisayPredictor: {PREDICTOR_IMPORT_ERROR}"
-    print(f"⚠️  {predictor_error}")
-else:
+
+def _ensure_predictor():
+    """Initialize the predictor on first use (lazy loading)."""
+    global predictor, predictor_error, _predictor_initialized
+    if _predictor_initialized:
+        return
+    _predictor_initialized = True
+
+    if TalisayPredictor is None:
+        predictor_error = f"Failed to import TalisayPredictor: {PREDICTOR_IMPORT_ERROR}"
+        print(f"⚠️  {predictor_error}")
+        return
+
     try:
-        print("="*60)
-        print("Initializing TalisayPredictor...")
-        print("="*60)
+        print("=" * 60)
+        print("Initializing TalisayPredictor (lazy)...")
+        print("=" * 60)
         predictor = TalisayPredictor(
             use_simple_color=True,           # HSV-based (always available, fast)
             use_deep_learning_color=True,    # Deep learning (mobile-optimized if available)
@@ -89,15 +101,15 @@ else:
             use_yolo=True,                   # YOLOv8 object detection (coin + fruit)
             use_cnn=True                     # Enhanced CNN color classification
         )
-        print("="*60)
+        print("=" * 60)
         print("✓ TalisayPredictor initialized successfully")
-        print("="*60)
+        print("=" * 60)
     except Exception as e:
         predictor_error = str(e)
-        print("="*60)
+        print("=" * 60)
         print(f"⚠️  Failed to initialize predictor: {e}")
         print("⚠️  API will start in limited mode (health check only)")
-        print("="*60)
+        print("=" * 60)
         import traceback
         traceback.print_exc()
 
@@ -105,6 +117,7 @@ else:
 @app.route("/", methods=["GET"])
 def health_check():
     """Health check endpoint."""
+    _ensure_predictor()
     if predictor is None:
         return jsonify({
             "status": "limited",
@@ -144,6 +157,7 @@ def predict_from_image():
     Returns:
         JSON with prediction results
     """
+    _ensure_predictor()
     if predictor is None:
         return jsonify({
             "error": "Predictor not available",
@@ -208,6 +222,7 @@ def predict_from_measurements():
     Returns:
         JSON with prediction results
     """
+    _ensure_predictor()
     try:
         data = request.get_json()
         
@@ -258,6 +273,7 @@ def get_research_data():
     Returns:
         JSON with research parameters and references
     """
+    _ensure_predictor()
     try:
         research = predictor.get_research_summary()
         return jsonify({
@@ -617,9 +633,10 @@ if __name__ == "__main__":
     print("="*60)
     print(f"Starting Flask server now...")
     
+    port = int(os.environ.get("PORT", API_CONFIG["port"]))
     app.run(
-        host=API_CONFIG["host"],
-        port=API_CONFIG["port"],
+        host="0.0.0.0",
+        port=port,
         debug=API_CONFIG["debug"],
         threaded=True
     )
