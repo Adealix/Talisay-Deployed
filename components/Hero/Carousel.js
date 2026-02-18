@@ -191,7 +191,7 @@ export default function HeroCarousel() {
       {/* Content */}
       <View style={[styles.slideContent, isMobile && styles.slideContentMobile]}>
         <Animated.View
-          entering={FadeInUp.delay(200).springify()}
+          entering={FadeInUp.delay(200).duration(280)}
           style={styles.captionContainer}
         >
           <Text style={[styles.slideSubtitle, isMobile && { fontSize: 13 }]}>

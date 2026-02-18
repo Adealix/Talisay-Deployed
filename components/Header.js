@@ -106,7 +106,7 @@ function MobileNavItem({ item, isActive, onPress, colors, index }) {
   }));
 
   return (
-    <Animated.View entering={FadeInDown.delay(index * 40).springify()}>
+    <Animated.View entering={FadeInDown.delay(index * 40).duration(280)}>
       <AnimatedPressable
         onPress={onPress}
         onPressIn={() => { scale.value = withSpring(0.97, { damping: 15 }); }}
@@ -421,7 +421,7 @@ export default function Header() {
 
         {/* Drawer Panel */}
         <Animated.View
-          entering={SlideInRight.springify().damping(18).stiffness(150)}
+          entering={SlideInRight.duration(280).stiffness(150)}
           exiting={SlideOutRight.duration(250)}
           style={[
             styles.drawer,

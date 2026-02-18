@@ -118,7 +118,7 @@ function MLStatusBadge({ available, onRefresh, colors }) {
 // ─── Mode Toggle ───
 function ModeToggle({ mode, setMode, reset, colors }) {
   return (
-    <Animated.View entering={FadeInUp.delay(200).springify()} style={[styles.modeRow, { backgroundColor: colors.backgroundSecondary, borderColor: colors.borderLight }]}>
+    <Animated.View entering={FadeInUp.delay(200).duration(280)} style={[styles.modeRow, { backgroundColor: colors.backgroundSecondary, borderColor: colors.borderLight }]}>
       {[
         { key: 'single', icon: 'image', label: 'Single Analysis' },
         { key: 'comparison', icon: 'git-compare', label: 'Side-by-Side' },
@@ -145,7 +145,7 @@ function ImagePickerCard({ title, subtitle, imageUri, onPickImage, onTakePhoto, 
   const cardStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
 
   return (
-    <Animated.View entering={FadeInUp.delay(delay).springify().damping(14)} style={[cardStyle, styles.pickerCard, { backgroundColor: colors.card, borderColor: colors.borderLight }]}>
+    <Animated.View entering={FadeInUp.delay(delay).duration(280)} style={[cardStyle, styles.pickerCard, { backgroundColor: colors.card, borderColor: colors.borderLight }]}>
       {/* Header */}
       <View style={styles.pickerHeader}>
         <View style={[styles.pickerIconWrap, { backgroundColor: colors.primary + '15' }]}>
@@ -197,7 +197,7 @@ function ImagePickerCard({ title, subtitle, imageUri, onPickImage, onTakePhoto, 
 // ─── Existing Dataset Card (read-only, left side of comparison) ───
 function ExistingDatasetCard({ imageUri, imageName, totalImages, loading, selectedColor, onColorChange, delay = 0, colors, isDark, error }) {
   return (
-    <Animated.View entering={FadeInUp.delay(delay).springify().damping(14)} style={[styles.pickerCard, { backgroundColor: colors.card, borderColor: colors.borderLight }]}>
+    <Animated.View entering={FadeInUp.delay(delay).duration(280)} style={[styles.pickerCard, { backgroundColor: colors.card, borderColor: colors.borderLight }]}>
       {/* Header */}
       <View style={styles.pickerHeader}>
         <View style={[styles.pickerIconWrap, { backgroundColor: '#3b82f6' + '15' }]}>
@@ -273,7 +273,7 @@ function ExistingDatasetCard({ imageUri, imageName, totalImages, loading, select
 function DetailCard({ icon, iconColor, title, children, delay = 0, colors }) {
   return (
     <Animated.View
-      entering={FadeInUp.delay(delay).springify()}
+      entering={FadeInUp.delay(delay).duration(280)}
       style={[styles.detailCard, { backgroundColor: colors.backgroundSecondary, borderColor: colors.borderLight }]}
     >
       <View style={styles.detailCardHeader}>
@@ -292,7 +292,7 @@ function ResultDisplay({ result, imageUri, imageName, showDetails, setShowDetail
   if (!result) return null;
 
   return (
-    <Animated.View entering={FadeInUp.springify().damping(14)} style={[styles.resultCard, { backgroundColor: colors.card, borderColor: colors.borderLight }]}>
+    <Animated.View entering={FadeInUp.duration(280)} style={[styles.resultCard, { backgroundColor: colors.card, borderColor: colors.borderLight }]}>
       {/* Label badge (for comparison) */}
       {label && (
         <View style={[styles.resultLabelBadge, { backgroundColor: colors.primary + '12' }]}>
@@ -459,7 +459,7 @@ function ComparisonSummary({ result1, result2, colors }) {
 
   return (
     <Animated.View
-      entering={FadeInUp.delay(300).springify()}
+      entering={FadeInUp.delay(300).duration(280)}
       style={[styles.summaryCard, { backgroundColor: colors.card, borderColor: colors.primary + '25' }]}
     >
       <View style={styles.summaryHeader}>
@@ -487,7 +487,7 @@ function CarouselCard({ slides, index, setIndex, colors, isDark }) {
   const slide = slides[index];
   return (
     <Animated.View
-      entering={FadeInUp.delay(300).springify()}
+      entering={FadeInUp.delay(300).duration(280)}
       style={[styles.carouselCard, { backgroundColor: colors.card, borderColor: colors.borderLight }]}
     >
       <Text style={[styles.carouselTitle, { color: colors.text }]}>Talisay Fruit / Seed Colors</Text>
@@ -716,10 +716,29 @@ export default function ScanPage() {
         setExistingLoading(false);
 
         if (isAuthenticated) {
-          // Save comparison items to history (only if valid Talisay)
+          // Save comparison items to history with a shared comparisonId
+          const comparisonId = `comp_${Date.now()}`;
+          
+          // Build baseline data object for embedding in own dataset entry
+          const baselineEntry = res1.success ? {
+            imageName: res1.imageName || 'existing_dataset.jpg',
+            imageUri: res1.cloudinaryUrl || res1.imageUri,
+            category: res1.category || 'GREEN',
+            maturityStage: res1.maturityStage,
+            confidence: res1.overallConfidence ?? res1.colorConfidence,
+            colorConfidence: res1.colorConfidence,
+            oilYieldPercent: res1.oilYieldPercent,
+            yieldCategory: res1.yieldCategory,
+            dimensions: res1.dimensions,
+            referenceDetected: res1.referenceDetected,
+            interpretation: res1.interpretation,
+            totalImages: res1.totalImages || res1.analyzedImages || 0,
+          } : null;
+
           if (res1.success) {
             historyService.saveHistoryItem({
               analysisType: 'comparison', comparisonLabel: `Baseline (${existingColor})`,
+              comparisonId,
               imageName: res1.imageName || 'existing_dataset.jpg', imageUri: res1.cloudinaryUrl || res1.imageUri,
               category: res1.category || 'GREEN', maturityStage: res1.maturityStage,
               confidence: res1.overallConfidence ?? res1.colorConfidence,
@@ -727,11 +746,13 @@ export default function ScanPage() {
               yieldCategory: res1.yieldCategory, dimensions: res1.dimensions,
               referenceDetected: res1.referenceDetected, coinInfo: res1.coinInfo,
               interpretation: res1.interpretation,
+              totalImages: res1.totalImages || res1.analyzedImages || 0,
             }).catch(() => {});
           }
           if (res2.success && res2.isTalisay !== false) {
             historyService.saveHistoryItem({
               analysisType: 'comparison', comparisonLabel: 'Own Dataset',
+              comparisonId,
               imageName: image2Name || 'image.jpg', imageUri: resolvedImage2CloudinaryUrl || image2Uri,
               category: res2.category || 'BROWN', maturityStage: res2.maturityStage,
               confidence: res2.overallConfidence ?? res2.colorConfidence,
@@ -739,6 +760,8 @@ export default function ScanPage() {
               yieldCategory: res2.yieldCategory, dimensions: res2.dimensions,
               referenceDetected: res2.referenceDetected, coinInfo: res2.coinInfo,
               interpretation: res2.interpretation,
+              // Embed baseline data so History can show both sides
+              baselineData: baselineEntry,
             }).catch(() => {});
           }
         }
@@ -773,7 +796,7 @@ export default function ScanPage() {
         <FloatingOrb delay={0} size={90} color={colors.primary} top={10} right={-15} />
         <FloatingOrb delay={600} size={60} color="#52b788" top={60} left={20} />
 
-        <Animated.View entering={FadeInUp.springify()} style={[styles.headerContent, isDesktop && styles.headerContentDesktop]}>
+        <Animated.View entering={FadeInUp.duration(280)} style={[styles.headerContent, isDesktop && styles.headerContentDesktop]}>
           <View style={[styles.headerIcon, { backgroundColor: colors.primary + '20' }]}>
             <Ionicons name="scan" size={28} color={colors.primary} />
           </View>
@@ -786,7 +809,7 @@ export default function ScanPage() {
 
       <View style={[styles.content, isDesktop && styles.contentDesktop]}>
         {/* Toolbar */}
-        <Animated.View entering={FadeInUp.delay(100).springify()} style={styles.toolbar}>
+        <Animated.View entering={FadeInUp.delay(100).duration(280)} style={styles.toolbar}>
           <Pressable onPress={() => router.push('/history')} style={[styles.historyBtn, { borderColor: colors.borderLight, backgroundColor: colors.card }]}>
             <Ionicons name="time-outline" size={16} color={colors.textSecondary} />
             <Text style={[styles.historyBtnText, { color: colors.text }]}>History</Text>
@@ -799,7 +822,7 @@ export default function ScanPage() {
 
         {/* Error */}
         {error && (
-          <Animated.View entering={FadeInDown.springify()} style={[styles.errorBox, { backgroundColor: '#ef444412', borderColor: '#ef444440' }]}>
+          <Animated.View entering={FadeInDown.duration(280)} style={[styles.errorBox, { backgroundColor: '#ef444412', borderColor: '#ef444440' }]}>
             <Ionicons name="alert-circle" size={16} color="#ef4444" />
             <Text style={[styles.errorText, { color: '#ef4444' }]}>{error}</Text>
           </Animated.View>
@@ -921,7 +944,7 @@ export default function ScanPage() {
                   )}
 
                   {/* Tips */}
-                  <Animated.View entering={FadeInUp.delay(250).springify()} style={[styles.tipsCard, { backgroundColor: colors.primary + '08', borderColor: colors.primary + '20' }]}>
+                  <Animated.View entering={FadeInUp.delay(250).duration(280)} style={[styles.tipsCard, { backgroundColor: colors.primary + '08', borderColor: colors.primary + '20' }]}>
                     <View style={styles.tipsHeader}>
                       <Ionicons name="bulb-outline" size={16} color={colors.primary} />
                       <Text style={[styles.tipsTitle, { color: colors.text }]}>Tips for a Clear Photo</Text>
@@ -992,7 +1015,7 @@ export default function ScanPage() {
                   />
                 )}
 
-                <Animated.View entering={FadeInUp.delay(300).springify()} style={[styles.tipsCard, { backgroundColor: colors.primary + '08', borderColor: colors.primary + '20' }]}>
+                <Animated.View entering={FadeInUp.delay(300).duration(280)} style={[styles.tipsCard, { backgroundColor: colors.primary + '08', borderColor: colors.primary + '20' }]}>
                   <View style={styles.tipsHeader}>
                     <Ionicons name="information-circle-outline" size={16} color={colors.primary} />
                     <Text style={[styles.tipsTitle, { color: colors.text }]}>Comparison Info</Text>
@@ -1023,7 +1046,7 @@ function AnimatedButton({ label, icon, onPress, loading, delay = 0, colors }) {
   const btnAnim = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
 
   return (
-    <Animated.View entering={FadeInUp.delay(delay).springify()}>
+    <Animated.View entering={FadeInUp.delay(delay).duration(280)}>
       <AnimatedPressable
         onPress={loading ? undefined : onPress}
         onPressIn={() => { scale.value = withSpring(0.96); }}

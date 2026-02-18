@@ -46,7 +46,7 @@ function PublicationItem({ pub, index }) {
 
   return (
     <Animated.View
-      entering={FadeInUp.delay(150 + index * 60).springify()}
+      entering={FadeInUp.delay(150 + index * 60).duration(280)}
     >
       <Pressable
         onPress={() => setExpanded(!expanded)}
@@ -147,7 +147,7 @@ export default function PublicationPage() {
         colors={isDark ? ['#1a1a2e', '#0f1a12'] : ['#faf5ff', '#ede9fe']}
         style={styles.pageHeader}
       >
-        <Animated.View entering={FadeInUp.springify()} style={[styles.headerContent, isDesktop && styles.headerContentDesktop]}>
+        <Animated.View entering={FadeInUp.duration(280)} style={[styles.headerContent, isDesktop && styles.headerContentDesktop]}>
           <View style={[styles.headerIcon, { backgroundColor: '#7c3aed' + '20' }]}>
             <Ionicons name="library" size={28} color="#7c3aed" />
           </View>
@@ -161,7 +161,7 @@ export default function PublicationPage() {
       <View style={[styles.content, isDesktop && styles.contentDesktop]}>
         {/* Stats banner */}
         <Animated.View
-          entering={FadeInUp.delay(100).springify()}
+          entering={FadeInUp.delay(100).duration(280)}
           style={[styles.statsRow, isMobile && styles.statsRowMobile]}
         >
           <View style={[styles.statChip, { backgroundColor: colors.card, borderColor: colors.borderLight, ...Shadows.sm }]}>
@@ -183,7 +183,7 @@ export default function PublicationPage() {
 
         {/* Search bar */}
         <Animated.View
-          entering={FadeInUp.delay(150).springify()}
+          entering={FadeInUp.delay(150).duration(280)}
           style={[styles.searchBar, {
             backgroundColor: colors.inputBackground,
             borderColor: colors.inputBorder,
@@ -205,7 +205,7 @@ export default function PublicationPage() {
         </Animated.View>
 
         {/* Category tabs */}
-        <Animated.View entering={FadeInUp.delay(200).springify()} style={styles.tabRow}>
+        <Animated.View entering={FadeInUp.delay(200).duration(280)} style={styles.tabRow}>
           {CATEGORY_TABS.map((tab) => {
             const active = activeCategory === tab.key;
             return (
@@ -243,7 +243,7 @@ export default function PublicationPage() {
             ))
           ) : (
             <Animated.View
-              entering={FadeInUp.springify()}
+              entering={FadeInUp.duration(280)}
               style={[styles.emptyState, { backgroundColor: colors.card, borderColor: colors.borderLight }]}
             >
               <Ionicons name="document" size={40} color={colors.textTertiary} />
@@ -258,7 +258,7 @@ export default function PublicationPage() {
         </View>
 
         {/* Contribute CTA */}
-        <Animated.View entering={FadeInUp.delay(500).springify()}>
+        <Animated.View entering={FadeInUp.delay(500).duration(280)}>
           <LinearGradient
             colors={isDark ? ['#312e81', '#1e1b4b'] : ['#ede9fe', '#ddd6fe']}
             style={styles.ctaBanner}

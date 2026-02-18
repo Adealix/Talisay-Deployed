@@ -1,0 +1,146 @@
+{
+  "version": "2.1.0",
+  "last_updated": "2026-01-30T19:41:12.473419",
+  "coin_reference": {
+    "default_coin": "peso_5_new",
+    "coins": {
+      "peso_5_new": {
+        "name": "\u20b15 Silver Coin (NEW)",
+        "diameter_mm": 25,
+        "color_type": "silver"
+      },
+      "peso_5_old": {
+        "name": "\u20b15 Brass Coin (OLD)",
+        "diameter_mm": 24,
+        "color_type": "brass"
+      }
+    },
+    "detection_rules": {
+      "position": "left_45_percent",
+      "size_ratio": {
+        "min": 0.06,
+        "max": 0.22
+      },
+      "hue_range": {
+        "neutral_max": 30,
+        "neutral_min_wrap": 165
+      },
+      "saturation_range": {
+        "min": 55,
+        "max": 90
+      },
+      "brightness_range": {
+        "min": 45,
+        "max": 165
+      },
+      "uniformity_threshold": 45,
+      "gradient_threshold": 35
+    }
+  },
+  "color_classification": {
+    "classes": [
+      "green",
+      "yellow",
+      "brown"
+    ],
+    "maturity_mapping": {
+      "green": "Immature",
+      "yellow": "Mature (Optimal)",
+      "brown": "Fully Ripe"
+    },
+    "deep_learning_model": "color_classifier_kaggle.keras",
+    "hsv_ranges": {
+      "green": {
+        "h_min": 25,
+        "h_max": 90,
+        "s_min": 30
+      },
+      "yellow": {
+        "h_min": 15,
+        "h_max": 35,
+        "s_min": 50
+      },
+      "brown": {
+        "h_min": 0,
+        "h_max": 25,
+        "s_min": 30
+      }
+    }
+  },
+  "oil_yield": {
+    "by_color": {
+      "green": {
+        "mean": 47.0,
+        "std": 1.5,
+        "min": 45.0,
+        "max": 49.0
+      },
+      "yellow": {
+        "mean": 58.5,
+        "std": 1.2,
+        "min": 57.0,
+        "max": 60.0
+      },
+      "brown": {
+        "mean": 55.5,
+        "std": 1.3,
+        "min": 54.0,
+        "max": 57.0
+      }
+    },
+    "categories": {
+      "excellent": {
+        "min": 58,
+        "label": "Excellent"
+      },
+      "good": {
+        "min": 55,
+        "label": "Good"
+      },
+      "average": {
+        "min": 50,
+        "label": "Average"
+      },
+      "below_average": {
+        "min": 0,
+        "label": "Below Average"
+      }
+    }
+  },
+  "dimensions": {
+    "length_cm": {
+      "min": 3.5,
+      "max": 7.0,
+      "typical": 5.0
+    },
+    "width_cm": {
+      "min": 2.0,
+      "max": 5.5,
+      "typical": 3.5
+    },
+    "kernel_mass_g": {
+      "min": 0.1,
+      "max": 0.9,
+      "typical": 0.4
+    },
+    "whole_fruit_weight_g": {
+      "min": 15.0,
+      "max": 60.0,
+      "typical": 35.0
+    }
+  },
+  "photo_guidelines": {
+    "coin_position": "left",
+    "fruit_position": "right",
+    "background": "white or neutral (A4 paper recommended)",
+    "angle": "top-down view",
+    "fill_ratio": "60-80% of frame",
+    "zoom": "zoomed preferred over full view"
+  },
+  "last_training": {
+    "timestamp": "2026-02-02T09:36:14.692259",
+    "model_type": "mobile_optimized",
+    "validation_accuracy": 0.8571428656578064,
+    "model_path": "D:\\talisay_ml\\ml\\models\\color_classifier_mobile_optimized.keras"
+  }
+}

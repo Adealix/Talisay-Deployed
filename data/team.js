@@ -13,6 +13,8 @@ export const teamMembers = [
     age: 20,
     contactNumber: '09157782493',
     image: TEAM.member1,
+    dayImage: TEAM.member1_day,
+    nightImage: TEAM.member1_night,
     github: 'adealix',
     facebook: 'Adealix Jairon Maranan',
     instagram: 'adealixm',

@@ -42,8 +42,8 @@ function getMLApiUrl() {
   return 'http://localhost:5001';
 }
 
-const ML_API_URL = getMLApiUrl();
-console.log(`[mlService] Using ML API URL: ${ML_API_URL} (Platform: ${Platform.OS})`);
+const ML_API_URL_STARTUP = getMLApiUrl();
+console.log(`[mlService] Initial ML API URL: ${ML_API_URL_STARTUP} (Platform: ${Platform.OS})`);
 
 // ════════════════════════════════════════════════
 // Public API
@@ -52,7 +52,7 @@ console.log(`[mlService] Using ML API URL: ${ML_API_URL} (Platform: ${Platform.O
 /** Check if the ML backend is healthy and reachable */
 export async function isMLBackendAvailable() {
   try {
-    const res = await fetch(`${ML_API_URL}/`, {
+    const res = await fetch(`${getMLApiUrl()}/`, {
       method: 'GET',
       headers: { 
         'Accept': 'application/json',
@@ -83,7 +83,7 @@ export async function isMLBackendAvailable() {
 /** Get backend system info */
 export async function getMLSystemInfo() {
   try {
-    const res = await fetch(`${ML_API_URL}/api/info`, {
+    const res = await fetch(`${getMLApiUrl()}/api/info`, {
       method: 'GET',
       headers: { 
         'Accept': 'application/json',
@@ -171,7 +171,7 @@ export async function analyzeImage(imageUri, options = {}) {
     const timeoutId = setTimeout(() => controller.abort(), IMAGE_CONFIG.timeout);
 
     try {
-      const response = await fetch(`${ML_API_URL}/api/predict/image`, {
+      const response = await fetch(`${getMLApiUrl()}/api/predict/image`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json', 
@@ -215,7 +215,7 @@ export async function analyzeImage(imageUri, options = {}) {
  */
 export async function predictFromMeasurements({ color, lengthCm, widthCm, kernelMassG }) {
   try {
-    const response = await fetch(`${ML_API_URL}/api/predict/measurements`, {
+    const response = await fetch(`${getMLApiUrl()}/api/predict/measurements`, {
       method: 'POST',
       headers: { 
         'Content-Type': 'application/json', 
@@ -253,7 +253,7 @@ export async function getExistingDatasetAnalysis(color = 'green', sampleSize = 3
     const timeoutId = setTimeout(() => controller.abort(), IMAGE_CONFIG.timeout); // Normal timeout - instant retrieval
 
     const response = await fetch(
-      `${ML_API_URL}/api/existing-dataset/average?color=${encodeURIComponent(color)}`,
+      `${getMLApiUrl()}/api/existing-dataset/average?color=${encodeURIComponent(color)}`,
       { 
         method: 'GET', 
         headers: { 

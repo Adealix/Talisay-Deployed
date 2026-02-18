@@ -146,7 +146,7 @@ function TabBar({ tabs, selected, onSelect, colors }) {
 function Card({ children, colors, delay = 0, style }) {
   return (
     <Animated.View
-      entering={FadeInUp.delay(delay).springify().damping(14)}
+      entering={FadeInUp.delay(delay).duration(280)}
       style={[
         s.card,
         { backgroundColor: colors.card, borderColor: colors.borderLight, ...Shadows.md },
@@ -186,7 +186,7 @@ function BarChart({ data, maxVal, colors, barColor, labelKey = 'label', valueKey
   const [hovered, setHovered] = useState(null);
   const max = maxVal || Math.max(...data.map((d) => d[valueKey] || 0), 1);
   return (
-    <View style={[s.barChartWrap, { height: height + 30 }]}>
+    <View style={[s.barChartWrap, { height: height + 46 }]}>
       <View style={[s.barChartInner, { height }]}>
         {data.map((item, idx) => {
           const h = ((item[valueKey] || 0) / max) * height;
@@ -208,7 +208,7 @@ function BarChart({ data, maxVal, colors, barColor, labelKey = 'label', valueKey
               )}
               <View style={[s.barTrack, { backgroundColor: colors.borderLight, height }]}>
                 <Animated.View
-                  entering={FadeInUp.delay(200 + idx * 40).springify().damping(12)}
+                  entering={FadeInUp.delay(200 + idx * 40).duration(280)}
                   style={[
                     s.barFill,
                     { height: h, backgroundColor: bg, opacity: isHov ? 1 : 0.8 },
@@ -238,12 +238,388 @@ function BarChart({ data, maxVal, colors, barColor, labelKey = 'label', valueKey
 }
 
 /* ═══════════════════════════════════════════════════
+   PIE CHART — circular, works on native + web
+   Native: border-arc segments (thick-border circle rotated around own center)
+   Web: conic-gradient
+   ═══════════════════════════════════════════════════ */
+function DonutChart({ data, colors, height = 180, labelKey = 'label', valueKey = 'value' }) {
+  const total = data.reduce((sum, d) => sum + (d[valueKey] || 0), 0);
+  const [hoveredIdx, setHoveredIdx] = useState(null);
+
+  const segments = data.map((item, idx) => ({
+    ...item,
+    pctVal: total > 0 ? (item[valueKey] || 0) / total : 0,
+    idx,
+  })).filter(s => s.pctVal > 0);
+
+  if (total === 0) {
+    return (
+      <View style={{ alignItems: 'center', paddingVertical: Spacing.md }}>
+        <Text style={{ ...Typography.small, color: colors.textTertiary }}>No data available</Text>
+      </View>
+    );
+  }
+
+  const PIE_SIZE = 160;
+  const HALF = PIE_SIZE / 2;
+  const INNER = 56; // donut hole diameter
+  const isWeb = Platform.OS === 'web';
+
+  // Build cumulative start/end degrees
+  let cumPct = 0;
+  const arcSegments = segments.map(seg => {
+    const start = cumPct * 360;
+    const end = (cumPct + seg.pctVal) * 360;
+    cumPct += seg.pctVal;
+    return { ...seg, startDeg: start, endDeg: end, sweepDeg: seg.pctVal * 360 };
+  });
+
+  // Web: conic-gradient
+  const conicGradient = isWeb
+    ? `conic-gradient(${arcSegments.map(s => `${s.color || colors.primary} ${s.startDeg.toFixed(1)}deg ${s.endDeg.toFixed(1)}deg`).join(', ')})`
+    : null;
+
+  // Native: border-arc technique.
+  // A "quarter arc" is a PIE_SIZE×PIE_SIZE View with borderRadius=HALF, borderWidth=HALF.
+  // When borderTopColor+borderRightColor = segment color, borderBottomColor+borderLeftColor = transparent,
+  // it fills the top-right quadrant. Rotating the whole circle View around its OWN center
+  // (which is its default pivot in RN) correctly sweeps a 90° arc into any position.
+  // For segments > 90°: we stack multiple 90° arcs, each at startDeg + 90*n.
+  // For a partial last arc (< 90°): we use a clip container approach to cut it.
+  //
+  // Simpler and equally reliable: render a solid colored circle for each segment
+  // using overflow:hidden clip on a half-width rect that's positioned at the segment's start angle.
+  // BUT the cleanest approach for RN that NEVER needs transformOrigin is:
+  // Render ALL filled arcs as a flat stacked list of border-colored circle outlines
+  // at the correct rotation — each naturally pivoting around its center = pie center.
+
+  // For each segment, break into ≤90° sub-arcs, each rendered as a colored quarter-circle border.
+  function NativePieSegments() {
+    const views = [];
+    arcSegments.forEach((seg, si) => {
+      const col = seg.color || colors.primary;
+      const opacity = hoveredIdx === seg.idx ? 1 : 0.88;
+      let remaining = seg.sweepDeg;
+      let currentAngle = seg.startDeg;
+
+      while (remaining > 0.5) {
+        const chunk = Math.min(90, remaining);
+        // A circle view with borderWidth = HALF fills as a thick ring.
+        // We color 1 or 2 borders to show a quadrant (max 90° chunk).
+        // The view is rotated by currentAngle around its own center.
+        // borderTopColor fills the top-right visible quadrant by default.
+        // We always use top+right for "the visible arc chunk" and rotate it into position.
+        const fraction = chunk / 90; // 0..1 within this quarter
+        views.push(
+          <View
+            key={`${si}-${currentAngle}`}
+            pointerEvents="none"
+            style={{
+              position: 'absolute',
+              width: PIE_SIZE,
+              height: PIE_SIZE,
+              borderRadius: HALF,
+              borderWidth: HALF,
+              borderTopColor: col,
+              borderRightColor: fraction > 0.5 ? col : 'transparent',
+              borderBottomColor: 'transparent',
+              borderLeftColor: 'transparent',
+              opacity,
+              transform: [{ rotate: `${currentAngle - 45}deg` }],
+            }}
+          />
+        );
+        currentAngle += chunk;
+        remaining -= chunk;
+      }
+    });
+
+    return <>{views}</>;
+  }
+
+  return (
+    <View style={{ paddingVertical: Spacing.sm, alignItems: 'center' }}>
+      {/* ── Circular pie ── */}
+      <Pressable
+        onPressIn={() => {}}
+        onPressOut={() => setHoveredIdx(null)}
+        style={{ width: PIE_SIZE, height: PIE_SIZE, marginBottom: Spacing.md }}
+      >
+        {isWeb ? (
+          <View style={{
+            width: PIE_SIZE, height: PIE_SIZE, borderRadius: HALF,
+            // @ts-ignore web-only
+            background: conicGradient,
+          }} />
+        ) : (
+          // Background circle (fills the full pie area with the last segment's color to avoid gaps)
+          <View style={{ position: 'absolute', width: PIE_SIZE, height: PIE_SIZE, borderRadius: HALF,
+            backgroundColor: arcSegments.length > 0 ? (arcSegments[arcSegments.length - 1].color || colors.primary) + 'CC' : colors.borderLight }}
+          >
+            <NativePieSegments />
+          </View>
+        )}
+        {/* Donut hole */}
+        <View style={{
+          position: 'absolute',
+          top: (PIE_SIZE - INNER) / 2, left: (PIE_SIZE - INNER) / 2,
+          width: INNER, height: INNER,
+          borderRadius: INNER / 2,
+          backgroundColor: colors.card,
+          alignItems: 'center', justifyContent: 'center',
+        }}>
+          <Text style={{ ...Typography.h3, color: colors.text, fontWeight: '800', fontSize: 17, lineHeight: 20 }}>{total}</Text>
+          <Text style={{ ...Typography.tiny, color: colors.textTertiary, fontSize: 9 }}>total</Text>
+        </View>
+      </Pressable>
+
+      {/* ── Legend ── */}
+      <View style={{ gap: Spacing.xs, width: '100%' }}>
+        {segments.map((seg, idx) => {
+          const isHov = hoveredIdx === seg.idx;
+          return (
+            <Pressable
+              key={idx}
+              onPressIn={() => setHoveredIdx(seg.idx)}
+              onPressOut={() => setHoveredIdx(null)}
+              onHoverIn={() => setHoveredIdx(seg.idx)}
+              onHoverOut={() => setHoveredIdx(null)}
+              style={{
+                flexDirection: 'row', alignItems: 'center', gap: Spacing.sm,
+                paddingVertical: 4, paddingHorizontal: 8,
+                borderRadius: BorderRadius.sm,
+                backgroundColor: isHov ? (seg.color || colors.primary) + '18' : 'transparent',
+              }}
+            >
+              <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: seg.color || colors.primary }} />
+              <Text style={{ ...Typography.small, color: colors.textSecondary, flex: 1 }}>
+                {seg[labelKey]}
+              </Text>
+              <Text style={{ ...Typography.captionMedium, color: seg.color || colors.primary, fontWeight: '700' }}>
+                {seg[valueKey]}
+              </Text>
+              <Text style={{ ...Typography.tiny, color: colors.textTertiary, minWidth: 38, textAlign: 'right' }}>
+                {(seg.pctVal * 100).toFixed(1)}%
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
+    </View>
+  );
+}
+
+/* ═══════════════════════════════════════════════════
+   LINE CHART (React Native — pixel-accurate, with Y-axis labels)
+   ═══════════════════════════════════════════════════ */
+const Y_AXIS_WIDTH = 38; // pixels reserved for Y-axis labels
+const Y_TICKS = 5;       // number of horizontal grid lines / labels
+
+function LineChart({ data, colors, barColor, labelKey = 'label', valueKey = 'value', height = 160, showValues = true }) {
+  const max = Math.max(...data.map(d => d[valueKey] || 0), 1);
+  const [hovered, setHovered] = useState(null);
+  const [chartAreaWidth, setChartAreaWidth] = useState(0);
+
+  const onChartLayout = (e) => setChartAreaWidth(e.nativeEvent.layout.width);
+
+  // Compute dot positions in pixels once we have a real chart area width
+  const points = chartAreaWidth > 0 && data.length > 0
+    ? data.map((item, idx) => ({
+        x: data.length > 1 ? (idx / (data.length - 1)) * chartAreaWidth : chartAreaWidth / 2,
+        y: height - ((item[valueKey] || 0) / max) * (height - 12),
+        item,
+        idx,
+      }))
+    : [];
+
+  // Y-axis tick values: 0, 25%, 50%, 75%, 100% of max
+  const yTickVals = Array.from({ length: Y_TICKS }, (_, i) => {
+    const raw = (max * i) / (Y_TICKS - 1);
+    return raw >= 10 ? Math.round(raw) : parseFloat(raw.toFixed(1));
+  });
+
+  return (
+    <View style={{ marginTop: Spacing.sm }}>
+      {/* Chart body: Y-axis column + chart area */}
+      <View style={{ flexDirection: 'row' }}>
+        {/* ── Y-axis labels column ── */}
+        <View style={{ width: Y_AXIS_WIDTH, height, justifyContent: 'space-between', alignItems: 'flex-end', paddingRight: 6 }}>
+          {[...yTickVals].reverse().map((val, i) => (
+            <Text key={i} style={{ ...Typography.tiny, color: colors.textTertiary, fontSize: 9, lineHeight: 12 }}>
+              {val}
+            </Text>
+          ))}
+        </View>
+
+        {/* ── Chart area ── */}
+        <View
+          style={{ flex: 1, height, position: 'relative' }}
+          onLayout={onChartLayout}
+        >
+          {/* Horizontal grid lines */}
+          {yTickVals.map((val, i) => {
+            const yPos = height - (val / max) * (height - 12);
+            return (
+              <View key={i} style={{
+                position: 'absolute', left: 0, right: 0,
+                top: yPos,
+                borderBottomWidth: 1,
+                borderBottomColor: i === 0 ? colors.border : colors.borderLight,
+                borderStyle: i === 0 ? 'solid' : 'dashed',
+              }} />
+            );
+          })}
+
+          {chartAreaWidth > 0 && (
+            <>
+              {/* Connecting line segments */}
+              {points.slice(0, -1).map((pt, idx) => {
+                const next = points[idx + 1];
+                const dx = next.x - pt.x;
+                const dy = next.y - pt.y;
+                const len = Math.sqrt(dx * dx + dy * dy);
+                const angle = Math.atan2(dy, dx) * (180 / Math.PI);
+                const bg = pt.item.color || barColor || colors.primary;
+                return (
+                  <Animated.View
+                    key={`seg-${idx}`}
+                    entering={FadeIn.delay(300 + idx * 60).duration(280)}
+                    style={{
+                      position: 'absolute',
+                      left: pt.x,
+                      top: pt.y - 1,
+                      width: len,
+                      height: 2,
+                      backgroundColor: bg,
+                      opacity: 0.65,
+                      transformOrigin: 'left center',
+                      transform: [{ rotate: `${angle}deg` }],
+                    }}
+                  />
+                );
+              })}
+
+              {/* Dots + tooltips */}
+              {points.map((pt, idx) => {
+                const bg = pt.item.color || barColor || colors.primary;
+                const isHov = hovered === idx;
+                return (
+                  <Pressable
+                    key={idx}
+                    onPressIn={() => setHovered(idx)}
+                    onPressOut={() => setHovered(null)}
+                    onHoverIn={() => setHovered(idx)}
+                    onHoverOut={() => setHovered(null)}
+                    style={{
+                      position: 'absolute',
+                      left: pt.x - 8,
+                      top: pt.y - 8,
+                      width: 16,
+                      height: 16,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      zIndex: 10,
+                    }}
+                  >
+                    <Animated.View
+                      entering={ZoomIn.delay(200 + idx * 60).duration(280)}
+                      style={{
+                        width: isHov ? 14 : 10,
+                        height: isHov ? 14 : 10,
+                        borderRadius: 7,
+                        backgroundColor: bg,
+                        borderWidth: 2,
+                        borderColor: colors.card,
+                        ...Shadows.sm,
+                      }}
+                    />
+                    {/* Hover tooltip */}
+                    {isHov && (
+                      <View style={[
+                        s.tooltip,
+                        {
+                          backgroundColor: colors.card,
+                          borderColor: colors.border,
+                          top: -52,
+                          left: -20,
+                          minWidth: 80,
+                        }
+                      ]}>
+                        <Text style={[s.tooltipTitle, { color: colors.text }]}>{pt.item[labelKey]}</Text>
+                        <Text style={[s.tooltipVal, { color: bg }]}>{pt.item[valueKey]}</Text>
+                        {pt.item.detail && <Text style={[s.tooltipDetail, { color: colors.textSecondary }]}>{pt.item.detail}</Text>}
+                      </View>
+                    )}
+                  </Pressable>
+                );
+              })}
+            </>
+          )}
+        </View>
+      </View>
+
+      {/* X-axis baseline */}
+      <View style={{ flexDirection: 'row', marginLeft: Y_AXIS_WIDTH }}>
+        <View style={{ flex: 1, borderTopWidth: 1, borderTopColor: colors.border }} />
+      </View>
+
+      {/* X-axis labels */}
+      <View style={{ flexDirection: 'row', marginTop: 4, marginLeft: Y_AXIS_WIDTH }}>
+        {data.map((item, idx) => (
+          <Text
+            key={idx}
+            style={{ ...Typography.tiny, color: colors.textTertiary, textAlign: 'center', flex: 1, fontSize: 9 }}
+            numberOfLines={1}
+          >
+            {item[labelKey] || ''}
+          </Text>
+        ))}
+      </View>
+    </View>
+  );
+}
+
+/* ═══════════════════════════════════════════════════
+   CHART TYPE TOGGLE (Bar / Line / Donut)
+   ═══════════════════════════════════════════════════ */
+function ChartTypeToggle({ activeType, onChangeType, colors, types = ['bar', 'line', 'donut'] }) {
+  const icons = { bar: 'bar-chart', line: 'trending-up', donut: 'pie-chart' };
+  const tooltips = { bar: 'Bar', line: 'Line', donut: 'Pie' };
+  return (
+    <View style={{ flexDirection: 'row', gap: 2, flexShrink: 0 }}>
+      {types.map(type => {
+        const active = activeType === type;
+        return (
+          <Pressable
+            key={type}
+            onPress={() => onChangeType(type)}
+            accessibilityLabel={tooltips[type] + ' chart'}
+            style={{
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: 26,
+              height: 26,
+              borderRadius: BorderRadius.full,
+              backgroundColor: active ? colors.primary + '20' : 'transparent',
+              borderWidth: 1,
+              borderColor: active ? colors.primary + '50' : colors.borderLight,
+            }}
+          >
+            <Ionicons name={icons[type]} size={12} color={active ? colors.primary : colors.textTertiary} />
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
+
+/* ═══════════════════════════════════════════════════
    HORIZONTAL PROGRESS BAR
    ═══════════════════════════════════════════════════ */
 function ProgressBar({ label, value, maxValue = 100, color, colors, suffix = '%', delay = 0 }) {
   const pctW = Math.min((value / maxValue) * 100, 100);
   return (
-    <Animated.View entering={FadeInUp.delay(delay).springify()} style={s.progressRow}>
+    <Animated.View entering={FadeInUp.delay(delay).duration(280)} style={s.progressRow}>
       <View style={s.progressLabelRow}>
         <Text style={[s.progressLabel, { color: colors.textSecondary }]}>{label}</Text>
         <Text style={[s.progressValue, { color: colors.text }]}>
@@ -308,7 +684,7 @@ function StatRow({ icon, label, value, color, colors, onPress }) {
    ═══════════════════════════════════════════════════ */
 function SectionHeader({ icon, title, colors, delay = 0 }) {
   return (
-    <Animated.View entering={FadeInUp.delay(delay).springify()} style={s.sectionHeader}>
+    <Animated.View entering={FadeInUp.delay(delay).duration(280)} style={s.sectionHeader}>
       <View style={[s.sectionIcon, { backgroundColor: colors.primary + '15' }]}>
         <Ionicons name={icon} size={18} color={colors.primary} />
       </View>
@@ -347,19 +723,19 @@ function ReportsTab({ historyItems, analytics, users, colors, isMobile }) {
       if (selectedType === 'overall') {
         if (format === 'csv') {
           const csv = generateOverallCSV(historyItems, analytics, users || []);
-          downloadFile(csv, `Talisay_AI_Overall_Report_${ts}.csv`, 'text/csv;charset=utf-8;');
+          await downloadFile(csv, `Talisay_AI_Overall_Report_${ts}.csv`, 'text/csv;charset=utf-8;');
         } else {
           const doc = await generateOverallPDF(historyItems, analytics, users || []);
-          downloadPDF(doc, `Talisay_AI_Overall_Report_${ts}.pdf`);
+          await downloadPDF(doc, `Talisay_AI_Overall_Report_${ts}.pdf`);
         }
       } else {
         const catLabel = selectedType.charAt(0) + selectedType.slice(1).toLowerCase();
         if (format === 'csv') {
           const csv = generateCategoryCSV(selectedType, historyItems, analytics);
-          downloadFile(csv, `Talisay_AI_${catLabel}_Report_${ts}.csv`, 'text/csv;charset=utf-8;');
+          await downloadFile(csv, `Talisay_AI_${catLabel}_Report_${ts}.csv`, 'text/csv;charset=utf-8;');
         } else {
           const doc = await generateCategoryPDF(selectedType, historyItems, analytics);
-          downloadPDF(doc, `Talisay_AI_${catLabel}_Report_${ts}.pdf`);
+          await downloadPDF(doc, `Talisay_AI_${catLabel}_Report_${ts}.pdf`);
         }
       }
     } catch (err) {
@@ -385,7 +761,7 @@ function ReportsTab({ historyItems, analytics, users, colors, isMobile }) {
             return (
               <AnimatedPressable
                 key={rt.key}
-                entering={FadeInUp.delay(150 + idx * 60).springify()}
+                entering={FadeInUp.delay(150 + idx * 60).duration(280)}
                 onPress={() => setSelectedType(rt.key)}
                 style={[
                   rptStyles.typeCard,
@@ -642,6 +1018,16 @@ export default function AdminPage() {
   const [userSearch, setUserSearch] = useState('');
   const [historySearch, setHistorySearch] = useState('');
   const [confirmDelete, setConfirmDelete] = useState(null); // { type: 'user'|'history', id, label }
+  const [chartType, setChartType] = useState('bar'); // 'bar' | 'line' | 'donut'
+  // Per-card chart types for Analytics tab
+  const [chartTypeMonthly, setChartTypeMonthly] = useState('bar');
+  const [chartTypeColor, setChartTypeColor] = useState('donut');
+  const [chartTypeConf, setChartTypeConf] = useState('bar');
+  const [chartTypeDaily, setChartTypeDaily] = useState('line');
+  const [chartTypeOilYield, setChartTypeOilYield] = useState('bar');
+  const [selectedUser, setSelectedUser] = useState(null); // User Details modal on mobile
+  const [mobileEditUserOpen, setMobileEditUserOpen] = useState(false); // Edit User modal on mobile
+  const [selectedHistory, setSelectedHistory] = useState(null); // detail modal for history on mobile
 
   // Route protection: only admin users can access this page
   const isAdmin = isAuthenticated && user?.role === 'admin';
@@ -703,12 +1089,14 @@ export default function AdminPage() {
   }, [activeTab, isAdmin]);
 
   // ─── User CRUD handlers ───
-  const handleUpdateUser = useCallback(async () => {
-    if (!editingUser) return;
-    const result = await updateUser(editingUser.id, editForm);
+  const handleUpdateUser = useCallback(async (overrideUser) => {
+    const targetUser = overrideUser || editingUser;
+    if (!targetUser) return;
+    const result = await updateUser(targetUser.id, editForm);
     if (result.ok) {
-      setUsers(prev => prev.map(u => u.id === editingUser.id ? { ...u, ...editForm } : u));
+      setUsers(prev => prev.map(u => u.id === targetUser.id ? { ...u, ...editForm } : u));
       setEditingUser(null);
+      setSelectedUser(null);
       setEditForm({});
     } else {
       if (Platform.OS === 'web') {
@@ -811,7 +1199,7 @@ export default function AdminPage() {
         colors={isDark ? ['#1a2b1f', '#0f1a12'] : ['#f0fdf4', '#ecfdf5']}
         style={s.pageHeader}
       >
-        <Animated.View entering={FadeInUp.springify()} style={[s.headerContent, isDesktop && s.headerContentDesktop]}>
+        <Animated.View entering={FadeInUp.duration(280)} style={[s.headerContent, isDesktop && s.headerContentDesktop]}>
           <View style={[s.headerIcon, { backgroundColor: colors.primary + '20' }]}>
             <Ionicons name="analytics" size={28} color={colors.primary} />
           </View>
@@ -850,7 +1238,7 @@ export default function AdminPage() {
                   return (
                     <Animated.View
                       key={cat}
-                      entering={FadeInUp.delay(300 + idx * 80).springify()}
+                      entering={FadeInUp.delay(300 + idx * 80).duration(280)}
                       style={[s.maturityItem, { borderColor: CAT_COLORS[cat] + '30' }]}
                     >
                       <View style={[s.maturityDot, { backgroundColor: CAT_COLORS[cat] }]} />
@@ -908,7 +1296,7 @@ export default function AdminPage() {
               {['GREEN', 'YELLOW', 'BROWN'].map((cat, idx) => {
                 const d = yieldData[cat] || {};
                 return (
-                  <Animated.View key={cat} entering={FadeInUp.delay(500 + idx * 60).springify()} style={s.yieldRow}>
+                  <Animated.View key={cat} entering={FadeInUp.delay(500 + idx * 60).duration(280)} style={s.yieldRow}>
                     <View style={[s.yieldDot, { backgroundColor: CAT_COLORS[cat] }]} />
                     <View style={{ flex: 1 }}>
                       <Text style={[s.yieldRowLabel, { color: colors.text }]}>{CAT_LABELS[cat]}</Text>
@@ -938,7 +1326,7 @@ export default function AdminPage() {
                 {recent.slice(0, 10).map((item, idx) => (
                   <Animated.View
                     key={item.id}
-                    entering={FadeInUp.delay(550 + idx * 40).springify()}
+                    entering={FadeInUp.delay(550 + idx * 40).duration(280)}
                     style={[s.activityItem, idx < 9 && { borderBottomWidth: 1, borderBottomColor: colors.divider }]}
                   >
                     <View style={[s.activityDot, { backgroundColor: CAT_COLORS[item.category] || colors.primary }]} />
@@ -982,52 +1370,227 @@ export default function AdminPage() {
           <View>
             <SectionHeader icon="bar-chart" title="Detection Trends & Confidence" colors={colors} />
 
-            {/* ── Detection Trend (Monthly) ── */}
+            {/* ── Monthly Detection Trend ── */}
             <Card colors={colors} delay={100}>
-              <CardTitle icon="trending-up" title="Monthly Detection Trend" subtitle="Scans per month by maturity stage" colors={colors} />
+              <CardTitle
+                icon="trending-up"
+                title="Monthly Detection Trend"
+                subtitle="Scans per month by maturity stage"
+                colors={colors}
+                right={<ChartTypeToggle activeType={chartTypeMonthly} onChangeType={setChartTypeMonthly} colors={colors} />}
+              />
               {monthly.length > 0 ? (
-                <BarChart
-                  data={monthly.map((m) => ({
-                    label: m._id,
-                    value: m.count,
-                    detail: `G:${m.greenCount} Y:${m.yellowCount} B:${m.brownCount}`,
-                    color: colors.primary,
-                  }))}
-                  colors={colors}
-                  height={180}
-                />
+                chartTypeMonthly === 'donut' ? (
+                  <DonutChart
+                    data={monthly.map((m) => ({ label: m._id, value: m.count, color: colors.primary }))}
+                    colors={colors}
+                    height={160}
+                  />
+                ) : chartTypeMonthly === 'line' ? (
+                  <LineChart
+                    data={monthly.map((m) => ({ label: m._id, value: m.count, color: colors.primary }))}
+                    colors={colors}
+                    barColor={colors.primary}
+                    height={180}
+                  />
+                ) : (
+                  <BarChart
+                    data={monthly.map((m) => ({
+                      label: m._id,
+                      value: m.count,
+                      detail: `G:${m.greenCount || 0} Y:${m.yellowCount || 0} B:${m.brownCount || 0}`,
+                      color: colors.primary,
+                    }))}
+                    colors={colors}
+                    height={180}
+                  />
+                )
               ) : (
                 <Text style={[s.emptyText, { color: colors.textTertiary }]}>No monthly data available</Text>
               )}
             </Card>
 
-            {/* ── Total Detections by Color ── */}
-            <Card colors={colors} delay={200}>
-              <CardTitle icon="pie-chart" title="Total Detections by Color" subtitle="All-time maturity stage breakdown" colors={colors} />
-              <BarChart
-                data={['GREEN', 'YELLOW', 'BROWN'].map((cat) => ({
-                  label: cat,
-                  value: catDist[cat] || 0,
-                  color: CAT_COLORS[cat],
-                }))}
+            {/* ── Daily Activity (last 7 days) ── */}
+            <Card colors={colors} delay={150}>
+              <CardTitle
+                icon="calendar"
+                title="Daily Activity (Last 7 Days)"
+                subtitle="Scan count per day"
                 colors={colors}
-                height={140}
+                right={<ChartTypeToggle activeType={chartTypeDaily} onChangeType={setChartTypeDaily} colors={colors} types={['line', 'bar']} />}
               />
+              {daily.length > 0 ? (
+                chartTypeDaily === 'bar' ? (
+                  <BarChart
+                    data={daily.slice(-7).map((d) => ({
+                      label: d._id ? d._id.slice(5) : '',
+                      value: d.count,
+                      color: colors.primary,
+                    }))}
+                    colors={colors}
+                    height={140}
+                  />
+                ) : (
+                  <LineChart
+                    data={daily.slice(-7).map((d) => ({
+                      label: d._id ? d._id.slice(5) : '',
+                      value: d.count,
+                      color: colors.primary,
+                    }))}
+                    colors={colors}
+                    barColor={colors.primary}
+                    height={140}
+                  />
+                )
+              ) : (
+                <Text style={[s.emptyText, { color: colors.textTertiary }]}>No daily activity data</Text>
+              )}
             </Card>
 
-            {/* ── Confidence Distribution ── */}
-            <Card colors={colors} delay={300}>
-              <CardTitle icon="stats-chart" title="Confidence Distribution" subtitle="Histogram of model confidence scores" colors={colors} />
-              {confDist.length > 0 ? (
-                <BarChart
-                  data={confDist.map((b) => ({
-                    label: b.range,
-                    value: b.count,
-                    color: (b.rangeMin != null && b.rangeMin >= 0.8) ? '#22c55e' : (b.rangeMin != null && b.rangeMin >= 0.5) ? '#eab308' : '#ef4444',
+            {/* ── Total Detections by Color ── */}
+            <Card colors={colors} delay={200}>
+              <CardTitle
+                icon="pie-chart"
+                title="Total Detections by Color"
+                subtitle="All-time maturity stage breakdown"
+                colors={colors}
+                right={<ChartTypeToggle activeType={chartTypeColor} onChangeType={setChartTypeColor} colors={colors} />}
+              />
+              {chartTypeColor === 'donut' ? (
+                <DonutChart
+                  data={['GREEN', 'YELLOW', 'BROWN'].map((cat) => ({
+                    label: cat,
+                    value: catDist[cat] || 0,
+                    color: CAT_COLORS[cat],
+                  }))}
+                  colors={colors}
+                  height={160}
+                />
+              ) : chartTypeColor === 'line' ? (
+                <LineChart
+                  data={['GREEN', 'YELLOW', 'BROWN'].map((cat) => ({
+                    label: cat,
+                    value: catDist[cat] || 0,
+                    color: CAT_COLORS[cat],
                   }))}
                   colors={colors}
                   height={140}
                 />
+              ) : (
+                <BarChart
+                  data={['GREEN', 'YELLOW', 'BROWN'].map((cat) => ({
+                    label: cat,
+                    value: catDist[cat] || 0,
+                    color: CAT_COLORS[cat],
+                  }))}
+                  colors={colors}
+                  height={140}
+                />
+              )}
+            </Card>
+
+            {/* ── Oil Yield Comparison by Category ── */}
+            <Card colors={colors} delay={250}>
+              <CardTitle
+                icon="water"
+                title="Oil Yield Comparison"
+                subtitle="Average oil yield % per maturity stage"
+                colors={colors}
+                right={<ChartTypeToggle activeType={chartTypeOilYield} onChangeType={setChartTypeOilYield} colors={colors} types={['bar', 'line']} />}
+              />
+              {['GREEN', 'YELLOW', 'BROWN'].some(c => (yieldData[c]?.avg || 0) > 0) ? (
+                chartTypeOilYield === 'line' ? (
+                  <LineChart
+                    data={['GREEN', 'YELLOW', 'BROWN'].map((cat) => ({
+                      label: CAT_LABELS[cat].split(' ')[0],
+                      value: parseFloat((yieldData[cat]?.avg || 0).toFixed(2)),
+                      detail: `Min:${(yieldData[cat]?.min || 0).toFixed(1)}% Max:${(yieldData[cat]?.max || 0).toFixed(1)}%`,
+                      color: CAT_COLORS[cat],
+                    }))}
+                    colors={colors}
+                    height={140}
+                  />
+                ) : (
+                  <BarChart
+                    data={['GREEN', 'YELLOW', 'BROWN'].map((cat) => ({
+                      label: CAT_LABELS[cat].split(' ')[0],
+                      value: parseFloat((yieldData[cat]?.avg || 0).toFixed(2)),
+                      detail: `n=${yieldData[cat]?.count || 0}`,
+                      color: CAT_COLORS[cat],
+                    }))}
+                    colors={colors}
+                    height={140}
+                  />
+                )
+              ) : (
+                <Text style={[s.emptyText, { color: colors.textTertiary }]}>No yield data available</Text>
+              )}
+              {/* Research vs system comparison row */}
+              <View style={{ flexDirection: 'row', gap: Spacing.sm, marginTop: Spacing.sm, flexWrap: 'wrap' }}>
+                {['GREEN', 'YELLOW', 'BROWN'].map((cat) => {
+                  const sci = OIL_YIELD_DATA[cat];
+                  const sys = yieldData[cat]?.avg;
+                  if (!sys) return null;
+                  const diff = (sys - sci.oilYieldMean).toFixed(1);
+                  const isAbove = sys >= sci.oilYieldMean;
+                  return (
+                    <View key={cat} style={{ flex: 1, minWidth: 80, padding: 8, borderRadius: BorderRadius.sm, backgroundColor: colors.background, borderWidth: 1, borderColor: CAT_COLORS[cat] + '30' }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                        <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: CAT_COLORS[cat] }} />
+                        <Text style={{ ...Typography.tiny, color: colors.textTertiary, fontWeight: '600' }}>{cat.slice(0, 1)}</Text>
+                      </View>
+                      <Text style={{ ...Typography.captionMedium, color: colors.text, fontWeight: '700', marginTop: 2 }}>{(sys || 0).toFixed(1)}%</Text>
+                      <Text style={{ ...Typography.tiny, color: colors.textTertiary }}>sys avg</Text>
+                      <Text style={{ ...Typography.tiny, color: isAbove ? '#22c55e' : '#ef4444', fontWeight: '600', marginTop: 2 }}>
+                        {isAbove ? '▲' : '▼'} {Math.abs(diff)}% vs research
+                      </Text>
+                    </View>
+                  );
+                })}
+              </View>
+            </Card>
+
+            {/* ── Confidence Distribution ── */}
+            <Card colors={colors} delay={300}>
+              <CardTitle
+                icon="stats-chart"
+                title="Confidence Distribution"
+                subtitle="Histogram of model confidence scores"
+                colors={colors}
+                right={<ChartTypeToggle activeType={chartTypeConf} onChangeType={setChartTypeConf} colors={colors} />}
+              />
+              {confDist.length > 0 ? (
+                chartTypeConf === 'donut' ? (
+                  <DonutChart
+                    data={confDist.map((b) => ({
+                      label: b.range,
+                      value: b.count,
+                      color: (b.rangeMin != null && b.rangeMin >= 0.8) ? '#22c55e' : (b.rangeMin != null && b.rangeMin >= 0.5) ? '#eab308' : '#ef4444',
+                    }))}
+                    colors={colors}
+                    height={160}
+                  />
+                ) : chartTypeConf === 'line' ? (
+                  <LineChart
+                    data={confDist.map((b) => ({
+                      label: b.range,
+                      value: b.count,
+                      color: (b.rangeMin != null && b.rangeMin >= 0.8) ? '#22c55e' : (b.rangeMin != null && b.rangeMin >= 0.5) ? '#eab308' : '#ef4444',
+                    }))}
+                    colors={colors}
+                    height={140}
+                  />
+                ) : (
+                  <BarChart
+                    data={confDist.map((b) => ({
+                      label: b.range,
+                      value: b.count,
+                      color: (b.rangeMin != null && b.rangeMin >= 0.8) ? '#22c55e' : (b.rangeMin != null && b.rangeMin >= 0.5) ? '#eab308' : '#ef4444',
+                    }))}
+                    colors={colors}
+                    height={140}
+                  />
+                )
               ) : (
                 <Text style={[s.emptyText, { color: colors.textTertiary }]}>No confidence data</Text>
               )}
@@ -1090,7 +1653,7 @@ export default function AdminPage() {
                 const d = dimStats[cat];
                 if (!d) return null;
                 return (
-                  <Animated.View key={cat} entering={FadeInUp.delay(550 + idx * 60).springify()} style={[s.dimRow, { borderColor: CAT_COLORS[cat] + '20' }]}>
+                  <Animated.View key={cat} entering={FadeInUp.delay(550 + idx * 60).duration(280)} style={[s.dimRow, { borderColor: CAT_COLORS[cat] + '20' }]}>
                     <View style={[s.dimDot, { backgroundColor: CAT_COLORS[cat] }]} />
                     <Text style={[s.dimLabel, { color: colors.text }]}>{CAT_LABELS[cat]}</Text>
                     <View style={s.dimStats}>
@@ -1105,25 +1668,44 @@ export default function AdminPage() {
               })}
             </Card>
 
-            {/* ── Top Users ── */}
+            {/* ── Top Users by Scan Count ── */}
             <Card colors={colors} delay={550}>
-              <CardTitle icon="people" title="Most Active Users" subtitle="Top 10 by scan count" colors={colors} />
-              {userAct.map((u, idx) => (
-                <Animated.View key={u.userId} entering={FadeInUp.delay(600 + idx * 40).springify()} style={[s.userRow, idx < userAct.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.divider }]}>
-                  <View style={[s.userRank, { backgroundColor: idx < 3 ? '#f97316' + '20' : colors.borderLight }]}>
-                    <Text style={[s.userRankText, { color: idx < 3 ? '#f97316' : colors.textTertiary }]}>#{idx + 1}</Text>
+              <CardTitle icon="podium" title="Top Users by Scan Count" subtitle="Most active users ranked by total scans" colors={colors} />
+              {userAct.length > 0 ? (
+                <>
+                  <BarChart
+                    data={userAct.slice(0, 8).map((u, idx) => ({
+                      label: (u.name || u.email || '').split('@')[0].slice(0, 10),
+                      value: u.scanCount,
+                      color: idx < 3 ? '#f97316' : colors.primary,
+                      detail: u.email,
+                    }))}
+                    colors={colors}
+                    height={140}
+                    labelKey="label"
+                    valueKey="value"
+                  />
+                  <View style={{ gap: 0 }}>
+                    {userAct.slice(0, 5).map((u, idx) => (
+                      <Animated.View key={u.userId} entering={FadeInUp.delay(600 + idx * 40).duration(280)} style={[s.userRow, idx < Math.min(userAct.length, 5) - 1 && { borderBottomWidth: 1, borderBottomColor: colors.divider }]}>
+                        <View style={[s.userRank, { backgroundColor: idx < 3 ? '#f97316' + '20' : colors.borderLight }]}>
+                          <Text style={[s.userRankText, { color: idx < 3 ? '#f97316' : colors.textTertiary }]}>#{idx + 1}</Text>
+                        </View>
+                        <View style={{ flex: 1 }}>
+                          <Text style={[s.userEmail, { color: colors.text }]}>{u.name || u.email}</Text>
+                          {u.name && <Text style={[s.userSub, { color: colors.textTertiary }]}>{u.email}</Text>}
+                        </View>
+                        <View style={{ alignItems: 'flex-end' }}>
+                          <Text style={[s.userScans, { color: colors.primary }]}>{u.scanCount} scans</Text>
+                          <Text style={[s.userSub, { color: colors.textTertiary }]}>{timeAgo(u.lastScan)}</Text>
+                        </View>
+                      </Animated.View>
+                    ))}
                   </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={[s.userEmail, { color: colors.text }]}>{u.name || u.email}</Text>
-                    <Text style={[s.userSub, { color: colors.textTertiary }]}>{u.email}</Text>
-                  </View>
-                  <View style={{ alignItems: 'flex-end' }}>
-                    <Text style={[s.userScans, { color: colors.primary }]}>{u.scanCount} scans</Text>
-                    <Text style={[s.userSub, { color: colors.textTertiary }]}>{timeAgo(u.lastScan)}</Text>
-                  </View>
-                </Animated.View>
-              ))}
-              {userAct.length === 0 && <Text style={[s.emptyText, { color: colors.textTertiary }]}>No user data</Text>}
+                </>
+              ) : (
+                <Text style={[s.emptyText, { color: colors.textTertiary }]}>No user scan data</Text>
+              )}
             </Card>
           </View>
         )}
@@ -1161,6 +1743,61 @@ export default function AdminPage() {
 
               {usersLoading ? (
                 <ActivityIndicator size="small" color={colors.primary} style={{ paddingVertical: Spacing.xl }} />
+              ) : isMobile ? (
+                /* ── Mobile: Compact user list (Name + Email only, tap to open detail+edit modal) ── */
+                <>
+                  {users
+                    .filter(u => {
+                      if (!userSearch) return true;
+                      const q = userSearch.toLowerCase();
+                      return (u.email || '').toLowerCase().includes(q) ||
+                        (u.firstName || '').toLowerCase().includes(q) ||
+                        (u.lastName || '').toLowerCase().includes(q) ||
+                        (u.role || '').toLowerCase().includes(q);
+                    })
+                    .map((u, idx) => (
+                      <Animated.View key={u.id} entering={FadeInUp.delay(60 + idx * 25).duration(280)}>
+                        <Pressable
+                          onPress={() => { setSelectedUser(u); setEditForm({ role: u.role, firstName: u.firstName, lastName: u.lastName }); }}
+                          style={({ pressed }) => [
+                            {
+                              flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+                              paddingVertical: 12, paddingHorizontal: 14,
+                              borderBottomWidth: 1, borderBottomColor: colors.divider,
+                              backgroundColor: pressed ? colors.primary + '08' : (idx % 2 === 0 ? colors.background + '60' : 'transparent'),
+                            },
+                          ]}
+                        >
+                          <View style={{ flex: 1, gap: 2 }}>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                              <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: u.role === 'admin' ? '#7c3aed18' : colors.primary + '15', alignItems: 'center', justifyContent: 'center' }}>
+                                <Ionicons name={u.role === 'admin' ? 'shield' : 'person'} size={15} color={u.role === 'admin' ? '#7c3aed' : colors.primary} />
+                              </View>
+                              <View style={{ flex: 1 }}>
+                                <Text style={{ ...Typography.captionMedium, color: colors.text, fontWeight: '600' }} numberOfLines={1}>
+                                  {[u.firstName, u.lastName].filter(Boolean).join(' ') || '—'}
+                                </Text>
+                                <Text style={{ ...Typography.tiny, color: colors.textTertiary, marginTop: 1 }} numberOfLines={1}>
+                                  {u.email}
+                                </Text>
+                              </View>
+                            </View>
+                          </View>
+                          <Ionicons name="chevron-forward" size={16} color={colors.textTertiary} />
+                        </Pressable>
+                      </Animated.View>
+                    ))}
+
+                  {users.length === 0 && (
+                    <Text style={[s.emptyText, { color: colors.textTertiary }]}>No users found</Text>
+                  )}
+
+                  <View style={[s.dtFooter, { borderTopColor: colors.divider }]}>
+                    <Text style={[s.dtFooterText, { color: colors.textTertiary }]}>
+                      {users.filter(u => !userSearch || (u.email || '').toLowerCase().includes(userSearch.toLowerCase()) || (u.firstName || '').toLowerCase().includes(userSearch.toLowerCase())).length} of {users.length} users
+                    </Text>
+                  </View>
+                </>
               ) : (
                 <>
                   {/* Header Row */}
@@ -1186,7 +1823,7 @@ export default function AdminPage() {
                     .map((u, idx) => (
                       <Animated.View
                         key={u.id}
-                        entering={FadeInUp.delay(100 + idx * 30).springify()}
+                        entering={FadeInUp.delay(100 + idx * 30).duration(280)}
                         style={[s.dtRow, { borderBottomColor: colors.divider }, idx % 2 === 0 && { backgroundColor: colors.background + '60' }]}
                       >
                         <Text style={[s.dtCell, s.dtCellName, { color: colors.text }]} numberOfLines={1}>
@@ -1241,8 +1878,8 @@ export default function AdminPage() {
               )}
             </Card>
 
-            {/* Edit User Modal */}
-            {editingUser && (
+            {/* Desktop: Edit User Modal (separate from details) */}
+            {editingUser && !isMobile && (
               <Modal transparent animationType="fade" visible={!!editingUser} onRequestClose={() => setEditingUser(null)}>
                 <Pressable style={s.modalOverlay} onPress={() => setEditingUser(null)}>
                   <Pressable style={[s.modalContent, { backgroundColor: colors.card, borderColor: colors.borderLight }]} onPress={e => e.stopPropagation()}>
@@ -1305,6 +1942,134 @@ export default function AdminPage() {
                 </Pressable>
               </Modal>
             )}
+
+            {/* ─── Modal 1: User Details ─── */}
+            {selectedUser && isMobile && (
+              <Modal transparent animationType="slide" visible={!!selectedUser} onRequestClose={() => setSelectedUser(null)}>
+                <Pressable style={s.modalOverlay} onPress={() => setSelectedUser(null)}>
+                  <Pressable style={[s.modalContent, { backgroundColor: colors.card, borderColor: colors.borderLight }]} onPress={e => e.stopPropagation()}>
+                    {/* X Close button */}
+                    <Pressable
+                      onPress={() => setSelectedUser(null)}
+                      hitSlop={12}
+                      style={{ position: 'absolute', top: 12, right: 12, zIndex: 10, width: 30, height: 30, borderRadius: 15, backgroundColor: colors.borderLight, alignItems: 'center', justifyContent: 'center' }}
+                    >
+                      <Ionicons name="close" size={16} color={colors.textSecondary} />
+                    </Pressable>
+
+                    {/* Header */}
+                    <View style={{ alignItems: 'center', marginBottom: Spacing.lg, marginTop: Spacing.xs }}>
+                      <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: selectedUser.role === 'admin' ? '#7c3aed18' : colors.primary + '18', alignItems: 'center', justifyContent: 'center', marginBottom: 10 }}>
+                        <Ionicons name={selectedUser.role === 'admin' ? 'shield' : 'person'} size={26} color={selectedUser.role === 'admin' ? '#7c3aed' : colors.primary} />
+                      </View>
+                      <Text style={[s.modalTitle, { color: colors.text, textAlign: 'center' }]}>User Details</Text>
+                      <Text style={[s.modalSubtitle, { color: colors.textSecondary, textAlign: 'center', marginBottom: 0 }]}>{selectedUser.email}</Text>
+                    </View>
+
+                    {/* Details */}
+                    <View style={{ backgroundColor: colors.background, borderRadius: BorderRadius.md, padding: Spacing.md, marginBottom: Spacing.lg, gap: Spacing.sm }}>
+                      {[
+                        { label: 'First Name', value: selectedUser.firstName || '—' },
+                        { label: 'Last Name',  value: selectedUser.lastName  || '—' },
+                        { label: 'Phone',      value: selectedUser.phone     || '—' },
+                        { label: 'Address',    value: selectedUser.address   || '—' },
+                        { label: 'Role',       value: (selectedUser.role || '—').charAt(0).toUpperCase() + (selectedUser.role || '').slice(1) },
+                        { label: 'Status',     value: selectedUser.isVerified ? 'Verified' : 'Pending' },
+                      ].map(({ label, value }) => (
+                        <View key={label} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', paddingVertical: 2 }}>
+                          <Text style={{ ...Typography.small, color: colors.textTertiary, width: 90 }}>{label}</Text>
+                          <Text style={{ ...Typography.small, color: colors.text, flex: 1, textAlign: 'right', fontWeight: '500' }}>{value}</Text>
+                        </View>
+                      ))}
+                    </View>
+
+                    {/* Buttons */}
+                    <View style={{ gap: Spacing.sm }}>
+                      <Pressable
+                        onPress={() => {
+                          setEditForm({ role: selectedUser.role, firstName: selectedUser.firstName, lastName: selectedUser.lastName });
+                          setEditingUser(selectedUser);
+                          setMobileEditUserOpen(true);
+                        }}
+                        style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: colors.primary, borderRadius: BorderRadius.md, paddingVertical: 13 }}
+                      >
+                        <Ionicons name="create-outline" size={17} color="#fff" />
+                        <Text style={{ ...Typography.captionMedium, color: '#fff', fontWeight: '700' }}>Edit User</Text>
+                      </Pressable>
+                      <Pressable
+                        onPress={() => { setConfirmDelete({ type: 'user', id: selectedUser.id, label: selectedUser.email }); setSelectedUser(null); }}
+                        style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#ef444412', borderRadius: BorderRadius.md, paddingVertical: 13, borderWidth: 1, borderColor: '#ef444430' }}
+                      >
+                        <Ionicons name="trash-outline" size={17} color="#ef4444" />
+                        <Text style={{ ...Typography.captionMedium, color: '#ef4444', fontWeight: '700' }}>Delete User</Text>
+                      </Pressable>
+                    </View>
+                  </Pressable>
+                </Pressable>
+              </Modal>
+            )}
+
+            {/* ─── Modal 2: Edit User ─── */}
+            {mobileEditUserOpen && editingUser && isMobile && (
+              <Modal transparent animationType="slide" visible={mobileEditUserOpen} onRequestClose={() => setMobileEditUserOpen(false)}>
+                <Pressable style={s.modalOverlay} onPress={() => setMobileEditUserOpen(false)}>
+                  <Pressable style={[s.modalContent, { backgroundColor: colors.card, borderColor: colors.borderLight }]} onPress={e => e.stopPropagation()}>
+                    {/* X Close button */}
+                    <Pressable
+                      onPress={() => setMobileEditUserOpen(false)}
+                      hitSlop={12}
+                      style={{ position: 'absolute', top: 12, right: 12, zIndex: 10, width: 30, height: 30, borderRadius: 15, backgroundColor: colors.borderLight, alignItems: 'center', justifyContent: 'center' }}
+                    >
+                      <Ionicons name="close" size={16} color={colors.textSecondary} />
+                    </Pressable>
+
+                    {/* Header */}
+                    <View style={{ marginBottom: Spacing.lg, marginTop: Spacing.xs }}>
+                      <Text style={[s.modalTitle, { color: colors.text }]}>Edit User</Text>
+                      <Text style={[s.modalSubtitle, { color: colors.textSecondary, marginBottom: 0 }]}>{editingUser.email}</Text>
+                    </View>
+
+                    {/* Role selector */}
+                    <View style={s.modalField}>
+                      <Text style={[s.modalLabel, { color: colors.textSecondary }]}>Role</Text>
+                      <View style={s.roleToggleRow}>
+                        {['user', 'admin'].map(r => (
+                          <Pressable
+                            key={r}
+                            onPress={() => setEditForm(f => ({ ...f, role: r }))}
+                            style={[
+                              s.roleToggleBtn,
+                              { borderColor: colors.border },
+                              editForm.role === r && { backgroundColor: r === 'admin' ? '#7c3aed18' : '#22c55e18', borderColor: r === 'admin' ? '#7c3aed' : '#22c55e' },
+                            ]}
+                          >
+                            <Ionicons name={r === 'admin' ? 'shield' : 'person'} size={15} color={editForm.role === r ? (r === 'admin' ? '#7c3aed' : '#22c55e') : colors.textTertiary} />
+                            <Text style={[s.roleToggleText, { color: editForm.role === r ? (r === 'admin' ? '#7c3aed' : '#22c55e') : colors.textSecondary }]}>
+                              {r.charAt(0).toUpperCase() + r.slice(1)}
+                            </Text>
+                          </Pressable>
+                        ))}
+                      </View>
+                    </View>
+
+                    {/* Save button */}
+                    <View style={{ gap: Spacing.sm, marginTop: Spacing.md }}>
+                      <Pressable
+                        onPress={async () => {
+                          await handleUpdateUser(editingUser);
+                          setMobileEditUserOpen(false);
+                          setSelectedUser(null);
+                        }}
+                        style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: colors.primary, borderRadius: BorderRadius.md, paddingVertical: 13 }}
+                      >
+                        <Ionicons name="save-outline" size={17} color="#fff" />
+                        <Text style={{ ...Typography.captionMedium, color: '#fff', fontWeight: '700' }}>Save Changes</Text>
+                      </Pressable>
+                    </View>
+                  </Pressable>
+                </Pressable>
+              </Modal>
+            )}
           </View>
         )}
 
@@ -1340,6 +2105,62 @@ export default function AdminPage() {
 
               {historyLoading ? (
                 <ActivityIndicator size="small" color={colors.primary} style={{ paddingVertical: Spacing.xl }} />
+              ) : isMobile ? (
+                /* ── Mobile: Compact history list (User + Category, tap for details) ── */
+                <>
+                  {historyItems
+                    .filter(h => {
+                      if (!historySearch) return true;
+                      const q = historySearch.toLowerCase();
+                      return (h.userEmail || '').toLowerCase().includes(q) ||
+                        (h.userName || '').toLowerCase().includes(q) ||
+                        (h.category || '').toLowerCase().includes(q) ||
+                        (h.yieldCategory || '').toLowerCase().includes(q);
+                    })
+                    .map((h, idx) => (
+                      <Animated.View key={h.id} entering={FadeInUp.delay(60 + idx * 20).duration(280)}>
+                        <Pressable
+                          onPress={() => setSelectedHistory(h)}
+                          style={({ pressed }) => [
+                            {
+                              flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+                              paddingVertical: 12, paddingHorizontal: 14,
+                              borderBottomWidth: 1, borderBottomColor: colors.divider,
+                              backgroundColor: pressed ? colors.primary + '08' : (idx % 2 === 0 ? colors.background + '60' : 'transparent'),
+                            },
+                          ]}
+                        >
+                          <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                            <View style={[s.categoryBadge, { backgroundColor: (CAT_COLORS[h.category] || colors.primary) + '18', paddingHorizontal: 8, paddingVertical: 4 }]}>
+                              <View style={[s.categoryDot, { backgroundColor: CAT_COLORS[h.category] || colors.primary }]} />
+                              <Text style={[s.categoryBadgeText, { color: CAT_COLORS[h.category] || colors.primary }]}>
+                                {h.category || '—'}
+                              </Text>
+                            </View>
+                            <View style={{ flex: 1 }}>
+                              <Text style={{ ...Typography.captionMedium, color: colors.text, fontWeight: '500' }} numberOfLines={1}>
+                                {h.userName || h.userEmail || '—'}
+                              </Text>
+                              <Text style={{ ...Typography.tiny, color: colors.textTertiary, marginTop: 1 }}>
+                                {h.createdAt ? new Date(h.createdAt).toLocaleDateString() : '—'}
+                              </Text>
+                            </View>
+                          </View>
+                          <Ionicons name="chevron-forward" size={16} color={colors.textTertiary} />
+                        </Pressable>
+                      </Animated.View>
+                    ))}
+
+                  {historyItems.length === 0 && (
+                    <Text style={[s.emptyText, { color: colors.textTertiary }]}>No scan history found</Text>
+                  )}
+
+                  <View style={[s.dtFooter, { borderTopColor: colors.divider }]}>
+                    <Text style={[s.dtFooterText, { color: colors.textTertiary }]}>
+                      {historyItems.filter(h => !historySearch || (h.userEmail || '').toLowerCase().includes(historySearch.toLowerCase()) || (h.category || '').toLowerCase().includes(historySearch.toLowerCase())).length} of {historyItems.length} records
+                    </Text>
+                  </View>
+                </>
               ) : (
                 <>
                   {/* Header Row */}
@@ -1365,7 +2186,7 @@ export default function AdminPage() {
                     .map((h, idx) => (
                       <Animated.View
                         key={h.id}
-                        entering={FadeInUp.delay(80 + idx * 20).springify()}
+                        entering={FadeInUp.delay(80 + idx * 20).duration(280)}
                         style={[s.dtRow, { borderBottomColor: colors.divider }, idx % 2 === 0 && { backgroundColor: colors.background + '60' }]}
                       >
                         <View style={s.dtCellUser}>
@@ -1413,6 +2234,82 @@ export default function AdminPage() {
                 </>
               )}
             </Card>
+
+            {/* Mobile: History Detail Modal */}
+            {selectedHistory && isMobile && (
+              <Modal transparent animationType="slide" visible={!!selectedHistory} onRequestClose={() => setSelectedHistory(null)}>
+                <Pressable style={s.modalOverlay} onPress={() => setSelectedHistory(null)}>
+                  <Pressable style={[s.modalContent, { backgroundColor: colors.card, borderColor: colors.borderLight, maxHeight: '80%' }]} onPress={e => e.stopPropagation()}>
+                    <ScrollView showsVerticalScrollIndicator={false}>
+                      {/* Header */}
+                      <View style={{ alignItems: 'center', marginBottom: Spacing.md }}>
+                        <View style={[s.categoryBadge, { backgroundColor: (CAT_COLORS[selectedHistory.category] || colors.primary) + '18', paddingHorizontal: 14, paddingVertical: 6, marginBottom: 8 }]}>
+                          <View style={[s.categoryDot, { backgroundColor: CAT_COLORS[selectedHistory.category] || colors.primary, width: 8, height: 8, borderRadius: 4 }]} />
+                          <Text style={{ ...Typography.captionMedium, color: CAT_COLORS[selectedHistory.category] || colors.primary, fontWeight: '700' }}>
+                            {selectedHistory.category || '—'}
+                          </Text>
+                        </View>
+                        <Text style={[s.modalTitle, { color: colors.text }]}>Scan Details</Text>
+                        <Text style={[s.modalSubtitle, { color: colors.textSecondary }]}>
+                          {selectedHistory.userName || selectedHistory.userEmail || 'Unknown User'}
+                        </Text>
+                      </View>
+
+                      {/* Details */}
+                      <View style={{ backgroundColor: colors.background, borderRadius: BorderRadius.md, padding: Spacing.md, marginBottom: Spacing.md, gap: Spacing.sm }}>
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <Text style={{ ...Typography.small, color: colors.textSecondary }}>User</Text>
+                          <Text style={{ ...Typography.small, color: colors.text, fontWeight: '500' }} numberOfLines={1}>{selectedHistory.userName || selectedHistory.userEmail || '—'}</Text>
+                        </View>
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <Text style={{ ...Typography.small, color: colors.textSecondary }}>Category</Text>
+                          <Text style={{ ...Typography.small, color: CAT_COLORS[selectedHistory.category] || colors.text, fontWeight: '600' }}>{selectedHistory.category || '—'}</Text>
+                        </View>
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <Text style={{ ...Typography.small, color: colors.textSecondary }}>Confidence</Text>
+                          <Text style={{ ...Typography.small, color: colors.text, fontWeight: '500' }}>
+                            {selectedHistory.confidence != null ? `${(selectedHistory.confidence * 100).toFixed(1)}%` : '—'}
+                          </Text>
+                        </View>
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <Text style={{ ...Typography.small, color: colors.textSecondary }}>Oil Yield</Text>
+                          <Text style={{ ...Typography.small, color: colors.text, fontWeight: '500' }}>
+                            {selectedHistory.oilYieldPercent != null ? `${Number(selectedHistory.oilYieldPercent).toFixed(1)}%` : '—'}
+                          </Text>
+                        </View>
+                        {selectedHistory.yieldCategory && (
+                          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <Text style={{ ...Typography.small, color: colors.textSecondary }}>Yield Category</Text>
+                            <Text style={{ ...Typography.small, color: colors.text, fontWeight: '500' }}>{selectedHistory.yieldCategory}</Text>
+                          </View>
+                        )}
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <Text style={{ ...Typography.small, color: colors.textSecondary }}>Date</Text>
+                          <Text style={{ ...Typography.small, color: colors.text }}>
+                            {selectedHistory.createdAt ? new Date(selectedHistory.createdAt).toLocaleString() : '—'}
+                          </Text>
+                        </View>
+                      </View>
+
+                      {/* Actions */}
+                      <View style={{ gap: Spacing.sm }}>
+                        <Pressable
+                          onPress={() => { setConfirmDelete({ type: 'history', id: selectedHistory.id, label: `${selectedHistory.category} scan by ${selectedHistory.userEmail || 'unknown'}` }); setSelectedHistory(null); }}
+                          style={[s.modalBtn, { borderColor: '#ef444440', backgroundColor: '#ef444408', paddingVertical: 12 }]}
+                        >
+                          <Ionicons name="trash-outline" size={16} color="#ef4444" style={{ marginRight: 6 }} />
+                          <Text style={[s.modalBtnText, { color: '#ef4444', fontWeight: '600' }]}>Delete Record</Text>
+                        </Pressable>
+
+                        <Pressable onPress={() => setSelectedHistory(null)} style={[s.modalBtn, { borderColor: colors.border, paddingVertical: 12 }]}>
+                          <Text style={[s.modalBtnText, { color: colors.textSecondary }]}>Close</Text>
+                        </Pressable>
+                      </View>
+                    </ScrollView>
+                  </Pressable>
+                </Pressable>
+              </Modal>
+            )}
           </View>
         )}
 
@@ -1475,7 +2372,7 @@ export default function AdminPage() {
                   <Ionicons name={expandedCard === model.name ? 'chevron-up' : 'chevron-down'} size={18} color={colors.textTertiary} />
                 </Pressable>
                 {expandedCard === model.name && (
-                  <Animated.View entering={FadeInUp.springify()} style={s.modelDetails}>
+                  <Animated.View entering={FadeInUp.duration(280)} style={s.modelDetails}>
                     <StatRow icon="cog" label="Task" value={model.task} color={colors.primary} colors={colors} />
                     <Text style={[s.modelDesc, { color: colors.textSecondary }]}>{model.description}</Text>
                     {model.classes && (
@@ -1567,7 +2464,7 @@ export default function AdminPage() {
               <View style={[s.extractionTable, { borderTopColor: colors.divider }]}>
                 <Text style={[s.extractTableTitle, { color: colors.text }]}>Extraction Methods</Text>
                 {SEED_TO_OIL.extractionMethods.map((m, idx) => (
-                  <Animated.View key={m.method} entering={FadeInUp.delay(400 + idx * 50).springify()} style={[s.extractRow, idx < SEED_TO_OIL.extractionMethods.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.divider }]}>
+                  <Animated.View key={m.method} entering={FadeInUp.delay(400 + idx * 50).duration(280)} style={[s.extractRow, idx < SEED_TO_OIL.extractionMethods.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.divider }]}>
                     <Text style={[s.extractMethod, { color: colors.text }]}>{m.method}</Text>
                     <Text style={[s.extractYield, { color: colors.primary }]}>{m.yield}</Text>
                     <Text style={[s.extractQuality, { color: colors.textTertiary }]}>{m.quality}</Text>
@@ -1626,7 +2523,7 @@ export default function AdminPage() {
                 const sci = OIL_YIELD_DATA[cat];
                 const sys = yieldData[cat] || {};
                 return (
-                  <Animated.View key={cat} entering={FadeInUp.delay(650 + idx * 60).springify()} style={[s.oilYieldCompare, { borderColor: sci.colorHex + '20' }]}>
+                  <Animated.View key={cat} entering={FadeInUp.delay(650 + idx * 60).duration(280)} style={[s.oilYieldCompare, { borderColor: sci.colorHex + '20' }]}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm }}>
                       <View style={[s.oilDot, { backgroundColor: sci.colorHex }]} />
                       <Text style={[s.oilLabel, { color: colors.text }]}>{sci.label}</Text>
@@ -1655,7 +2552,7 @@ export default function AdminPage() {
             <Card colors={colors} delay={700}>
               <CardTitle icon="list" title="Uses of Talisay Oil" colors={colors} />
               {BOTANICAL_INFO.usesOfOil.map((use, idx) => (
-                <Animated.View key={use} entering={FadeInUp.delay(750 + idx * 40).springify()} style={s.useItem}>
+                <Animated.View key={use} entering={FadeInUp.delay(750 + idx * 40).duration(280)} style={s.useItem}>
                   <Ionicons name="checkmark-circle" size={16} color={colors.primary} />
                   <Text style={[s.useText, { color: colors.textSecondary }]}>{use}</Text>
                 </Animated.View>
@@ -1729,7 +2626,7 @@ const s = StyleSheet.create({
 
   /* Card */
   card: { padding: Spacing.lg, borderRadius: BorderRadius.lg, borderWidth: 1, marginBottom: Spacing.md },
-  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: Spacing.md, gap: Spacing.sm },
+  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.md, gap: Spacing.xs, flexWrap: 'wrap' },
   cardTitleIcon: { width: 28, height: 28, borderRadius: BorderRadius.sm, alignItems: 'center', justifyContent: 'center' },
   cardTitle: { ...Typography.h4 },
   cardSubtitle: { ...Typography.small, marginTop: 2, marginLeft: 40 },
@@ -1781,12 +2678,12 @@ const s = StyleSheet.create({
 
   /* Bar chart */
   barChartWrap: { marginTop: Spacing.sm },
-  barChartInner: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', gap: 2 },
-  barCol: { flex: 1, alignItems: 'center', gap: 3 },
-  barVal: { ...Typography.tiny, textAlign: 'center' },
-  barTrack: { width: '85%', borderRadius: BorderRadius.xs, justifyContent: 'flex-end', overflow: 'hidden' },
+  barChartInner: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-around', gap: 6, paddingHorizontal: 4 },
+  barCol: { alignItems: 'center', gap: 0, minWidth: 24, maxWidth: 48, flex: 1 },
+  barVal: { ...Typography.tiny, textAlign: 'center', marginBottom: 5 },
+  barTrack: { width: 22, maxWidth: 22, borderRadius: BorderRadius.xs, justifyContent: 'flex-end', overflow: 'hidden' },
   barFill: { width: '100%', borderRadius: BorderRadius.xs },
-  barLbl: { ...Typography.tiny, textAlign: 'center' },
+  barLbl: { ...Typography.tiny, textAlign: 'center', marginTop: 4 },
   tooltip: { position: 'absolute', bottom: '100%', left: -20, width: 100, padding: Spacing.xs, borderRadius: BorderRadius.sm, borderWidth: 1, ...Shadows.lg, zIndex: 10 },
   tooltipTitle: { ...Typography.tiny, fontWeight: '600' },
   tooltipVal: { ...Typography.small, fontWeight: '700' },

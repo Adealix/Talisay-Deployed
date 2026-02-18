@@ -38,6 +38,8 @@ const NAV_ITEMS = [
   { key: '/', label: 'Home', icon: 'home-outline', iconActive: 'home' },
   { key: '/grade', label: 'Grade', icon: 'school-outline', iconActive: 'school' },
   { key: '/history', label: 'History', icon: 'time-outline', iconActive: 'time' },
+  { key: '/mapping', label: 'Mapping', icon: 'map-outline', iconActive: 'map' },
+  { key: '/chatbot', label: 'TalisAI', icon: 'chatbubbles-outline', iconActive: 'chatbubbles' },
   { key: '/admin', label: 'Admin', icon: 'bar-chart-outline', iconActive: 'bar-chart' },
   { key: '/about-us', label: 'About Us', icon: 'people-outline', iconActive: 'people' },
   { key: '/about-talisay', label: 'About Talisay', icon: 'leaf-outline', iconActive: 'leaf' },

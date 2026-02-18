@@ -1,0 +1,24 @@
+{
+  "class_to_idx": {
+    "brown": 0,
+    "green": 1,
+    "yellow": 2
+  },
+  "idx_to_class": {
+    "0": "brown",
+    "1": "green",
+    "2": "yellow"
+  },
+  "architecture": "efficientnet",
+  "input_size": [
+    224,
+    224
+  ],
+  "classes": [
+    "brown",
+    "green",
+    "yellow"
+  ],
+  "training_phase": "brown_phase_2",
+  "training_date": "2026-02-17 23:55:08"
+}

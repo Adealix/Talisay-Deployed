@@ -10,7 +10,9 @@
  */
 import { Platform, Alert } from 'react-native';
 import { Asset } from 'expo-asset';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
+import * as Sharing from 'expo-sharing';
+import * as Print from 'expo-print';
 import {
   OIL_YIELD_DATA,
   SEED_TO_OIL,
@@ -280,22 +282,7 @@ export function generateOverallCSV(historyItems, analytics, users) {
    PDF GENERATION
    ═══════════════════════════════════════════════════ */
 
-/**
- * Load jsPDF and autotable plugin.
- */
-let _jsPDFClass = null;
-let _autoTable = null;
 let _tupLogoBase64 = null;
-
-async function loadJsPDF() {
-  if (_jsPDFClass) return _jsPDFClass;
-  const jspdfModule = require('jspdf');
-  const jsPDF = jspdfModule.jsPDF || jspdfModule.default || jspdfModule;
-  const autoTableModule = require('jspdf-autotable');
-  _autoTable = autoTableModule.default || autoTableModule;
-  _jsPDFClass = jsPDF;
-  return jsPDF;
-}
 
 /**
  * Load and cache the TUP logo as base64 for PDF embedding.
@@ -505,10 +492,164 @@ function checkPage(doc, y, needed, pageHeight, pageWidth, logoBase64) {
 /**
  * Generate category-specific PDF report.
  */
+// Helper: strip non-latin1 characters to avoid jsPDF encoding errors
+function sanitizeText(str) {
+  if (!str) return '';
+  return String(str).replace(/[^\x00-\xFF]/g, '?');
+}
+
+/* ═══════════════════════════════════════════════════
+   NATIVE HTML REPORT GENERATOR
+   Generates a styled HTML string for mobile sharing.
+   Used on native (iOS/Android) instead of jsPDF.
+   ═══════════════════════════════════════════════════ */
+
+function htmlTable(headers, rows) {
+  const ths = headers.map(h => `<th>${h}</th>`).join('');
+  const trs = rows.map((row, ri) =>
+    `<tr class="${ri % 2 === 0 ? 'even' : 'odd'}">${row.map(c => `<td>${c ?? ''}</td>`).join('')}</tr>`
+  ).join('');
+  return `<table><thead><tr>${ths}</tr></thead><tbody>${trs}</tbody></table>`;
+}
+
+function htmlSection(title) {
+  return `<h2>${title}</h2>`;
+}
+
+function htmlKV(rows) {
+  return htmlTable(['Metric', 'Value'], rows);
+}
+
+function buildNativeHTMLReport(title, subtitle, sections) {
+  const style = `
+    body { font-family: Arial, sans-serif; font-size: 13px; color: #222; margin: 0; padding: 16px; }
+    .header { background: #1b4332; color: #fff; padding: 16px; margin-bottom: 20px; text-align: center; border-radius: 6px; }
+    .header h1 { margin: 0 0 4px; font-size: 17px; }
+    .header p { margin: 2px 0; font-size: 12px; opacity: 0.85; }
+    h2 { font-size: 14px; color: #1b4332; border-bottom: 2px solid #1b4332; padding-bottom: 4px; margin-top: 22px; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 12px; }
+    th { background: #1b4332; color: #fff; padding: 6px 8px; font-size: 11px; text-align: left; }
+    td { padding: 5px 8px; font-size: 11px; border: 1px solid #d0e8d8; }
+    tr.even td { background: #f0faf4; }
+    tr.odd td { background: #fff; }
+    .footer { margin-top: 28px; text-align: center; font-size: 10px; color: #888; border-top: 1px solid #ccc; padding-top: 8px; }
+  `;
+  const sectionsHTML = sections.map(s => `${htmlSection(s.title)}${s.content}`).join('\n');
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${title}</title><style>${style}</style></head><body>
+    <div class="header">
+      <p>Republic of the Philippines</p>
+      <h1>TECHNOLOGICAL UNIVERSITY OF THE PHILIPPINES</h1>
+      <p>TAGUIG BRANCH &mdash; ELECTRICAL AND ALLIED DEPARTMENT</p>
+      <p style="margin-top:10px;font-size:14px;font-weight:bold;">${title}</p>
+      <p>${subtitle}</p>
+    </div>
+    ${sectionsHTML}
+    <div class="footer">Talisay AI Oil Yield Analysis System &mdash; ${today()}</div>
+  </body></html>`;
+}
+
+// ── Lazy jsPDF loader — web only. On native, jsPDF cannot run (latin1/encoding errors). ──
+let _JsPDF = null;
+let _autoTable = null;
+async function loadJsPDFLibs() {
+  if (Platform.OS !== 'web') {
+    throw new Error('jsPDF is only supported on web. Use HTML export on native.');
+  }
+  if (!_JsPDF) {
+    const jspdfMod = await import('jspdf');
+    _JsPDF = jspdfMod.jsPDF || jspdfMod.default;
+    const atMod = await import('jspdf-autotable');
+    _autoTable = atMod.default;
+  }
+  return { JsPDF: _JsPDF, autoTable: _autoTable };
+}
+
 export async function generateCategoryPDF(category, historyItems, analytics) {
-  const jsPDF = await loadJsPDF();
+  // Native: generate a styled HTML report shared via expo-sharing
+  if (Platform.OS !== 'web') {
+    const items = historyItems.filter(h => h.category === category);
+    const yieldStats = analytics?.avgYieldByCategory?.[category] || {};
+    const dimStats = analytics?.dimensionStats?.[category] || {};
+    const sci = OIL_YIELD_DATA[category];
+    const confItems = items.filter(h => h.confidence != null);
+    const avgConf = confItems.length > 0 ? confItems.reduce((s, h) => s + h.confidence, 0) / confItems.length : 0;
+    const spotsInCat = items.filter(h => h.hasSpots);
+    const coinInCat = items.filter(h => h.referenceDetected);
+
+    const sections = [
+      {
+        title: '1. Executive Summary',
+        content: `<p>${CAT_LABELS[category]} Talisay Fruit Analysis — ${items.length} scan(s). Research oil yield range: ${sci.oilYieldRange[0]}&ndash;${sci.oilYieldRange[1]}% (mean ${sci.oilYieldMean}%). System average: ${fmt(yieldStats.avg)}%.</p>`,
+      },
+      {
+        title: '2. Oil Yield Statistics',
+        content: htmlKV([
+          ['Research Oil Yield Range', `${sci.oilYieldRange[0]}-${sci.oilYieldRange[1]}%`],
+          ['Research Oil Yield Mean', `${sci.oilYieldMean}%`],
+          ['System Average Oil Yield', `${fmt(yieldStats.avg)}%`],
+          ['System Minimum Oil Yield', `${fmt(yieldStats.min)}%`],
+          ['System Maximum Oil Yield', `${fmt(yieldStats.max)}%`],
+          ['Total Samples', yieldStats.count || 0],
+        ]),
+      },
+      {
+        title: '3. Physical Dimensions',
+        content: htmlKV([
+          ['Average Fruit Length', `${fmt(dimStats.avgLength)} cm`],
+          ['Average Fruit Width', `${fmt(dimStats.avgWidth)} cm`],
+          ['Average Whole Fruit Weight', `${fmt(dimStats.avgWeight)} g`],
+          ['Average Kernel Weight', `${fmt(dimStats.avgKernelWeight)} g`],
+        ]),
+      },
+      {
+        title: '4. Model Confidence',
+        content: htmlKV([
+          ['Average Confidence', pct(avgConf)],
+          ['High Confidence Scans (>=80%)', confItems.filter(h => h.confidence >= 0.8).length],
+          ['Low Confidence Scans (<50%)', confItems.filter(h => h.confidence < 0.5).length],
+          ['Total with Confidence Data', confItems.length],
+        ]),
+      },
+      {
+        title: '5. Quality Indicators',
+        content: htmlKV([
+          ['Scans with Spots Detected', spotsInCat.length],
+          ['Average Spot Coverage', spotsInCat.length > 0 ? `${(spotsInCat.reduce((s, h) => s + (h.spotCoverage || 0), 0) / spotsInCat.length * 100).toFixed(1)}%` : 'N/A'],
+          ['Reference Coin Detected', coinInCat.length],
+          ['Coin Detection Rate', items.length > 0 ? `${((coinInCat.length / items.length) * 100).toFixed(1)}%` : 'N/A'],
+        ]),
+      },
+      {
+        title: '6. Detailed Scan Records',
+        content: items.length > 0
+          ? htmlTable(
+              ['#', 'Date', 'User', 'Confidence', 'Oil Yield %', 'Yield Cat.', 'Spots', 'Coin'],
+              items.map((h, i) => [
+                i + 1,
+                fmtDateTime(h.createdAt),
+                h.userName || h.userEmail || 'N/A',
+                pct(h.confidence),
+                fmt(h.oilYieldPercent),
+                h.yieldCategory || 'N/A',
+                h.hasSpots ? 'Yes' : 'No',
+                h.referenceDetected ? 'Yes' : 'No',
+              ])
+            )
+          : '<p>No scan records found for this category.</p>',
+      },
+    ];
+
+    const html = buildNativeHTMLReport(
+      `${CAT_LABELS[category]} Fruit — Analysis Report`,
+      `Report Date: ${today()} | Total Scans: ${items.length} | Category: ${category}`,
+      sections
+    );
+    return { _nativeHtmlReport: true, content: html };
+  }
+
+  const { JsPDF } = await loadJsPDFLibs();
   const logoBase64 = await loadTUPLogo();
-  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  const doc = new JsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4', putOnlyUsedFonts: true, compress: true });
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
 
@@ -605,10 +746,10 @@ export async function generateCategoryPDF(category, historyItems, analytics) {
       items.map((h, i) => [
         i + 1,
         fmtDateTime(h.createdAt),
-        h.userName || h.userEmail || 'N/A',
+        sanitizeText(h.userName || h.userEmail || 'N/A'),
         pct(h.confidence),
         fmt(h.oilYieldPercent),
-        h.yieldCategory || 'N/A',
+        sanitizeText(h.yieldCategory || 'N/A'),
         h.hasSpots ? 'Yes' : 'No',
         h.referenceDetected ? 'Yes' : 'No',
       ]),
@@ -641,9 +782,120 @@ export async function generateCategoryPDF(category, historyItems, analytics) {
  * Generate comprehensive overall PDF report.
  */
 export async function generateOverallPDF(historyItems, analytics, users) {
-  const jsPDF = await loadJsPDF();
+  // Native: generate a styled HTML report shared via expo-sharing
+  if (Platform.OS !== 'web') {
+    const ov = analytics?.overview || {};
+    const catDist = analytics?.categoryDistribution || {};
+    const yieldData = analytics?.avgYieldByCategory || {};
+    const yieldOverall = analytics?.avgYieldOverall || {};
+    const conf = analytics?.confidenceStats || {};
+    const dimStats = analytics?.dimensionStats || {};
+    const coinDet = analytics?.coinDetection || {};
+    const spots = analytics?.spotStats || {};
+    const totalScans = ov.totalHistory || historyItems.length;
+    const catTotal = (catDist.GREEN || 0) + (catDist.YELLOW || 0) + (catDist.BROWN || 0);
+
+    const sections = [
+      {
+        title: '1. Executive Summary',
+        content: `<p>This report provides a comprehensive overview of the Talisay AI Oil Yield Analysis System. The system has processed ${totalScans} fruit scan(s) from ${ov.totalUsers || users.length} registered user(s). The overall average oil yield across all categories is ${fmt(yieldOverall.avgYield)}%.</p>`,
+      },
+      {
+        title: '2. System Overview',
+        content: htmlKV([
+          ['Total Registered Users', ov.totalUsers || users.length],
+          ['Total Fruit Scans', totalScans],
+          ['Scans Today', ov.scansToday || 0],
+          ['Scans This Week', ov.scansThisWeek || 0],
+          ['New Users This Month', ov.newUsersThisMonth || 0],
+          ['High Yield Scans (Yellow + Brown)', ov.highYieldCount || 0],
+          ['Low Yield Scans (Green)', ov.lowYieldCount || 0],
+        ]),
+      },
+      {
+        title: '3. Maturity Category Distribution',
+        content: htmlTable(
+          ['Category', 'Count', 'Percentage', 'Oil Yield Range (Research)'],
+          ['GREEN', 'YELLOW', 'BROWN'].map(c => {
+            const sci = OIL_YIELD_DATA[c];
+            return [CAT_LABELS[c], catDist[c] || 0, catTotal > 0 ? `${(((catDist[c] || 0) / catTotal) * 100).toFixed(1)}%` : '0%', `${sci.oilYieldRange[0]}-${sci.oilYieldRange[1]}%`];
+          })
+        ),
+      },
+      {
+        title: '4. Oil Yield Analysis by Category',
+        content: htmlTable(
+          ['Category', 'Avg Yield', 'Min Yield', 'Max Yield', 'Samples', 'Research Mean'],
+          ['GREEN', 'YELLOW', 'BROWN'].map(c => {
+            const yd = yieldData[c] || {};
+            const sci = OIL_YIELD_DATA[c];
+            return [CAT_LABELS[c], `${fmt(yd.avg)}%`, `${fmt(yd.min)}%`, `${fmt(yd.max)}%`, yd.count || 0, `${sci.oilYieldMean}%`];
+          })
+        ) + htmlKV([
+          ['Overall Average Oil Yield', `${fmt(yieldOverall.avgYield)}%`],
+          ['Overall Minimum Oil Yield', `${fmt(yieldOverall.minYield)}%`],
+          ['Overall Maximum Oil Yield', `${fmt(yieldOverall.maxYield)}%`],
+        ]),
+      },
+      {
+        title: '5. Model Confidence Metrics',
+        content: htmlKV([
+          ['Average Overall Confidence', pct(conf.avgConfidence)],
+          ['Maximum Confidence', pct(conf.maxConfidence)],
+          ['Minimum Confidence', pct(conf.minConfidence)],
+          ['Average Color Classifier Confidence', pct(conf.avgColorConfidence)],
+          ['Average Oil Predictor Confidence', pct(conf.avgOilConfidence)],
+          ['Average Fruit Detection Confidence', pct(conf.avgFruitConfidence)],
+          ['High Confidence Count (>=80%)', conf.highConfidenceCount || 0],
+          ['Low Confidence Count (<50%)', conf.lowConfidenceCount || 0],
+        ]),
+      },
+      {
+        title: '6. Physical Dimensions by Category',
+        content: htmlTable(
+          ['Category', 'Avg Length (cm)', 'Avg Width (cm)', 'Avg Weight (g)', 'Avg Kernel (g)', 'Samples'],
+          ['GREEN', 'YELLOW', 'BROWN'].map(c => {
+            const d = dimStats[c] || {};
+            return [CAT_LABELS[c], fmt(d.avgLength), fmt(d.avgWidth), fmt(d.avgWeight), fmt(d.avgKernelWeight), d.count || 0];
+          })
+        ),
+      },
+      {
+        title: '7. Detection Quality Indicators',
+        content: htmlKV([
+          ['Scans with Spot Detection', spots.withSpots || 0],
+          ['Average Spot Coverage', spots.avgSpotCoverage != null ? `${(spots.avgSpotCoverage * 100).toFixed(1)}%` : 'N/A'],
+          ['Reference Coin Detected', coinDet.withCoin || 0],
+          ['Coin Detection Rate', coinDet.totalScans > 0 ? `${((coinDet.withCoin / coinDet.totalScans) * 100).toFixed(1)}%` : 'N/A'],
+        ]),
+      },
+      {
+        title: '8. Registered Users',
+        content: htmlTable(
+          ['#', 'Name', 'Email', 'Role', 'Verified', 'Date Joined'],
+          users.map((u, i) => [
+            i + 1,
+            [u.firstName, u.lastName].filter(Boolean).join(' ') || 'N/A',
+            u.email,
+            u.role,
+            u.isVerified ? 'Yes' : 'No',
+            fmtDate(u.createdAt),
+          ])
+        ),
+      },
+    ];
+
+    const html = buildNativeHTMLReport(
+      'Talisay Fruit Oil Yield Analysis — Comprehensive System Report',
+      `Report Date: ${today()} | Total Scans: ${totalScans} | Total Users: ${ov.totalUsers || users.length}`,
+      sections
+    );
+    return { _nativeHtmlReport: true, content: html };
+  }
+
+  const { JsPDF } = await loadJsPDFLibs();
   const logoBase64 = await loadTUPLogo();
-  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  const doc = new JsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4', putOnlyUsedFonts: true, compress: true });
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
 
@@ -833,8 +1085,10 @@ export async function generateOverallPDF(historyItems, analytics, users) {
     ['#', 'Name', 'Email', 'Role', 'Verified', 'Date Joined'],
     users.map((u, i) => [
       i + 1,
-      [u.firstName, u.lastName].filter(Boolean).join(' ') || 'N/A',
-      u.email, u.role, u.isVerified ? 'Yes' : 'No',
+      sanitizeText([u.firstName, u.lastName].filter(Boolean).join(' ') || 'N/A'),
+      sanitizeText(u.email),
+      sanitizeText(u.role),
+      u.isVerified ? 'Yes' : 'No',
       fmtDate(u.createdAt),
     ]),
     y
@@ -868,7 +1122,7 @@ export async function generateOverallPDF(historyItems, analytics, users) {
 /**
  * Trigger file download (web) or share (mobile).
  */
-export function downloadFile(content, filename, mimeType) {
+export async function downloadFile(content, filename, mimeType) {
   if (Platform.OS === 'web') {
     // Add UTF-8 BOM for Excel compatibility with CSV files
     const bom = mimeType.includes('csv') ? '\uFEFF' : '';
@@ -882,18 +1136,86 @@ export function downloadFile(content, filename, mimeType) {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
   } else {
-    // On mobile, use Alert to notify — full share requires expo-file-system + expo-sharing
-    Alert.alert('Export', `Report "${filename}" generated. File sharing on mobile requires expo-sharing.`);
+    // Mobile: write to temp file then share via system share sheet
+    try {
+      const fileUri = FileSystem.documentDirectory + filename;
+      await FileSystem.writeAsStringAsync(fileUri, content, {
+        encoding: FileSystem.EncodingType.UTF8,
+      });
+      const canShare = await Sharing.isAvailableAsync();
+      if (canShare) {
+        await Sharing.shareAsync(fileUri, {
+          mimeType: mimeType || 'text/csv',
+          dialogTitle: `Export ${filename}`,
+        });
+      } else {
+        Alert.alert('Exported', `File saved to: ${fileUri}`);
+      }
+    } catch (err) {
+      Alert.alert('Export Error', `Failed to save file: ${err.message}`);
+    }
   }
 }
 
 /**
- * Download a jsPDF document.
+ * Download a jsPDF document (web) or generate a real PDF from HTML (native).
+ * On native, uses expo-print to convert the styled HTML into an actual PDF file,
+ * then shares it via expo-sharing.
  */
-export function downloadPDF(doc, filename) {
+export async function downloadPDF(doc, filename) {
+  // Native: doc is a {_nativeHtmlReport, content} object — convert HTML → real PDF
+  if (doc && doc._nativeHtmlReport) {
+    try {
+      // expo-print converts HTML to a real PDF file on the device
+      const { uri: pdfUri } = await Print.printToFileAsync({
+        html: doc.content,
+        base64: false,
+      });
+
+      // Rename from the temp path to a user-friendly filename
+      const pdfFilename = filename.endsWith('.pdf') ? filename : filename.replace(/\.[^.]+$/, '.pdf');
+      const destUri = FileSystem.documentDirectory + pdfFilename;
+
+      // Move the generated PDF to documentDirectory with the correct filename
+      await FileSystem.moveAsync({ from: pdfUri, to: destUri });
+
+      const canShare = await Sharing.isAvailableAsync();
+      if (canShare) {
+        await Sharing.shareAsync(destUri, {
+          mimeType: 'application/pdf',
+          dialogTitle: `Export ${pdfFilename}`,
+          UTI: 'com.adobe.pdf',
+        });
+      } else {
+        Alert.alert('Exported', `PDF saved to: ${destUri}`);
+      }
+    } catch (err) {
+      Alert.alert('Export Error', `Failed to generate PDF: ${err.message}`);
+    }
+    return;
+  }
+
   if (Platform.OS === 'web') {
     doc.save(filename);
   } else {
-    Alert.alert('Export', `PDF "${filename}" generated. File sharing on mobile requires expo-sharing.`);
+    // Fallback: try base64 PDF (should not reach here for native normally)
+    try {
+      const base64 = doc.output('datauristring').split(',')[1];
+      const fileUri = FileSystem.documentDirectory + filename;
+      await FileSystem.writeAsStringAsync(fileUri, base64, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+      const canShare = await Sharing.isAvailableAsync();
+      if (canShare) {
+        await Sharing.shareAsync(fileUri, {
+          mimeType: 'application/pdf',
+          dialogTitle: `Export ${filename}`,
+        });
+      } else {
+        Alert.alert('Exported', `PDF saved to: ${fileUri}`);
+      }
+    } catch (err) {
+      Alert.alert('Export Error', `Failed to save PDF: ${err.message}`);
+    }
   }
 }

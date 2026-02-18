@@ -115,7 +115,7 @@ function ClassificationTable() {
 
   return (
     <Animated.View
-      entering={FadeInUp.delay(200).springify()}
+      entering={FadeInUp.delay(200).duration(280)}
       style={[styles.tableCard, { backgroundColor: colors.card, borderColor: colors.borderLight, ...Shadows.sm }]}
     >
       <View style={styles.tableHeader}>
@@ -125,7 +125,7 @@ function ClassificationTable() {
       {CLASSIFICATION.map((item, idx) => (
         <Animated.View
           key={item.label}
-          entering={FadeInLeft.delay(250 + idx * 50).springify()}
+          entering={FadeInLeft.delay(250 + idx * 50).duration(280)}
           style={[styles.tableRow, {
             backgroundColor: idx % 2 === 0 ? colors.background : 'transparent',
             borderBottomColor: colors.borderLight,
@@ -144,7 +144,7 @@ function NutritionSection() {
 
   return (
     <Animated.View
-      entering={FadeInUp.delay(300).springify()}
+      entering={FadeInUp.delay(300).duration(280)}
       style={[styles.tableCard, { backgroundColor: colors.card, borderColor: colors.borderLight, ...Shadows.sm }]}
     >
       <View style={styles.tableHeader}>
@@ -155,7 +155,7 @@ function NutritionSection() {
       {NUTRITIONAL.map((item, idx) => (
         <Animated.View
           key={item.nutrient}
-          entering={FadeInRight.delay(350 + idx * 60).springify()}
+          entering={FadeInRight.delay(350 + idx * 60).duration(280)}
           style={styles.nutrientRow}
         >
           <View style={styles.nutrientInfo}>
@@ -182,7 +182,7 @@ function MedicinalGrid({ isMobile }) {
       {MEDICINAL_USES.map((use, idx) => (
         <Animated.View
           key={use.title}
-          entering={ZoomIn.delay(250 + idx * 80).springify().damping(12)}
+          entering={ZoomIn.delay(250 + idx * 80).duration(280)}
           style={[styles.medicinalCard, {
             backgroundColor: colors.card,
             borderColor: colors.borderLight,
@@ -208,7 +208,7 @@ function GallerySection({ isMobile }) {
       {GALLERY.map((img, idx) => (
         <Animated.View
           key={idx}
-          entering={ZoomIn.delay(200 + idx * 100).springify()}
+          entering={ZoomIn.delay(200 + idx * 100).duration(280)}
           style={[styles.galleryItem, { borderRadius: BorderRadius.lg, overflow: 'hidden', ...Shadows.sm }]}
         >
           <Image source={{ uri: img.uri }} style={styles.galleryImage} resizeMode="cover" />
@@ -239,7 +239,7 @@ export default function AboutTalisayPage() {
         colors={isDark ? ['#1b2e1f', '#0f1a12'] : ['#ecfdf5', '#d1fae5']}
         style={styles.pageHeader}
       >
-        <Animated.View entering={FadeInUp.springify()} style={[styles.headerContent, isDesktop && styles.headerContentDesktop]}>
+        <Animated.View entering={FadeInUp.duration(280)} style={[styles.headerContent, isDesktop && styles.headerContentDesktop]}>
           <View style={[styles.headerIcon, { backgroundColor: '#2d6a4f' + '20' }]}>
             <Ionicons name="leaf" size={28} color="#2d6a4f" />
           </View>
@@ -253,7 +253,7 @@ export default function AboutTalisayPage() {
       <View style={[styles.content, isDesktop && styles.contentDesktop]}>
         {/* Hero description */}
         <Animated.View
-          entering={FadeInUp.delay(100).springify()}
+          entering={FadeInUp.delay(100).duration(280)}
           style={[styles.introCard, { backgroundColor: colors.card, borderColor: colors.borderLight, ...Shadows.md }]}
         >
           <Text style={[styles.introText, { color: colors.textSecondary }]}>
@@ -293,7 +293,7 @@ export default function AboutTalisayPage() {
           {CULTURAL_FACTS.map((fact, idx) => (
             <Animated.View
               key={fact.title}
-              entering={FadeInLeft.delay(200 + idx * 80).springify()}
+              entering={FadeInLeft.delay(200 + idx * 80).duration(280)}
             >
               <Pressable
                 onPress={() => setExpandedFact(expandedFact === idx ? null : idx)}
@@ -341,7 +341,7 @@ export default function AboutTalisayPage() {
           {SCIENCE_SUMMARY.map((st, idx) => (
             <Animated.View
               key={st.label}
-              entering={ZoomIn.delay(200 + idx * 80).springify().damping(12)}
+              entering={ZoomIn.delay(200 + idx * 80).duration(280)}
               style={[styles.sciCard, { backgroundColor: colors.card, borderColor: colors.borderLight, ...Shadows.sm }]}
             >
               <View style={[styles.sciCardIcon, { backgroundColor: st.color + '15' }]}>
@@ -356,7 +356,7 @@ export default function AboutTalisayPage() {
 
         {/* Botanical Details */}
         <Animated.View
-          entering={FadeInUp.delay(300).springify()}
+          entering={FadeInUp.delay(300).duration(280)}
           style={[styles.tableCard, { backgroundColor: colors.card, borderColor: colors.borderLight, ...Shadows.sm }]}
         >
           <View style={styles.tableHeader}>
@@ -374,7 +374,7 @@ export default function AboutTalisayPage() {
           ].map((item, idx) => (
             <Animated.View
               key={item.label}
-              entering={FadeInLeft.delay(350 + idx * 40).springify()}
+              entering={FadeInLeft.delay(350 + idx * 40).duration(280)}
               style={[styles.tableRow, {
                 backgroundColor: idx % 2 === 0 ? colors.background : 'transparent',
                 borderBottomColor: colors.borderLight,
@@ -400,7 +400,7 @@ export default function AboutTalisayPage() {
 
         {/* Oil Yield by Maturity Stage */}
         <Animated.View
-          entering={FadeInUp.delay(400).springify()}
+          entering={FadeInUp.delay(400).duration(280)}
           style={[styles.tableCard, { backgroundColor: colors.card, borderColor: colors.borderLight, ...Shadows.sm }]}
         >
           <View style={styles.tableHeader}>
@@ -412,7 +412,7 @@ export default function AboutTalisayPage() {
             return (
               <Animated.View
                 key={cat}
-                entering={FadeInLeft.delay(450 + idx * 60).springify()}
+                entering={FadeInLeft.delay(450 + idx * 60).duration(280)}
                 style={[styles.oilYieldCard, { borderColor: sci.colorHex + '20' }]}
               >
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm }}>
@@ -437,7 +437,7 @@ export default function AboutTalisayPage() {
 
         {/* Seed-to-Oil Ratio */}
         <Animated.View
-          entering={FadeInUp.delay(500).springify()}
+          entering={FadeInUp.delay(500).duration(280)}
           style={[styles.tableCard, { backgroundColor: colors.card, borderColor: colors.borderLight, ...Shadows.sm }]}
         >
           <View style={styles.tableHeader}>
@@ -453,7 +453,7 @@ export default function AboutTalisayPage() {
           ].map((item, idx) => (
             <Animated.View
               key={item.label}
-              entering={FadeInLeft.delay(550 + idx * 40).springify()}
+              entering={FadeInLeft.delay(550 + idx * 40).duration(280)}
               style={[styles.tableRow, {
                 backgroundColor: idx % 2 === 0 ? colors.background : 'transparent',
                 borderBottomColor: colors.borderLight,
@@ -470,7 +470,7 @@ export default function AboutTalisayPage() {
             {SEED_TO_OIL.extractionMethods.map((m, idx) => (
               <Animated.View
                 key={m.method}
-                entering={FadeInLeft.delay(600 + idx * 50).springify()}
+                entering={FadeInLeft.delay(600 + idx * 50).duration(280)}
                 style={[styles.extractRow, { borderBottomColor: colors.divider }]}
               >
                 <Text style={[styles.extractMethod, { color: colors.text }]}>{m.method}</Text>
@@ -485,7 +485,7 @@ export default function AboutTalisayPage() {
         <View style={[styles.twoCol, isMobile && styles.twoColMobile]}>
           {/* Fatty Acid Profile */}
           <Animated.View
-            entering={FadeInUp.delay(600).springify()}
+            entering={FadeInUp.delay(600).duration(280)}
             style={[styles.tableCard, { backgroundColor: colors.card, borderColor: colors.borderLight, ...Shadows.sm, flex: 1 }]}
           >
             <View style={styles.tableHeader}>
@@ -493,7 +493,7 @@ export default function AboutTalisayPage() {
               <Text style={[styles.tableTitle, { color: colors.text }]}>Fatty Acid Profile</Text>
             </View>
             {FATTY_ACID_PROFILE.map((fa, idx) => (
-              <Animated.View key={fa.name} entering={FadeInRight.delay(650 + idx * 40).springify()} style={styles.nutrientRow}>
+              <Animated.View key={fa.name} entering={FadeInRight.delay(650 + idx * 40).duration(280)} style={styles.nutrientRow}>
                 <View style={styles.nutrientInfo}>
                   <Text style={[styles.nutrientName, { color: colors.text }]}>{fa.name}</Text>
                   <Text style={[styles.nutrientAmount, { color: colors.textSecondary }]}>{fa.percentage}%</Text>
@@ -518,7 +518,7 @@ export default function AboutTalisayPage() {
 
           {/* Kernel Nutritional Composition */}
           <Animated.View
-            entering={FadeInUp.delay(650).springify()}
+            entering={FadeInUp.delay(650).duration(280)}
             style={[styles.tableCard, { backgroundColor: colors.card, borderColor: colors.borderLight, ...Shadows.sm, flex: 1 }]}
           >
             <View style={styles.tableHeader}>
@@ -527,7 +527,7 @@ export default function AboutTalisayPage() {
               <Text style={[styles.tableMeta, { color: colors.textTertiary }]}>per 100g</Text>
             </View>
             {Object.values(NUTRITIONAL_DATA).map((n, idx) => (
-              <Animated.View key={n.label} entering={FadeInRight.delay(700 + idx * 40).springify()} style={styles.nutrientRow}>
+              <Animated.View key={n.label} entering={FadeInRight.delay(700 + idx * 40).duration(280)} style={styles.nutrientRow}>
                 <View style={styles.nutrientInfo}>
                   <Text style={[styles.nutrientName, { color: colors.text }]}>{n.label}</Text>
                   <Text style={[styles.nutrientAmount, { color: colors.textSecondary }]}>{n.value}{n.unit}</Text>
@@ -545,7 +545,7 @@ export default function AboutTalisayPage() {
 
         {/* Physical Dimension Ranges */}
         <Animated.View
-          entering={FadeInUp.delay(700).springify()}
+          entering={FadeInUp.delay(700).duration(280)}
           style={[styles.tableCard, { backgroundColor: colors.card, borderColor: colors.borderLight, ...Shadows.sm }]}
         >
           <View style={styles.tableHeader}>
@@ -555,7 +555,7 @@ export default function AboutTalisayPage() {
           {Object.values(DIMENSION_RANGES).map((d, idx) => (
             <Animated.View
               key={d.label}
-              entering={FadeInLeft.delay(750 + idx * 50).springify()}
+              entering={FadeInLeft.delay(750 + idx * 50).duration(280)}
               style={[styles.tableRow, {
                 backgroundColor: idx % 2 === 0 ? colors.background : 'transparent',
                 borderBottomColor: colors.borderLight,
@@ -569,7 +569,7 @@ export default function AboutTalisayPage() {
 
         {/* Uses of Talisay Oil */}
         <Animated.View
-          entering={FadeInUp.delay(750).springify()}
+          entering={FadeInUp.delay(750).duration(280)}
           style={[styles.tableCard, { backgroundColor: colors.card, borderColor: colors.borderLight, ...Shadows.sm }]}
         >
           <View style={styles.tableHeader}>
@@ -577,7 +577,7 @@ export default function AboutTalisayPage() {
             <Text style={[styles.tableTitle, { color: colors.text }]}>Uses of Talisay Oil</Text>
           </View>
           {BOTANICAL_INFO.usesOfOil.map((use, idx) => (
-            <Animated.View key={use} entering={FadeInLeft.delay(800 + idx * 40).springify()} style={styles.oilUseItem}>
+            <Animated.View key={use} entering={FadeInLeft.delay(800 + idx * 40).duration(280)} style={styles.oilUseItem}>
               <Ionicons name="checkmark-circle" size={16} color="#22c55e" />
               <Text style={[styles.oilUseText, { color: colors.textSecondary }]}>{use}</Text>
             </Animated.View>
@@ -586,7 +586,7 @@ export default function AboutTalisayPage() {
 
         {/* Research References */}
         <Animated.View
-          entering={FadeInUp.delay(800).springify()}
+          entering={FadeInUp.delay(800).duration(280)}
           style={[styles.tableCard, { backgroundColor: colors.card, borderColor: colors.borderLight, ...Shadows.sm }]}
         >
           <View style={styles.tableHeader}>
@@ -596,7 +596,7 @@ export default function AboutTalisayPage() {
           {RESEARCH_REFERENCES.map((ref, idx) => (
             <Animated.View
               key={idx}
-              entering={FadeInLeft.delay(850 + idx * 30).springify()}
+              entering={FadeInLeft.delay(850 + idx * 30).duration(280)}
               style={[styles.refRow, {
                 borderBottomWidth: idx < RESEARCH_REFERENCES.length - 1 ? 1 : 0,
                 borderBottomColor: colors.divider,
@@ -615,7 +615,7 @@ export default function AboutTalisayPage() {
         </Animated.View>
 
         {/* Fun Fact Banner */}
-        <Animated.View entering={FadeInUp.delay(500).springify()}>
+        <Animated.View entering={FadeInUp.delay(500).duration(280)}>
           <LinearGradient
             colors={isDark ? ['#1b4332', '#2d6a4f'] : ['#d1fae5', '#a7f3d0']}
             style={styles.funFactBanner}

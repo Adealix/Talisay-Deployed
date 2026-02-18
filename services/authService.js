@@ -30,8 +30,11 @@ function getApiUrl() {
   return 'http://localhost:3000';
 }
 
-const API_URL = getApiUrl();
-console.log(`[authService] Using API URL: ${API_URL} (Platform: ${Platform.OS})`);
+// Log the resolved URL once at startup for debugging
+if (Platform.OS !== 'web') {
+  const _resolvedUrl = getApiUrl();
+  console.log(`[authService] Resolved API URL: ${_resolvedUrl} (Platform: ${Platform.OS})`);
+}
 
 // ─── Token management ───
 let _token = null;
@@ -68,7 +71,7 @@ async function apiFetch(path, opts = {}) {
   const config = { method, headers };
   if (body) config.body = JSON.stringify(body);
 
-  const res = await fetch(`${API_URL}${path}`, config);
+  const res = await fetch(`${getApiUrl()}${path}`, config);
   const data = await res.json().catch(() => ({}));
 
   if (!res.ok) {

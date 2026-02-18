@@ -116,7 +116,7 @@ export default function ProfileDropdown() {
 
           {/* Dropdown Menu */}
           <Animated.View
-            entering={FadeInDown.duration(200).springify()}
+            entering={FadeInDown.duration(200).duration(280)}
             exiting={FadeOutUp.duration(150)}
             style={[
               styles.dropdown,

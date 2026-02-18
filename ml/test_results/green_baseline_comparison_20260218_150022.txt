@@ -1,0 +1,290 @@
+====================================================================================================
+GREEN TALISAY BASELINE COMPARISON TEST - DETAILED RESULTS
+====================================================================================================
+Test Date: 2026-02-18 15:00:22
+Objective: Validate model accuracy by comparing own_datasets against existing_datasets baseline
+====================================================================================================
+
+EXPECTED OUTCOME:
+----------------------------------------------------------------------------------------------------
+Own_datasets predictions should closely match existing_datasets baseline with only
+minor decimal variations, demonstrating model accuracy and consistency.
+====================================================================================================
+
+
+====================================================================================================
+DATASET: existing_datasets_green
+====================================================================================================
+Type: BASELINE REFERENCE
+
+SUMMARY STATISTICS:
+----------------------------------------------------------------------------------------------------
+Total Images Tested: 2124
+Successful Predictions: 2124
+Failed Predictions: 0
+Success Rate: 100.0%
+
+Average Confidence: 90.89% (±1.00%)
+Average Oil Yield: 45.42% (±1.62%)
+Average Processing Time: 0.88 seconds
+
+COLOR CLASSIFICATION DISTRIBUTION:
+----------------------------------------------------------------------------------------------------
+  GREEN: 2094 images (98.59%)
+  YELLOW: 30 images (1.41%)
+
+DETAILED PREDICTIONS (First 50 images):
+----------------------------------------------------------------------------------------------------
+Image Name                                         Color      Oil Yield %     Confidence %   
+----------------------------------------------------------------------------------------------------
+ExistingGreen1.jpg                                 GREEN              45.00          91.00
+ExistingGreen10.jpg                                GREEN              45.00          91.00
+ExistingGreen100.jpg                               GREEN              45.00          91.00
+ExistingGreen101.jpg                               GREEN              45.00          91.00
+ExistingGreen102.jpg                               GREEN              45.00          91.00
+ExistingGreen103.jpg                               GREEN              45.00          91.00
+ExistingGreen104.jpg                               GREEN              45.00          91.00
+ExistingGreen105.jpg                               GREEN              45.00          92.00
+ExistingGreen106.jpg                               GREEN              45.39          92.00
+ExistingGreen107.jpg                               GREEN              45.45          90.00
+ExistingGreen108.jpg                               GREEN              45.82          90.00
+ExistingGreen109.jpg                               GREEN              45.00          91.00
+ExistingGreen11.jpg                                GREEN              45.00          91.00
+ExistingGreen110.jpg                               GREEN              45.00          91.00
+ExistingGreen111.jpg                               GREEN              45.00          91.00
+ExistingGreen112.jpg                               GREEN              45.00          91.00
+ExistingGreen113.jpg                               GREEN              45.00          91.00
+ExistingGreen114.jpg                               GREEN              45.00          92.00
+ExistingGreen115.jpg                               GREEN              45.39          92.00
+ExistingGreen116.jpg                               GREEN              45.45          90.00
+ExistingGreen117.jpg                               GREEN              45.82          90.00
+ExistingGreen118.jpg                               GREEN              45.00          91.00
+ExistingGreen119.jpg                               GREEN              45.00          91.00
+ExistingGreen12.jpg                                GREEN              45.00          91.00
+ExistingGreen120.jpg                               GREEN              45.00          91.00
+ExistingGreen121.jpg                               GREEN              45.00          91.00
+ExistingGreen122.jpg                               GREEN              45.00          91.00
+ExistingGreen123.jpg                               GREEN              45.00          92.00
+ExistingGreen124.jpg                               GREEN              45.39          92.00
+ExistingGreen125.jpg                               GREEN              45.45          90.00
+ExistingGreen126.jpg                               GREEN              45.82          90.00
+ExistingGreen127.jpg                               GREEN              45.00          91.00
+ExistingGreen128.jpg                               GREEN              45.00          91.00
+ExistingGreen129.jpg                               GREEN              45.00          91.00
+ExistingGreen13.jpg                                GREEN              45.00          91.00
+ExistingGreen130.jpg                               GREEN              45.00          91.00
+ExistingGreen131.jpg                               GREEN              45.00          91.00
+ExistingGreen132.jpg                               GREEN              45.00          92.00
+ExistingGreen133.jpg                               GREEN              45.39          92.00
+ExistingGreen134.jpg                               GREEN              45.45          90.00
+ExistingGreen135.jpg                               GREEN              45.82          90.00
+ExistingGreen136.jpg                               GREEN              45.00          91.00
+ExistingGreen137.jpg                               GREEN              45.00          91.00
+ExistingGreen138.jpg                               GREEN              45.00          91.00
+ExistingGreen139.jpg                               GREEN              45.00          91.00
+ExistingGreen14.jpg                                GREEN              45.00          91.00
+ExistingGreen140.jpg                               GREEN              45.00          91.00
+ExistingGreen141.jpg                               GREEN              45.00          92.00
+ExistingGreen142.jpg                               GREEN              45.39          92.00
+ExistingGreen143.jpg                               GREEN              45.45          90.00
+
+... and 2074 more predictions (see JSON for full details)
+
+
+====================================================================================================
+DATASET: own_datasets_green
+====================================================================================================
+Type: TEST DATASET
+
+SUMMARY STATISTICS:
+----------------------------------------------------------------------------------------------------
+Total Images Tested: 500
+Successful Predictions: 500
+Failed Predictions: 0
+Success Rate: 100.0%
+
+Average Confidence: 95.99% (±1.05%)
+Average Oil Yield: 45.59% (±0.35%)
+Average Processing Time: 0.74 seconds
+
+COLOR CLASSIFICATION DISTRIBUTION:
+----------------------------------------------------------------------------------------------------
+  GREEN: 500 images (100.00%)
+
+DETAILED PREDICTIONS (First 50 images):
+----------------------------------------------------------------------------------------------------
+Image Name                                         Color      Oil Yield %     Confidence %   
+----------------------------------------------------------------------------------------------------
+TalisayGreen375.jpg                                GREEN              45.32          96.00
+TalisayGreen303.jpg                                GREEN              45.65          96.00
+TalisayGreen144.jpg                                GREEN              46.09          97.00
+TalisayGreen563.jpg                                GREEN              45.65          96.00
+TalisayGreen605.jpg                                GREEN              45.70          96.00
+TalisayGreen55.jpg                                 GREEN              45.60          97.00
+TalisayGreen51.jpg                                 GREEN              45.45          97.00
+TalisayGreen355.jpg                                GREEN              45.65          96.00
+TalisayGreen554.jpg                                GREEN              45.78          95.00
+TalisayGreen287.jpg                                GREEN              46.15          97.00
+TalisayGreen443.jpg                                GREEN              46.15          97.00
+TalisayGreen561.jpg                                GREEN              45.75          96.00
+TalisayGreen841.jpg                                GREEN              45.47          96.00
+TalisayGreen200.jpg                                GREEN              45.46          96.00
+TalisayGreen259.jpg                                GREEN              45.45          97.00
+TalisayGreen285.jpg                                GREEN              45.45          97.00
+TalisayGreen877.jpg                                GREEN              45.48          96.00
+TalisayGreen157.jpg                                GREEN              46.15          97.00
+TalisayGreen153.jpg                                GREEN              45.56          96.00
+TalisayGreen270.jpg                                GREEN              45.40          97.00
+TalisayGreen500.jpg                                GREEN              45.78          96.00
+TalisayGreen527.jpg                                GREEN              45.70          96.00
+TalisayGreen127.jpg                                GREEN              45.56          96.00
+TalisayGreen305.jpg                                GREEN              45.48          96.00
+TalisayGreen147.jpg                                GREEN              45.65          96.00
+TalisayGreen230.jpg                                GREEN              45.00          93.00
+TalisayGreen465.jpg                                GREEN              45.56          96.00
+TalisayGreen516.jpg                                GREEN              45.00          93.00
+TalisayGreen394.jpg                                GREEN              45.18          95.00
+TalisayGreen49.jpg                                 GREEN              45.56          96.00
+TalisayGreen989.jpg                                GREEN              46.15          97.00
+TalisayGreen872.jpg                                GREEN              46.09          97.00
+TalisayGreen504.jpg                                GREEN              45.40          97.00
+TalisayGreen926.jpg                                GREEN              45.76          96.00
+TalisayGreen282.jpg                                GREEN              45.00          93.00
+TalisayGreen610.jpg                                GREEN              45.05          96.00
+TalisayGreen689.jpg                                GREEN              46.37          95.00
+TalisayGreen8.jpg                                  GREEN              45.45          97.00
+TalisayGreen11.jpg                                 GREEN              45.60          97.00
+TalisayGreen596.jpg                                GREEN              45.21          97.00
+TalisayGreen682.jpg                                GREEN              45.78          96.00
+TalisayGreen392.jpg                                GREEN              45.80          97.00
+TalisayGreen483.jpg                                GREEN              45.75          96.00
+TalisayGreen878.jpg                                GREEN              46.30          95.00
+TalisayGreen725.jpg                                GREEN              45.56          96.00
+TalisayGreen969.jpg                                GREEN              45.70          96.00
+TalisayGreen385.jpg                                GREEN              45.25          96.00
+TalisayGreen495.jpg                                GREEN              46.15          97.00
+TalisayGreen603.jpg                                GREEN              45.00          93.00
+TalisayGreen719.jpg                                GREEN              45.65          96.00
+
+... and 450 more predictions (see JSON for full details)
+
+
+====================================================================================================
+DATASET: own_datasets_green_nocoin
+====================================================================================================
+Type: TEST DATASET
+
+SUMMARY STATISTICS:
+----------------------------------------------------------------------------------------------------
+Total Images Tested: 500
+Successful Predictions: 500
+Failed Predictions: 0
+Success Rate: 100.0%
+
+Average Confidence: 93.00% (±0.00%)
+Average Oil Yield: 46.94% (±0.26%)
+Average Processing Time: 0.40 seconds
+
+COLOR CLASSIFICATION DISTRIBUTION:
+----------------------------------------------------------------------------------------------------
+  GREEN: 500 images (100.00%)
+
+DETAILED PREDICTIONS (First 50 images):
+----------------------------------------------------------------------------------------------------
+Image Name                                         Color      Oil Yield %     Confidence %   
+----------------------------------------------------------------------------------------------------
+GreenTalisay377.png                                GREEN              47.16          93.00
+GreenTalisay303.png                                GREEN              46.97          93.00
+GreenTalisay144.png                                GREEN              46.97          93.00
+GreenTalisay565.png                                GREEN              47.26          93.00
+GreenTalisay605.png                                GREEN              46.83          93.00
+GreenTalisay55.png                                 GREEN              47.16          93.00
+GreenTalisay51.png                                 GREEN              46.97          93.00
+GreenTalisay355.png                                GREEN              47.26          93.00
+GreenTalisay556.png                                GREEN              47.12          93.00
+GreenTalisay287.png                                GREEN              46.98          93.00
+GreenTalisay445.png                                GREEN              46.29          93.00
+GreenTalisay563.png                                GREEN              46.83          93.00
+GreenTalisay843.png                                GREEN              46.83          93.00
+GreenTalisay202.png                                GREEN              47.21          93.00
+GreenTalisay259.png                                GREEN              46.98          93.00
+GreenTalisay287.png                                GREEN              46.98          93.00
+GreenTalisay877.png                                GREEN              46.97          93.00
+GreenTalisay157.png                                GREEN              46.83          93.00
+GreenTalisay153.png                                GREEN              47.16          93.00
+GreenTalisay270.png                                GREEN              46.97          93.00
+GreenTalisay500.png                                GREEN              47.12          93.00
+GreenTalisay527.png                                GREEN              46.97          93.00
+GreenTalisay129.png                                GREEN              46.83          93.00
+GreenTalisay307.png                                GREEN              47.16          93.00
+GreenTalisay147.png                                GREEN              46.98          93.00
+GreenTalisay232.png                                GREEN              46.75          93.00
+GreenTalisay465.png                                GREEN              46.83          93.00
+GreenTalisay518.png                                GREEN              47.01          93.00
+GreenTalisay396.png                                GREEN              46.97          93.00
+GreenTalisay491.png                                GREEN              47.29          93.00
+GreenTalisay987.png                                GREEN              46.98          93.00
+GreenTalisay872.png                                GREEN              46.97          93.00
+GreenTalisay504.png                                GREEN              47.01          93.00
+GreenTalisay926.png                                GREEN              46.83          93.00
+GreenTalisay284.png                                GREEN              46.97          93.00
+GreenTalisay610.png                                GREEN              46.75          93.00
+GreenTalisay690.png                                GREEN              46.97          93.00
+GreenTalisay800.png                                GREEN              46.83          93.00
+GreenTalisay11.png                                 GREEN              46.83          93.00
+GreenTalisay598.png                                GREEN              47.12          93.00
+GreenTalisay684.png                                GREEN              46.53          93.00
+GreenTalisay392.png                                GREEN              47.01          93.00
+GreenTalisay485.png                                GREEN              46.97          93.00
+GreenTalisay878.png                                GREEN              47.12          93.00
+GreenTalisay725.png                                GREEN              46.29          93.00
+GreenTalisay967.png                                GREEN              47.29          93.00
+GreenTalisay385.png                                GREEN              46.98          93.00
+GreenTalisay495.png                                GREEN              47.26          93.00
+GreenTalisay605.png                                GREEN              46.83          93.00
+GreenTalisay719.png                                GREEN              47.26          93.00
+
+... and 450 more predictions (see JSON for full details)
+
+
+====================================================================================================
+BASELINE COMPARISON ANALYSIS
+====================================================================================================
+
+BASELINE (existing_datasets/green):
+----------------------------------------------------------------------------------------------------
+  Average Confidence: 90.89%
+  Average Oil Yield: 45.42%
+  Color Distribution: {'GREEN': 2094, 'YELLOW': 30}
+
+OWN_DATASETS_GREEN:
+----------------------------------------------------------------------------------------------------
+  Average Confidence: 95.99%
+  Average Oil Yield: 45.59%
+  Color Distribution: {'GREEN': 500}
+
+  DIFFERENCES FROM BASELINE:
+    Confidence: +5.10% (deviation: 5.10%)
+    Oil Yield: +0.17% (deviation: 0.17%)
+
+  ACCURACY ASSESSMENT:
+    ⚠ ACCEPTABLE - Moderate deviation (< 10%)
+
+OWN_DATASETS_GREEN_NOCOIN:
+----------------------------------------------------------------------------------------------------
+  Average Confidence: 93.00%
+  Average Oil Yield: 46.94%
+  Color Distribution: {'GREEN': 500}
+
+  DIFFERENCES FROM BASELINE:
+    Confidence: +2.11% (deviation: 2.11%)
+    Oil Yield: +1.52% (deviation: 1.52%)
+
+  ACCURACY ASSESSMENT:
+    ✓ GOOD - Close to baseline (< 5% deviation)
+
+====================================================================================================
+FINAL CONCLUSION
+====================================================================================================
+own_datasets_green: Acceptable accuracy - moderate deviation from baseline. own_datasets_green_nocoin: Good accuracy - predictions align well with baseline
+====================================================================================================

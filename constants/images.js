@@ -20,6 +20,8 @@ export const MAP_IMAGE = require('../assets/images/map.png');
 
 export const TEAM = {
   member1: require('../assets/images/team/member1.jpg'),
+  member1_day: require('../assets/images/team/member1_day.jpg'),
+  member1_night: require('../assets/images/team/member1_night.jpg'),
   member2: require('../assets/images/team/member2.jpg'),
   member3: require('../assets/images/team/member3.jpg'),
   member4: require('../assets/images/team/member4.jpg'),

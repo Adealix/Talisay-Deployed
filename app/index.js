@@ -88,6 +88,8 @@ const FEATURES = [
 const QUICK_LINKS = [
   { icon: 'scan', label: 'Scan Fruit', route: '/scan', color: '#2d6a4f' },
   { icon: 'time', label: 'History', route: '/history', color: '#f97316' },
+  { icon: 'map', label: 'Mapping', route: '/mapping', color: '#ef4444' },
+  { icon: 'chatbubbles', label: 'TalisAI Chat', route: '/chatbot', color: '#22c55e' },
   { icon: 'leaf', label: 'About Talisay', route: '/about-talisay', color: '#52b788' },
   { icon: 'document-text', label: 'Publications', route: '/publication', color: '#3b82f6' },
   { icon: 'bar-chart', label: 'Analytics', route: '/admin', color: '#7c3aed' },
@@ -160,7 +162,7 @@ function SectionHeader({ title, subtitle, action, onAction, delay = 0 }) {
   const { colors } = useTheme();
   return (
     <Animated.View
-      entering={FadeInUp.delay(delay).springify().damping(16)}
+      entering={FadeInUp.delay(delay).duration(280)}
       style={styles.sectionHeader}
     >
       <View style={styles.sectionHeaderLeft}>
@@ -191,7 +193,7 @@ function QuickLinkItem({ item, index }) {
 
   return (
     <AnimatedPressable
-      entering={ZoomIn.delay(400 + index * 70).springify().damping(12)}
+      entering={ZoomIn.delay(400 + index * 70).duration(280)}
       onPress={() => router.push(item.route)}
       onPressIn={() => { scale.value = withSpring(0.9, { damping: 12 }); }}
       onPressOut={() => { scale.value = withSpring(1, { damping: 8 }); }}
@@ -218,7 +220,7 @@ function UpdateItem({ item, index }) {
 
   return (
     <AnimatedPressable
-      entering={FadeInUp.delay(600 + index * 100).springify().damping(16)}
+      entering={FadeInUp.delay(600 + index * 100).duration(280)}
       onPressIn={() => { scale.value = withSpring(0.98); }}
       onPressOut={() => { scale.value = withSpring(1); }}
       style={[
@@ -270,7 +272,7 @@ function CTABanner() {
   }));
 
   return (
-    <Animated.View entering={FadeInUp.delay(700).springify()}>
+    <Animated.View entering={FadeInUp.delay(700).duration(280)}>
       <LinearGradient
         colors={gradients.accent}
         start={{ x: 0, y: 0 }}

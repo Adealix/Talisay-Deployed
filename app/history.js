@@ -67,7 +67,7 @@ function HistoryCard({ entry, onPress, delay = 0, colors, isDark }) {
   const cardStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
 
   return (
-    <Animated.View entering={FadeInUp.delay(delay).springify().damping(14)}>
+    <Animated.View entering={FadeInUp.delay(delay).duration(280)}>
       <AnimatedPressable
         onPress={onPress}
         onPressIn={() => { scale.value = withSpring(0.96); }}
@@ -119,9 +119,149 @@ function HistoryCard({ entry, onPress, delay = 0, colors, isDark }) {
   );
 }
 
+// ─── Single Dataset Panel (reusable) ───
+function DatasetPanel({ data, label, colors, isDark }) {
+  if (!data) return null;
+  const dims = data.dimensions || {};
+  const catColor = getCategoryColor(data.category);
+
+  return (
+    <View style={styles.dsPanel}>
+      {/* Label */}
+      <View style={[styles.dsPanelLabel, { backgroundColor: label === 'Baseline' ? '#3b82f620' : '#22c55e20' }]}>
+        <Ionicons name={label === 'Baseline' ? 'server-outline' : 'camera-outline'} size={13} color={label === 'Baseline' ? '#3b82f6' : '#22c55e'} />
+        <Text style={[styles.dsPanelLabelText, { color: label === 'Baseline' ? '#3b82f6' : '#22c55e' }]}>{label}</Text>
+      </View>
+
+      {/* Image */}
+      <View style={styles.dsPanelImageWrap}>
+        {data.imageUri ? (
+          <Image source={{ uri: data.imageUri }} style={styles.dsPanelImage} resizeMode="cover" />
+        ) : (
+          <View style={[styles.dsPanelImagePlaceholder, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#f1f5f9' }]}>
+            <Ionicons name="leaf" size={32} color={colors.textTertiary} />
+          </View>
+        )}
+      </View>
+
+      {/* Oil Yield */}
+      <View style={[styles.dsPanelStat, { backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : '#f0fdf4', borderColor: colors.borderLight }]}>
+        <Ionicons name="water" size={16} color="#22c55e" />
+        <Text style={[styles.dsPanelStatLabel, { color: colors.textSecondary }]}>Oil Yield</Text>
+        <Text style={[styles.dsPanelStatValue, { color: colors.text }]}>
+          {data.oilYieldPercent?.toFixed(1) ?? '—'}%
+        </Text>
+        {data.yieldCategory && (
+          <Text style={[styles.dsPanelStatSub, { color: colors.textTertiary }]}>{data.yieldCategory}</Text>
+        )}
+      </View>
+
+      {/* Color Category */}
+      <View style={[styles.dsPanelStat, { backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : '#fefce8', borderColor: colors.borderLight }]}>
+        <Ionicons name="color-palette" size={16} color={catColor} />
+        <Text style={[styles.dsPanelStatLabel, { color: colors.textSecondary }]}>Color</Text>
+        <View style={[styles.modalCatBadge, { backgroundColor: catColor }]}>
+          <Text style={styles.modalCatText}>{data.category || 'Unknown'}</Text>
+        </View>
+        {data.colorConfidence != null && (
+          <Text style={[styles.dsPanelStatSub, { color: colors.textTertiary }]}>
+            {Math.round((typeof data.colorConfidence === 'number' && data.colorConfidence <= 1 ? data.colorConfidence * 100 : data.colorConfidence))}% conf
+          </Text>
+        )}
+      </View>
+
+      {/* Confidence */}
+      {data.confidence != null && (
+        <View style={[styles.dsPanelStat, { backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : '#eff6ff', borderColor: colors.borderLight }]}>
+          <Ionicons name="checkmark-circle" size={16} color="#3b82f6" />
+          <Text style={[styles.dsPanelStatLabel, { color: colors.textSecondary }]}>Confidence</Text>
+          <Text style={[styles.dsPanelStatValue, { color: colors.text }]}>
+            {(typeof data.confidence === 'number' && data.confidence <= 1 ? (data.confidence * 100).toFixed(1) : Number(data.confidence).toFixed(1))}%
+          </Text>
+        </View>
+      )}
+
+      {/* Dimensions */}
+      {dims && Object.keys(dims).length > 0 && (
+        <View style={[styles.dsPanelDims, { borderColor: colors.borderLight }]}>
+          <Text style={[styles.dsPanelDimTitle, { color: colors.textSecondary }]}>Dimensions</Text>
+          <View style={styles.dsPanelDimGrid}>
+            {[
+              { label: 'L', value: dims.lengthCm ?? dims.length_cm, unit: 'cm' },
+              { label: 'W', value: dims.widthCm ?? dims.width_cm, unit: 'cm' },
+              { label: 'Kernel', value: dims.kernelWeightG ?? dims.kernel_mass_g, unit: 'g', dec: 2 },
+              { label: 'Fruit', value: dims.wholeFruitWeightG ?? dims.whole_fruit_weight_g, unit: 'g', dec: 1 },
+            ].map((d, i) => (
+              <View key={i} style={styles.dsPanelDimItem}>
+                <Text style={[styles.dsPanelDimLabel, { color: colors.textTertiary }]}>{d.label}</Text>
+                <Text style={[styles.dsPanelDimValue, { color: colors.text }]}>
+                  {d.value != null ? Number(d.value).toFixed(d.dec ?? 1) : '—'}{d.unit}
+                </Text>
+              </View>
+            ))}
+          </View>
+        </View>
+      )}
+
+      {/* Maturity */}
+      {data.maturityStage && (
+        <View style={styles.dsPanelFeature}>
+          <Text style={[styles.dsPanelStatSub, { color: colors.textSecondary }]}>Maturity: <Text style={{ fontWeight: '700', color: colors.text }}>{data.maturityStage}</Text></Text>
+        </View>
+      )}
+
+      {/* Total Images (for baseline) */}
+      {data.totalImages > 0 && (
+        <View style={styles.dsPanelFeature}>
+          <Text style={[styles.dsPanelStatSub, { color: colors.textSecondary }]}>Dataset: <Text style={{ fontWeight: '700', color: colors.text }}>{data.totalImages} images</Text></Text>
+        </View>
+      )}
+
+      {/* Interpretation */}
+      {data.interpretation && (
+        <Text style={[styles.dsPanelInterp, { color: colors.textTertiary }]} numberOfLines={4}>{data.interpretation}</Text>
+      )}
+    </View>
+  );
+}
+
 // ─── Detail Modal ───
-function DetailModal({ entry, visible, onClose, onDelete, colors, isDark }) {
+function DetailModal({ entry, visible, onClose, onDelete, colors, isDark, allEntries }) {
   if (!entry) return null;
+
+  // Check if this is a comparison entry
+  const isComparison = entry.analysisType === 'comparison';
+
+  // Try to build baseline and own dataset data for comparison view
+  let baselineData = null;
+  let ownData = null;
+
+  if (isComparison) {
+    if (entry.comparisonLabel === 'Own Dataset' && entry.baselineData) {
+      // This entry IS the own dataset and carries embedded baseline
+      ownData = entry;
+      baselineData = entry.baselineData;
+    } else if (entry.comparisonId && allEntries) {
+      // Find the paired entry by comparisonId
+      const paired = allEntries.find(
+        (e) => e.comparisonId === entry.comparisonId && (e.id || e._id) !== (entry.id || entry._id)
+      );
+      if (entry.comparisonLabel?.startsWith('Baseline')) {
+        baselineData = entry;
+        ownData = paired || null;
+      } else {
+        ownData = entry;
+        baselineData = paired || entry.baselineData || null;
+      }
+    } else if (entry.comparisonLabel?.startsWith('Baseline')) {
+      baselineData = entry;
+    } else {
+      ownData = entry;
+      baselineData = entry.baselineData || null;
+    }
+  }
+
+  const showComparison = isComparison && (baselineData || ownData);
   const dims = entry.dimensions || {};
 
   return (
@@ -137,10 +277,10 @@ function DetailModal({ entry, visible, onClose, onDelete, colors, isDark }) {
             {/* Header */}
             <View style={[styles.modalHeader, { backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : '#f8fafc', borderBottomColor: colors.borderLight }]}>
               <Text style={[styles.modalTitle, { color: colors.text }]} numberOfLines={1}>
-                {entry.imageName || 'Analysis Result'}
+                {showComparison ? 'Side-by-Side Comparison' : (entry.imageName || 'Analysis Result')}
               </Text>
               <View style={styles.modalMetaRow}>
-                {entry.analysisType === 'comparison' && (
+                {isComparison && (
                   <View style={[styles.modalTypeBadge, { backgroundColor: colors.primary + '12' }]}>
                     <Ionicons name="git-compare" size={11} color={colors.primary} />
                     <Text style={[styles.modalTypeText, { color: colors.primary }]}>Comparison</Text>
@@ -152,118 +292,174 @@ function DetailModal({ entry, visible, onClose, onDelete, colors, isDark }) {
               </View>
             </View>
 
-            {/* Image */}
-            <View style={styles.modalImageSection}>
-              {entry.imageUri ? (
-                <Image source={{ uri: entry.imageUri }} style={styles.modalImage} resizeMode="contain" />
-              ) : (
-                <View style={[styles.modalImagePlaceholder, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#f1f5f9' }]}>
-                  <Ionicons name="leaf" size={48} color={colors.textTertiary} />
+            {showComparison ? (
+              /* ─── Comparison View (Side-by-Side) ─── */
+              <View style={styles.modalDetails}>
+                <View style={styles.comparisonRow}>
+                  {baselineData && (
+                    <DatasetPanel data={baselineData} label="Baseline" colors={colors} isDark={isDark} />
+                  )}
+                  {ownData && (
+                    <DatasetPanel data={ownData} label="Own Dataset" colors={colors} isDark={isDark} />
+                  )}
                 </View>
-              )}
-              {entry.comparisonLabel && (
-                <View style={[styles.compLabelBox, { backgroundColor: 'rgba(0,0,0,0.6)' }]}>
-                  <Text style={styles.compLabelBoxText}>{entry.comparisonLabel}</Text>
-                </View>
-              )}
-            </View>
 
-            {/* Results */}
-            <View style={styles.modalDetails}>
-              {/* Oil Yield + Color Row */}
-              <View style={styles.modalResultRow}>
-                <View style={[styles.modalResultCol, { backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : '#f0fdf4', borderColor: colors.borderLight }]}>
-                  <Ionicons name="water" size={18} color="#22c55e" />
-                  <Text style={[styles.modalResultLabel, { color: colors.textSecondary }]}>Oil Yield</Text>
-                  <Text style={[styles.modalResultValue, { color: colors.text }]}>
-                    {entry.oilYieldPercent?.toFixed(1) ?? '—'}%
-                  </Text>
-                  {entry.yieldCategory && (
-                    <Text style={[styles.modalResultSub, { color: colors.textTertiary }]}>{entry.yieldCategory}</Text>
-                  )}
-                </View>
-                <View style={[styles.modalResultCol, { backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : '#fefce8', borderColor: colors.borderLight }]}>
-                  <Ionicons name="color-palette" size={18} color={getCategoryColor(entry.category)} />
-                  <Text style={[styles.modalResultLabel, { color: colors.textSecondary }]}>Color</Text>
-                  <View style={[styles.modalCatBadge, { backgroundColor: getCategoryColor(entry.category) }]}>
-                    <Text style={styles.modalCatText}>{entry.category || 'Unknown'}</Text>
+                {/* Comparison Summary */}
+                {baselineData && ownData && baselineData.oilYieldPercent != null && ownData.oilYieldPercent != null && (
+                  <View style={[styles.compSummaryBox, { backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : '#f0f9ff', borderColor: colors.borderLight }]}>
+                    <View style={styles.modalSectionHeader}>
+                      <Ionicons name="analytics" size={16} color="#3b82f6" />
+                      <Text style={[styles.modalSectionTitle, { color: colors.text }]}>Comparison Summary</Text>
+                    </View>
+                    {(() => {
+                      const diff = ownData.oilYieldPercent - baselineData.oilYieldPercent;
+                      const absDiff = Math.abs(diff).toFixed(1);
+                      const icon = diff > 0 ? 'arrow-up' : diff < 0 ? 'arrow-down' : 'remove';
+                      const diffColor = diff > 0 ? '#22c55e' : diff < 0 ? '#ef4444' : '#6b7280';
+                      const catMatch = (baselineData.category || '').toUpperCase() === (ownData.category || '').toUpperCase();
+                      return (
+                        <View style={{ gap: 8, marginTop: 8 }}>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                            <Ionicons name={icon} size={16} color={diffColor} />
+                            <Text style={{ fontSize: 14, fontWeight: '700', color: diffColor }}>
+                              {absDiff}% {diff > 0 ? 'higher' : diff < 0 ? 'lower' : 'same'} oil yield
+                            </Text>
+                          </View>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                            <Ionicons name={catMatch ? 'checkmark-circle' : 'close-circle'} size={16} color={catMatch ? '#22c55e' : '#f59e0b'} />
+                            <Text style={{ fontSize: 13, color: colors.textSecondary }}>
+                              Category: {catMatch ? 'Same' : 'Different'} ({baselineData.category} vs {ownData.category})
+                            </Text>
+                          </View>
+                        </View>
+                      );
+                    })()}
                   </View>
-                  {entry.colorConfidence != null && (
-                    <Text style={[styles.modalResultSub, { color: colors.textTertiary }]}>
-                      {Math.round(entry.colorConfidence * 100)}% confidence
-                    </Text>
-                  )}
-                </View>
+                )}
+
+                {/* Delete button */}
+                <Pressable onPress={onDelete} style={[styles.deleteBtn, { borderColor: '#ef444440' }]}>
+                  <Ionicons name="trash-outline" size={16} color="#ef4444" />
+                  <Text style={styles.deleteBtnText}>Delete This Entry</Text>
+                </Pressable>
               </View>
-
-              {/* Dimensions */}
-              {dims && Object.keys(dims).length > 0 && (
-                <View style={[styles.modalSection, { borderColor: colors.borderLight }]}>
-                  <View style={styles.modalSectionHeader}>
-                    <Ionicons name="resize" size={16} color={colors.primary} />
-                    <Text style={[styles.modalSectionTitle, { color: colors.text }]}>Dimensions</Text>
-                  </View>
-                  <View style={styles.dimGrid}>
-                    {[
-                      { label: 'Length', value: dims.lengthCm ?? dims.length_cm, unit: 'cm', icon: 'resize-outline' },
-                      { label: 'Width', value: dims.widthCm ?? dims.width_cm, unit: 'cm', icon: 'resize-outline' },
-                      { label: 'Kernel', value: dims.kernelWeightG ?? dims.kernel_mass_g, unit: 'g', icon: 'scale-outline', decimals: 2 },
-                      { label: 'Total', value: dims.wholeFruitWeightG ?? dims.whole_fruit_weight_g, unit: 'g', icon: 'barbell-outline', decimals: 1 },
-                    ].map((d, i) => (
-                      <View key={i} style={[styles.dimItem, { backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : '#f8fafc', borderColor: colors.borderLight }]}>
-                        <Ionicons name={d.icon} size={16} color={colors.primary} />
-                        <Text style={[styles.dimLabel, { color: colors.textTertiary }]}>{d.label}</Text>
-                        <Text style={[styles.dimValue, { color: colors.text }]}>
-                          {d.value != null ? Number(d.value).toFixed(d.decimals ?? 1) : '—'}
-                        </Text>
-                        <Text style={[styles.dimUnit, { color: colors.textTertiary }]}>{d.unit}</Text>
-                      </View>
-                    ))}
-                  </View>
-                </View>
-              )}
-
-              {/* Maturity & Features */}
-              {(entry.maturityStage || entry.hasSpots) && (
-                <View style={[styles.modalSection, { borderColor: colors.borderLight }]}>
-                  <View style={styles.modalSectionHeader}>
-                    <Ionicons name="information-circle" size={16} color={colors.primary} />
-                    <Text style={[styles.modalSectionTitle, { color: colors.text }]}>Features</Text>
-                  </View>
-                  {entry.maturityStage && (
-                    <View style={styles.featureRow}>
-                      <Text style={[styles.featureLabel, { color: colors.textSecondary }]}>Maturity:</Text>
-                      <Text style={[styles.featureValue, { color: colors.text }]}>{entry.maturityStage}</Text>
+            ) : (
+              /* ─── Single Analysis View ─── */
+              <>
+                {/* Image */}
+                <View style={styles.modalImageSection}>
+                  {entry.imageUri ? (
+                    <Image source={{ uri: entry.imageUri }} style={styles.modalImage} resizeMode="contain" />
+                  ) : (
+                    <View style={[styles.modalImagePlaceholder, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#f1f5f9' }]}>
+                      <Ionicons name="leaf" size={48} color={colors.textTertiary} />
                     </View>
                   )}
-                  {entry.hasSpots && (
-                    <View style={[styles.spotBadge, { backgroundColor: '#f9731612' }]}>
-                      <Ionicons name="warning" size={14} color="#f97316" />
-                      <Text style={{ color: '#f97316', fontSize: 12, fontWeight: '600' }}>
-                        Spots detected ({entry.spotCoverage ? (entry.spotCoverage * 100).toFixed(1) : '—'}% coverage)
+                  {entry.comparisonLabel && (
+                    <View style={[styles.compLabelBox, { backgroundColor: 'rgba(0,0,0,0.6)' }]}>
+                      <Text style={styles.compLabelBoxText}>{entry.comparisonLabel}</Text>
+                    </View>
+                  )}
+                </View>
+
+                {/* Results */}
+                <View style={styles.modalDetails}>
+                  {/* Oil Yield + Color Row */}
+                  <View style={styles.modalResultRow}>
+                    <View style={[styles.modalResultCol, { backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : '#f0fdf4', borderColor: colors.borderLight }]}>
+                      <Ionicons name="water" size={18} color="#22c55e" />
+                      <Text style={[styles.modalResultLabel, { color: colors.textSecondary }]}>Oil Yield</Text>
+                      <Text style={[styles.modalResultValue, { color: colors.text }]}>
+                        {entry.oilYieldPercent?.toFixed(1) ?? '—'}%
                       </Text>
+                      {entry.yieldCategory && (
+                        <Text style={[styles.modalResultSub, { color: colors.textTertiary }]}>{entry.yieldCategory}</Text>
+                      )}
+                    </View>
+                    <View style={[styles.modalResultCol, { backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : '#fefce8', borderColor: colors.borderLight }]}>
+                      <Ionicons name="color-palette" size={18} color={getCategoryColor(entry.category)} />
+                      <Text style={[styles.modalResultLabel, { color: colors.textSecondary }]}>Color</Text>
+                      <View style={[styles.modalCatBadge, { backgroundColor: getCategoryColor(entry.category) }]}>
+                        <Text style={styles.modalCatText}>{entry.category || 'Unknown'}</Text>
+                      </View>
+                      {entry.colorConfidence != null && (
+                        <Text style={[styles.modalResultSub, { color: colors.textTertiary }]}>
+                          {Math.round(entry.colorConfidence * 100)}% confidence
+                        </Text>
+                      )}
+                    </View>
+                  </View>
+
+                  {/* Dimensions */}
+                  {dims && Object.keys(dims).length > 0 && (
+                    <View style={[styles.modalSection, { borderColor: colors.borderLight }]}>
+                      <View style={styles.modalSectionHeader}>
+                        <Ionicons name="resize" size={16} color={colors.primary} />
+                        <Text style={[styles.modalSectionTitle, { color: colors.text }]}>Dimensions</Text>
+                      </View>
+                      <View style={styles.dimGrid}>
+                        {[
+                          { label: 'Length', value: dims.lengthCm ?? dims.length_cm, unit: 'cm', icon: 'resize-outline' },
+                          { label: 'Width', value: dims.widthCm ?? dims.width_cm, unit: 'cm', icon: 'resize-outline' },
+                          { label: 'Kernel', value: dims.kernelWeightG ?? dims.kernel_mass_g, unit: 'g', icon: 'scale-outline', decimals: 2 },
+                          { label: 'Total', value: dims.wholeFruitWeightG ?? dims.whole_fruit_weight_g, unit: 'g', icon: 'barbell-outline', decimals: 1 },
+                        ].map((d, i) => (
+                          <View key={i} style={[styles.dimItem, { backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : '#f8fafc', borderColor: colors.borderLight }]}>
+                            <Ionicons name={d.icon} size={16} color={colors.primary} />
+                            <Text style={[styles.dimLabel, { color: colors.textTertiary }]}>{d.label}</Text>
+                            <Text style={[styles.dimValue, { color: colors.text }]}>
+                              {d.value != null ? Number(d.value).toFixed(d.decimals ?? 1) : '—'}
+                            </Text>
+                            <Text style={[styles.dimUnit, { color: colors.textTertiary }]}>{d.unit}</Text>
+                          </View>
+                        ))}
+                      </View>
                     </View>
                   )}
-                </View>
-              )}
 
-              {/* Interpretation */}
-              {entry.interpretation && (
-                <View style={[styles.modalSection, { borderColor: colors.borderLight }]}>
-                  <View style={styles.modalSectionHeader}>
-                    <Ionicons name="bulb" size={16} color="#f59e0b" />
-                    <Text style={[styles.modalSectionTitle, { color: colors.text }]}>Interpretation</Text>
-                  </View>
-                  <Text style={[styles.interpText, { color: colors.textSecondary }]}>{entry.interpretation}</Text>
-                </View>
-              )}
+                  {/* Maturity & Features */}
+                  {(entry.maturityStage || entry.hasSpots) && (
+                    <View style={[styles.modalSection, { borderColor: colors.borderLight }]}>
+                      <View style={styles.modalSectionHeader}>
+                        <Ionicons name="information-circle" size={16} color={colors.primary} />
+                        <Text style={[styles.modalSectionTitle, { color: colors.text }]}>Features</Text>
+                      </View>
+                      {entry.maturityStage && (
+                        <View style={styles.featureRow}>
+                          <Text style={[styles.featureLabel, { color: colors.textSecondary }]}>Maturity:</Text>
+                          <Text style={[styles.featureValue, { color: colors.text }]}>{entry.maturityStage}</Text>
+                        </View>
+                      )}
+                      {entry.hasSpots && (
+                        <View style={[styles.spotBadge, { backgroundColor: '#f9731612' }]}>
+                          <Ionicons name="warning" size={14} color="#f97316" />
+                          <Text style={{ color: '#f97316', fontSize: 12, fontWeight: '600' }}>
+                            Spots detected ({entry.spotCoverage ? (entry.spotCoverage * 100).toFixed(1) : '—'}% coverage)
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+                  )}
 
-              {/* Delete button */}
-              <Pressable onPress={onDelete} style={[styles.deleteBtn, { borderColor: '#ef444440' }]}>
-                <Ionicons name="trash-outline" size={16} color="#ef4444" />
-                <Text style={styles.deleteBtnText}>Delete This Entry</Text>
-              </Pressable>
-            </View>
+                  {/* Interpretation */}
+                  {entry.interpretation && (
+                    <View style={[styles.modalSection, { borderColor: colors.borderLight }]}>
+                      <View style={styles.modalSectionHeader}>
+                        <Ionicons name="bulb" size={16} color="#f59e0b" />
+                        <Text style={[styles.modalSectionTitle, { color: colors.text }]}>Interpretation</Text>
+                      </View>
+                      <Text style={[styles.interpText, { color: colors.textSecondary }]}>{entry.interpretation}</Text>
+                    </View>
+                  )}
+
+                  {/* Delete button */}
+                  <Pressable onPress={onDelete} style={[styles.deleteBtn, { borderColor: '#ef444440' }]}>
+                    <Ionicons name="trash-outline" size={16} color="#ef4444" />
+                    <Text style={styles.deleteBtnText}>Delete This Entry</Text>
+                  </Pressable>
+                </View>
+              </>
+            )}
           </ScrollView>
         </Pressable>
       </Pressable>
@@ -368,7 +564,7 @@ export default function HistoryPage() {
         colors={isDark ? ['#1a1f2e', '#0f1318'] : ['#eff6ff', '#dbeafe']}
         style={styles.pageHeader}
       >
-        <Animated.View entering={FadeInUp.springify()} style={[styles.headerContent, isDesktop && styles.headerContentDesktop]}>
+        <Animated.View entering={FadeInUp.duration(280)} style={[styles.headerContent, isDesktop && styles.headerContentDesktop]}>
           <View style={[styles.headerIcon, { backgroundColor: '#3b82f6' + '20' }]}>
             <Ionicons name="time" size={28} color="#3b82f6" />
           </View>
@@ -382,7 +578,7 @@ export default function HistoryPage() {
       <View style={[styles.content, isDesktop && styles.contentDesktop]}>
         {/* ─── Not Logged In ─── */}
         {!isAuthenticated ? (
-          <Animated.View entering={FadeInUp.delay(100).springify()} style={[styles.emptyCard, { backgroundColor: colors.card, borderColor: colors.borderLight }]}>
+          <Animated.View entering={FadeInUp.delay(100).duration(280)} style={[styles.emptyCard, { backgroundColor: colors.card, borderColor: colors.borderLight }]}>
             <Ionicons name="log-in-outline" size={56} color={colors.textTertiary} />
             <Text style={[styles.emptyTitle, { color: colors.text }]}>Sign In to View History</Text>
             <Text style={[styles.emptyDesc, { color: colors.textSecondary }]}>
@@ -400,7 +596,7 @@ export default function HistoryPage() {
           </View>
         ) : entries.length === 0 ? (
           /* ─── Empty ─── */
-          <Animated.View entering={FadeInUp.delay(100).springify()} style={[styles.emptyCard, { backgroundColor: colors.card, borderColor: colors.borderLight }]}>
+          <Animated.View entering={FadeInUp.delay(100).duration(280)} style={[styles.emptyCard, { backgroundColor: colors.card, borderColor: colors.borderLight }]}>
             <Ionicons name="scan-outline" size={56} color={colors.textTertiary} />
             <Text style={[styles.emptyTitle, { color: colors.text }]}>No Scans Yet</Text>
             <Text style={[styles.emptyDesc, { color: colors.textSecondary }]}>
@@ -413,7 +609,7 @@ export default function HistoryPage() {
         ) : (
           <>
             {/* ─── Filter Tabs ─── */}
-            <Animated.View entering={FadeInUp.delay(100).springify()} style={[styles.filterRow, { backgroundColor: colors.backgroundSecondary, borderColor: colors.borderLight }]}>
+            <Animated.View entering={FadeInUp.delay(100).duration(280)} style={[styles.filterRow, { backgroundColor: colors.backgroundSecondary, borderColor: colors.borderLight }]}>
               {[
                 { key: 'all', label: `All (${entries.length})`, icon: 'list' },
                 { key: 'single', label: `Single (${singleCount})`, icon: 'image' },
@@ -434,7 +630,7 @@ export default function HistoryPage() {
             </Animated.View>
 
             {/* ─── Toolbar ─── */}
-            <Animated.View entering={FadeInUp.delay(150).springify()} style={styles.toolbar}>
+            <Animated.View entering={FadeInUp.delay(150).duration(280)} style={styles.toolbar}>
               <Text style={[styles.resultCount, { color: colors.textSecondary }]}>
                 {filteredEntries.length} {filteredEntries.length === 1 ? 'entry' : 'entries'}
               </Text>
@@ -446,7 +642,7 @@ export default function HistoryPage() {
 
             {/* ─── Cards Grid ─── */}
             {filteredEntries.length === 0 ? (
-              <Animated.View entering={FadeInUp.springify()} style={[styles.emptyCard, { backgroundColor: colors.card, borderColor: colors.borderLight }]}>
+              <Animated.View entering={FadeInUp.duration(280)} style={[styles.emptyCard, { backgroundColor: colors.card, borderColor: colors.borderLight }]}>
                 <Ionicons name="filter-outline" size={48} color={colors.textTertiary} />
                 <Text style={[styles.emptyTitle, { color: colors.text }]}>
                   No {filterType === 'single' ? 'Single Analysis' : 'Comparison'} Scans
@@ -483,6 +679,7 @@ export default function HistoryPage() {
         onDelete={() => modalEntry && handleDelete(modalEntry.id || modalEntry._id)}
         colors={colors}
         isDark={isDark}
+        allEntries={entries}
       />
     </ScrollView>
   );
@@ -660,4 +857,38 @@ const styles = StyleSheet.create({
     ...Platform.select({ web: { cursor: 'pointer' } }),
   },
   deleteBtnText: { color: '#ef4444', fontSize: 13, fontWeight: '600' },
+
+  /* ─── Comparison Side-by-Side Panels ─── */
+  comparisonRow: {
+    flexDirection: 'row', gap: Spacing.sm,
+  },
+  dsPanel: {
+    flex: 1, gap: 8,
+  },
+  dsPanelLabel: {
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    alignSelf: 'flex-start', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6,
+  },
+  dsPanelLabelText: { fontSize: 11, fontWeight: '700', textTransform: 'uppercase' },
+  dsPanelImageWrap: { borderRadius: BorderRadius.md, overflow: 'hidden' },
+  dsPanelImage: { width: '100%', height: 120, borderRadius: BorderRadius.md },
+  dsPanelImagePlaceholder: { width: '100%', height: 100, borderRadius: BorderRadius.md, alignItems: 'center', justifyContent: 'center' },
+  dsPanelStat: {
+    alignItems: 'center', gap: 2,
+    padding: Spacing.sm, borderRadius: BorderRadius.sm, borderWidth: 1,
+  },
+  dsPanelStatLabel: { fontSize: 9, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5 },
+  dsPanelStatValue: { fontSize: 20, fontWeight: '800' },
+  dsPanelStatSub: { fontSize: 10, fontWeight: '500' },
+  dsPanelDims: { borderTopWidth: 1, paddingTop: 6, gap: 4 },
+  dsPanelDimTitle: { fontSize: 9, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
+  dsPanelDimGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 4 },
+  dsPanelDimItem: { alignItems: 'center', gap: 1, width: '46%' },
+  dsPanelDimLabel: { fontSize: 8, fontWeight: '600' },
+  dsPanelDimValue: { fontSize: 12, fontWeight: '700' },
+  dsPanelFeature: { paddingVertical: 2 },
+  dsPanelInterp: { fontSize: 10, lineHeight: 14 },
+  compSummaryBox: {
+    padding: Spacing.md, borderRadius: BorderRadius.md, borderWidth: 1, gap: Spacing.xs,
+  },
 });

@@ -1,0 +1,287 @@
+{
+  "test_type": "Green Talisay Baseline Comparison",
+  "timestamp": "20260218_150022",
+  "objective": "Compare own_datasets predictions against existing_datasets baseline",
+  "datasets": {
+    "existing_datasets_green": {
+      "stats": {
+        "total_images": 2124,
+        "successful": 2124,
+        "failed": 0,
+        "success_rate": 100.0,
+        "avg_confidence": 90.89,
+        "std_confidence": 1.0,
+        "avg_oil_yield": 45.42,
+        "std_oil_yield": 1.62,
+        "avg_processing_time": 0.88,
+        "color_distribution": {
+          "GREEN": 2094,
+          "YELLOW": 30
+        }
+      },
+      "sample_predictions": [
+        {
+          "image": "ExistingGreen1.jpg",
+          "color": "GREEN",
+          "oil_yield_percent": 45.0,
+          "confidence_percent": 91.0,
+          "processing_time": 6.21
+        },
+        {
+          "image": "ExistingGreen10.jpg",
+          "color": "GREEN",
+          "oil_yield_percent": 45.0,
+          "confidence_percent": 91.0,
+          "processing_time": 0.68
+        },
+        {
+          "image": "ExistingGreen100.jpg",
+          "color": "GREEN",
+          "oil_yield_percent": 45.0,
+          "confidence_percent": 91.0,
+          "processing_time": 0.66
+        },
+        {
+          "image": "ExistingGreen101.jpg",
+          "color": "GREEN",
+          "oil_yield_percent": 45.0,
+          "confidence_percent": 91.0,
+          "processing_time": 0.64
+        },
+        {
+          "image": "ExistingGreen102.jpg",
+          "color": "GREEN",
+          "oil_yield_percent": 45.0,
+          "confidence_percent": 91.0,
+          "processing_time": 0.7
+        },
+        {
+          "image": "ExistingGreen103.jpg",
+          "color": "GREEN",
+          "oil_yield_percent": 45.0,
+          "confidence_percent": 91.0,
+          "processing_time": 0.6
+        },
+        {
+          "image": "ExistingGreen104.jpg",
+          "color": "GREEN",
+          "oil_yield_percent": 45.0,
+          "confidence_percent": 91.0,
+          "processing_time": 0.62
+        },
+        {
+          "image": "ExistingGreen105.jpg",
+          "color": "GREEN",
+          "oil_yield_percent": 45.0,
+          "confidence_percent": 92.0,
+          "processing_time": 0.57
+        },
+        {
+          "image": "ExistingGreen106.jpg",
+          "color": "GREEN",
+          "oil_yield_percent": 45.39,
+          "confidence_percent": 92.0,
+          "processing_time": 0.58
+        },
+        {
+          "image": "ExistingGreen107.jpg",
+          "color": "GREEN",
+          "oil_yield_percent": 45.45,
+          "confidence_percent": 90.0,
+          "processing_time": 0.72
+        }
+      ]
+    },
+    "own_datasets_green": {
+      "stats": {
+        "total_images": 500,
+        "successful": 500,
+        "failed": 0,
+        "success_rate": 100.0,
+        "avg_confidence": 95.99,
+        "std_confidence": 1.05,
+        "avg_oil_yield": 45.59,
+        "std_oil_yield": 0.35,
+        "avg_processing_time": 0.74,
+        "color_distribution": {
+          "GREEN": 500
+        }
+      },
+      "sample_predictions": [
+        {
+          "image": "TalisayGreen375.jpg",
+          "color": "GREEN",
+          "oil_yield_percent": 45.32,
+          "confidence_percent": 96.0,
+          "processing_time": 0.72
+        },
+        {
+          "image": "TalisayGreen303.jpg",
+          "color": "GREEN",
+          "oil_yield_percent": 45.65,
+          "confidence_percent": 96.0,
+          "processing_time": 0.67
+        },
+        {
+          "image": "TalisayGreen144.jpg",
+          "color": "GREEN",
+          "oil_yield_percent": 46.09,
+          "confidence_percent": 97.0,
+          "processing_time": 0.64
+        },
+        {
+          "image": "TalisayGreen563.jpg",
+          "color": "GREEN",
+          "oil_yield_percent": 45.65,
+          "confidence_percent": 96.0,
+          "processing_time": 0.77
+        },
+        {
+          "image": "TalisayGreen605.jpg",
+          "color": "GREEN",
+          "oil_yield_percent": 45.7,
+          "confidence_percent": 96.0,
+          "processing_time": 0.79
+        },
+        {
+          "image": "TalisayGreen55.jpg",
+          "color": "GREEN",
+          "oil_yield_percent": 45.6,
+          "confidence_percent": 97.0,
+          "processing_time": 0.81
+        },
+        {
+          "image": "TalisayGreen51.jpg",
+          "color": "GREEN",
+          "oil_yield_percent": 45.45,
+          "confidence_percent": 97.0,
+          "processing_time": 0.8
+        },
+        {
+          "image": "TalisayGreen355.jpg",
+          "color": "GREEN",
+          "oil_yield_percent": 45.65,
+          "confidence_percent": 96.0,
+          "processing_time": 0.96
+        },
+        {
+          "image": "TalisayGreen554.jpg",
+          "color": "GREEN",
+          "oil_yield_percent": 45.78,
+          "confidence_percent": 95.0,
+          "processing_time": 0.77
+        },
+        {
+          "image": "TalisayGreen287.jpg",
+          "color": "GREEN",
+          "oil_yield_percent": 46.15,
+          "confidence_percent": 97.0,
+          "processing_time": 0.81
+        }
+      ]
+    },
+    "own_datasets_green_nocoin": {
+      "stats": {
+        "total_images": 500,
+        "successful": 500,
+        "failed": 0,
+        "success_rate": 100.0,
+        "avg_confidence": 93.0,
+        "std_confidence": 0.0,
+        "avg_oil_yield": 46.94,
+        "std_oil_yield": 0.26,
+        "avg_processing_time": 0.4,
+        "color_distribution": {
+          "GREEN": 500
+        }
+      },
+      "sample_predictions": [
+        {
+          "image": "GreenTalisay377.png",
+          "color": "GREEN",
+          "oil_yield_percent": 47.16,
+          "confidence_percent": 93.0,
+          "processing_time": 0.5
+        },
+        {
+          "image": "GreenTalisay303.png",
+          "color": "GREEN",
+          "oil_yield_percent": 46.97,
+          "confidence_percent": 93.0,
+          "processing_time": 0.41
+        },
+        {
+          "image": "GreenTalisay144.png",
+          "color": "GREEN",
+          "oil_yield_percent": 46.97,
+          "confidence_percent": 93.0,
+          "processing_time": 0.43
+        },
+        {
+          "image": "GreenTalisay565.png",
+          "color": "GREEN",
+          "oil_yield_percent": 47.26,
+          "confidence_percent": 93.0,
+          "processing_time": 0.43
+        },
+        {
+          "image": "GreenTalisay605.png",
+          "color": "GREEN",
+          "oil_yield_percent": 46.83,
+          "confidence_percent": 93.0,
+          "processing_time": 0.42
+        },
+        {
+          "image": "GreenTalisay55.png",
+          "color": "GREEN",
+          "oil_yield_percent": 47.16,
+          "confidence_percent": 93.0,
+          "processing_time": 0.4
+        },
+        {
+          "image": "GreenTalisay51.png",
+          "color": "GREEN",
+          "oil_yield_percent": 46.97,
+          "confidence_percent": 93.0,
+          "processing_time": 0.4
+        },
+        {
+          "image": "GreenTalisay355.png",
+          "color": "GREEN",
+          "oil_yield_percent": 47.26,
+          "confidence_percent": 93.0,
+          "processing_time": 0.41
+        },
+        {
+          "image": "GreenTalisay556.png",
+          "color": "GREEN",
+          "oil_yield_percent": 47.12,
+          "confidence_percent": 93.0,
+          "processing_time": 0.42
+        },
+        {
+          "image": "GreenTalisay287.png",
+          "color": "GREEN",
+          "oil_yield_percent": 46.98,
+          "confidence_percent": 93.0,
+          "processing_time": 0.43
+        }
+      ]
+    }
+  },
+  "comparison": {
+    "own_datasets_green": {
+      "confidence_difference": 5.1,
+      "oil_yield_difference": 0.17,
+      "confidence_deviation_percent": 5.1,
+      "oil_yield_deviation_percent": 0.17
+    },
+    "own_datasets_green_nocoin": {
+      "confidence_difference": 2.11,
+      "oil_yield_difference": 1.52,
+      "confidence_deviation_percent": 2.11,
+      "oil_yield_deviation_percent": 1.52
+    }
+  },
+  "conclusion": "own_datasets_green: Acceptable accuracy - moderate deviation from baseline. own_datasets_green_nocoin: Good accuracy - predictions align well with baseline"
+}

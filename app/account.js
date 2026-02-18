@@ -102,7 +102,7 @@ function AnimatedInput({
   }));
 
   return (
-    <Animated.View entering={FadeInUp.delay(delay).springify().damping(14)} style={styles.inputGroup}>
+    <Animated.View entering={FadeInUp.delay(delay).duration(280)} style={styles.inputGroup}>
       <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>{label}</Text>
       <Animated.View style={[
         styles.inputContainer,
@@ -155,7 +155,7 @@ function AnimatedButton({ onPress, label, icon, color = '#2d6a4f', loading, dela
   }));
   const isDisabled = disabled || loading;
   return (
-    <Animated.View entering={FadeInUp.delay(delay).springify()}>
+    <Animated.View entering={FadeInUp.delay(delay).duration(280)}>
       <View style={styles.btnGlowContainer}>
         <Animated.View style={[styles.btnGlow, { backgroundColor: color }, glowStyle]} />
         <AnimatedPressable
@@ -182,7 +182,7 @@ function SocialButton({ icon, label, color, onPress, delay = 0 }) {
   const scale = useSharedValue(1);
   const btnAnim = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
   return (
-    <Animated.View entering={FadeInUp.delay(delay).springify()}>
+    <Animated.View entering={FadeInUp.delay(delay).duration(280)}>
       <AnimatedPressable
         onPress={onPress}
         onPressIn={() => { scale.value = withSpring(0.95); }}
@@ -225,7 +225,7 @@ function PasswordStrength({ password, colors }) {
 function FeatureCard({ icon, title, description, delay, colors, color }) {
   return (
     <Animated.View
-      entering={FadeInLeft.delay(delay).springify()}
+      entering={FadeInLeft.delay(delay).duration(280)}
       style={[styles.featureCard, { backgroundColor: color + '08', borderColor: color + '20' }]}
     >
       <View style={[styles.featureIconWrap, { backgroundColor: color + '18' }]}>
@@ -248,7 +248,7 @@ function InlineMessage({ text, type = 'error', colors, onClose }) {
   if (!text) return null;
   return (
     <Animated.View
-      entering={FadeInDown.springify().damping(14)}
+      entering={FadeInDown.duration(280)}
       style={[styles.inlineMsg, { backgroundColor: bg, borderColor: border }]}
     >
       <Ionicons name={icon} size={16} color={textColor} />
@@ -334,7 +334,7 @@ function OtpVerificationScreen({ email, onBack }) {
   return (
     <View style={[styles.otpContainer, { backgroundColor: colors.card }]}>
       <ScrollView contentContainerStyle={styles.otpScroll} showsVerticalScrollIndicator={false}>
-        <Animated.View entering={FadeInDown.springify()} style={styles.otpHeader}>
+        <Animated.View entering={FadeInDown.duration(280)} style={styles.otpHeader}>
           <View style={[styles.otpIconWrap, { backgroundColor: colors.primary + '15' }]}>
             <Ionicons name="mail-open" size={40} color={colors.primary} />
           </View>
@@ -353,7 +353,7 @@ function OtpVerificationScreen({ email, onBack }) {
         />
 
         {/* OTP input boxes */}
-        <Animated.View entering={FadeInUp.delay(200).springify()} style={styles.otpRow}>
+        <Animated.View entering={FadeInUp.delay(200).duration(280)} style={styles.otpRow}>
           {otp.map((digit, i) => (
             <TextInput
               key={i}
@@ -385,7 +385,7 @@ function OtpVerificationScreen({ email, onBack }) {
           delay={300}
         />
 
-        <Animated.View entering={FadeInUp.delay(400).springify()} style={styles.otpFooter}>
+        <Animated.View entering={FadeInUp.delay(400).duration(280)} style={styles.otpFooter}>
           <Text style={[styles.otpFooterText, { color: colors.textTertiary }]}>
             Didn't receive the code?
           </Text>
@@ -441,7 +441,7 @@ function LoginForm({ onSwitch }) {
   return (
     <View style={[styles.authLayout, isMobile && styles.authLayoutMobile]}>
       {isDesktop && (
-        <Animated.View entering={FadeInLeft.springify().damping(16)} style={styles.authSidebar}>
+        <Animated.View entering={FadeInLeft.duration(280)} style={styles.authSidebar}>
           <LinearGradient
             colors={isDark ? ['#0d2818', '#1a4731', '#0d2818'] : ['#f0fdf4', '#dcfce7', '#f0fdf4']}
             style={styles.sidebarGradient}
@@ -450,17 +450,17 @@ function LoginForm({ onSwitch }) {
             <FloatingOrb delay={500} size={60} color="#52b788" top={120} left={30} />
             <FloatingOrb delay={1000} size={80} color="#40916c" top={250} right={40} />
             <View style={styles.sidebarContent}>
-              <Animated.View entering={FadeInDown.delay(200).springify()}>
+              <Animated.View entering={FadeInDown.delay(200).duration(280)}>
                 <View style={[styles.sidebarIconBox, { backgroundColor: '#2d6a4f20' }]}>
                   <Ionicons name="leaf" size={36} color="#2d6a4f" />
                 </View>
               </Animated.View>
-              <Animated.View entering={FadeInDown.delay(300).springify()}>
+              <Animated.View entering={FadeInDown.delay(300).duration(280)}>
                 <Text style={[styles.sidebarTitle, { color: isDark ? '#e8f5e2' : '#1b4332' }]}>
                   Welcome to{'\n'}Talisay AI
                 </Text>
               </Animated.View>
-              <Animated.View entering={FadeInDown.delay(400).springify()}>
+              <Animated.View entering={FadeInDown.delay(400).duration(280)}>
                 <Text style={[styles.sidebarSubtitle, { color: isDark ? '#74c69d' : '#52796f' }]}>
                   Smart fruit analysis powered by machine learning
                 </Text>
@@ -476,11 +476,11 @@ function LoginForm({ onSwitch }) {
       )}
 
       <Animated.View
-        entering={FadeInRight.springify().damping(16)}
+        entering={FadeInRight.duration(280)}
         style={[styles.authFormSide, isDesktop && styles.authFormSideDesktop]}
       >
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.authFormScroll}>
-          <Animated.View entering={FadeInDown.delay(100).springify()} style={styles.formHeader}>
+          <Animated.View entering={FadeInDown.delay(100).duration(280)} style={styles.formHeader}>
             <View style={[styles.formHeaderIcon, { backgroundColor: colors.primary + '15' }]}>
               <Ionicons name="person-circle" size={40} color={colors.primary} />
             </View>
@@ -499,7 +499,7 @@ function LoginForm({ onSwitch }) {
               {features.map((f, i) => (
                 <Animated.View
                   key={f.title}
-                  entering={FadeInRight.delay(200 + i * 80).springify()}
+                  entering={FadeInRight.delay(200 + i * 80).duration(280)}
                   style={[styles.featureChip, { backgroundColor: f.color + '12', borderColor: f.color + '25' }]}
                 >
                   <Ionicons name={f.icon} size={14} color={f.color} />
@@ -529,7 +529,7 @@ function LoginForm({ onSwitch }) {
               }
             />
 
-            <Animated.View entering={FadeInUp.delay(400).springify()} style={styles.rememberRow}>
+            <Animated.View entering={FadeInUp.delay(400).duration(280)} style={styles.rememberRow}>
               <Pressable onPress={() => setRememberMe(!rememberMe)} style={styles.checkboxRow}>
                 <View style={[styles.checkbox, { backgroundColor: rememberMe ? colors.primary : 'transparent', borderColor: rememberMe ? colors.primary : colors.borderLight }]}>
                   {rememberMe && <Ionicons name="checkmark" size={12} color="#fff" />}
@@ -540,7 +540,7 @@ function LoginForm({ onSwitch }) {
 
             <AnimatedButton onPress={handleLogin} label="Sign In" icon="arrow-forward-circle" loading={isLoading} delay={500} />
 
-            <Animated.View entering={FadeInUp.delay(600).springify()} style={styles.switchRow}>
+            <Animated.View entering={FadeInUp.delay(600).duration(280)} style={styles.switchRow}>
               <Text style={[styles.switchText, { color: colors.textSecondary }]}>Don't have an account?</Text>
               <Pressable onPress={onSwitch}><Text style={[styles.switchLink, { color: colors.primary }]}> Create one</Text></Pressable>
             </Animated.View>
@@ -590,7 +590,7 @@ function RegisterForm({ onSwitch }) {
   return (
     <View style={[styles.authLayout, isMobile && styles.authLayoutMobile]}>
       {isDesktop && (
-        <Animated.View entering={FadeInLeft.springify().damping(16)} style={styles.authSidebar}>
+        <Animated.View entering={FadeInLeft.duration(280)} style={styles.authSidebar}>
           <LinearGradient
             colors={isDark ? ['#1a0d2e', '#2d1b4e', '#1a0d2e'] : ['#faf5ff', '#ede9fe', '#faf5ff']}
             style={styles.sidebarGradient}
@@ -599,15 +599,15 @@ function RegisterForm({ onSwitch }) {
             <FloatingOrb delay={600} size={70} color="#a78bfa" top={160} right={30} />
             <FloatingOrb delay={1200} size={50} color="#c4b5fd" top={300} left={50} />
             <View style={styles.sidebarContent}>
-              <Animated.View entering={FadeInDown.delay(200).springify()}>
+              <Animated.View entering={FadeInDown.delay(200).duration(280)}>
                 <View style={[styles.sidebarIconBox, { backgroundColor: '#7c3aed20' }]}>
                   <Ionicons name="rocket" size={36} color="#7c3aed" />
                 </View>
               </Animated.View>
-              <Animated.View entering={FadeInDown.delay(300).springify()}>
+              <Animated.View entering={FadeInDown.delay(300).duration(280)}>
                 <Text style={[styles.sidebarTitle, { color: isDark ? '#e9d5ff' : '#4c1d95' }]}>Join Talisay AI</Text>
               </Animated.View>
-              <Animated.View entering={FadeInDown.delay(400).springify()}>
+              <Animated.View entering={FadeInDown.delay(400).duration(280)}>
                 <Text style={[styles.sidebarSubtitle, { color: isDark ? '#c4b5fd' : '#6b21a8' }]}>
                   Start analyzing fruits with cutting-edge AI technology
                 </Text>
@@ -618,7 +618,7 @@ function RegisterForm({ onSwitch }) {
                   { value: '<2s', label: 'Analysis Time', icon: 'flash' },
                   { value: '3', label: 'Fruit Stages', icon: 'layers' },
                 ].map((stat, i) => (
-                  <Animated.View key={stat.label} entering={ZoomIn.delay(500 + i * 100).springify()}
+                  <Animated.View key={stat.label} entering={ZoomIn.delay(500 + i * 100).duration(280)}
                     style={[styles.statCard, { backgroundColor: isDark ? 'rgba(124,58,237,0.1)' : 'rgba(124,58,237,0.08)', borderColor: isDark ? 'rgba(124,58,237,0.2)' : 'rgba(124,58,237,0.15)' }]}>
                     <Ionicons name={stat.icon} size={20} color="#7c3aed" />
                     <Text style={[styles.statValue, { color: isDark ? '#e9d5ff' : '#4c1d95' }]}>{stat.value}</Text>
@@ -632,11 +632,11 @@ function RegisterForm({ onSwitch }) {
       )}
 
       <Animated.View
-        entering={FadeInRight.springify().damping(16)}
+        entering={FadeInRight.duration(280)}
         style={[styles.authFormSide, isDesktop && styles.authFormSideDesktop]}
       >
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.authFormScroll}>
-          <Animated.View entering={FadeInDown.delay(100).springify()} style={styles.formHeader}>
+          <Animated.View entering={FadeInDown.delay(100).duration(280)} style={styles.formHeader}>
             <View style={[styles.formHeaderIcon, { backgroundColor: '#7c3aed15' }]}>
               <Ionicons name="person-add" size={36} color="#7c3aed" />
             </View>
@@ -688,13 +688,13 @@ function RegisterForm({ onSwitch }) {
             />
 
             {passwordMismatch && (
-              <Animated.View entering={FadeInDown.springify()} style={styles.errorHint}>
+              <Animated.View entering={FadeInDown.duration(280)} style={styles.errorHint}>
                 <Ionicons name="alert-circle" size={14} color="#ef4444" />
                 <Text style={styles.errorHintText}>Passwords do not match</Text>
               </Animated.View>
             )}
 
-            <Animated.View entering={FadeInUp.delay(600).springify()} style={styles.termsRow}>
+            <Animated.View entering={FadeInUp.delay(600).duration(280)} style={styles.termsRow}>
               <Pressable onPress={() => setAgreed(!agreed)} style={styles.checkboxRow}>
                 <View style={[styles.checkbox, { backgroundColor: agreed ? '#7c3aed' : 'transparent', borderColor: agreed ? '#7c3aed' : colors.borderLight }]}>
                   {agreed && <Ionicons name="checkmark" size={12} color="#fff" />}
@@ -708,7 +708,7 @@ function RegisterForm({ onSwitch }) {
 
             <AnimatedButton onPress={handleRegister} label="Create Account" icon="rocket" color="#7c3aed" loading={isLoading} delay={700} />
 
-            <Animated.View entering={FadeInUp.delay(750).springify()} style={styles.switchRow}>
+            <Animated.View entering={FadeInUp.delay(750).duration(280)} style={styles.switchRow}>
               <Text style={[styles.switchText, { color: colors.textSecondary }]}>Already have an account?</Text>
               <Pressable onPress={onSwitch}><Text style={[styles.switchLink, { color: '#7c3aed' }]}> Sign In</Text></Pressable>
             </Animated.View>
@@ -982,7 +982,7 @@ function ProfileView() {
   return (
     <View style={styles.profileWrapper}>
       {/* ── Hero Card ── */}
-      <Animated.View entering={FadeInUp.springify().damping(14)}>
+      <Animated.View entering={FadeInUp.duration(280)}>
         <LinearGradient
           colors={isDark ? ['#1b4332', '#2d6a4f', '#1b4332'] : ['#f0fdf4', '#dcfce7', '#bbf7d0']}
           style={[styles.profileHero, { borderColor: colors.borderLight }]}
@@ -1051,7 +1051,7 @@ function ProfileView() {
             {QUICK_STATS.map((stat, i) => (
               <Animated.View
                 key={stat.label}
-                entering={ZoomIn.delay(300 + i * 100).springify()}
+                entering={ZoomIn.delay(300 + i * 100).duration(280)}
                 style={[styles.quickStatCard, { backgroundColor: isDark ? 'rgba(0,0,0,0.25)' : 'rgba(255,255,255,0.85)' }]}
               >
                 <Ionicons name={stat.icon} size={20} color={stat.color} />
@@ -1063,7 +1063,7 @@ function ProfileView() {
 
           {/* Category breakdown chips */}
           {Object.keys(catBreakdown).length > 0 && (
-            <Animated.View entering={FadeInUp.delay(500).springify()} style={styles.catChipsRow}>
+            <Animated.View entering={FadeInUp.delay(500).duration(280)} style={styles.catChipsRow}>
               {Object.entries(catBreakdown).map(([cat, count]) => {
                 const catColors = { green: '#22c55e', yellow: '#eab308', brown: '#92400e' };
                 return (
@@ -1082,7 +1082,7 @@ function ProfileView() {
 
       {/* ── Personal Information ── */}
       <Animated.View
-        entering={FadeInUp.delay(200).springify()}
+        entering={FadeInUp.delay(200).duration(280)}
         style={[styles.sectionCard, { backgroundColor: colors.card, borderColor: colors.borderLight }]}
       >
         <View style={styles.sectionHeader}>
@@ -1135,7 +1135,7 @@ function ProfileView() {
         </View>
 
         {isEditing && (
-          <Animated.View entering={FadeInUp.delay(350).springify()} style={styles.profileActions}>
+          <Animated.View entering={FadeInUp.delay(350).duration(280)} style={styles.profileActions}>
             <AnimatedButton 
               onPress={handleSaveProfile} 
               label={imageUploading ? 'Uploading Photo...' : profileSaving ? 'Saving Profile...' : 'Update Profile'} 
@@ -1166,7 +1166,7 @@ function ProfileView() {
 
       {/* ── Change Password ── */}
       <Animated.View
-        entering={FadeInUp.delay(300).springify()}
+        entering={FadeInUp.delay(300).duration(280)}
         style={[styles.sectionCard, { backgroundColor: colors.card, borderColor: colors.borderLight }]}
       >
         <Pressable onPress={() => setShowPasswordSection(!showPasswordSection)} style={styles.sectionHeader}>
@@ -1180,7 +1180,7 @@ function ProfileView() {
         </Pressable>
 
         {showPasswordSection && (
-          <Animated.View entering={FadeInDown.springify().damping(14)} style={styles.passwordBody}>
+          <Animated.View entering={FadeInDown.duration(280)} style={styles.passwordBody}>
             <InlineMessage 
               text={passwordMsg} 
               type={passwordMsgType} 
@@ -1239,7 +1239,7 @@ function ProfileView() {
       {/* ── Recent Activity ── */}
       {stats?.lastAnalysisDate && (
         <Animated.View
-          entering={FadeInUp.delay(400).springify()}
+          entering={FadeInUp.delay(400).duration(280)}
           style={[styles.sectionCard, { backgroundColor: colors.card, borderColor: colors.borderLight }]}
         >
           <View style={styles.sectionHeader}>
@@ -1265,7 +1265,7 @@ function ProfileView() {
       )}
 
       {/* ── Logout ── */}
-      <Animated.View entering={FadeInUp.delay(500).springify()}>
+      <Animated.View entering={FadeInUp.delay(500).duration(280)}>
         <Pressable style={[styles.logoutBtn, { borderColor: '#ef444460' }]} onPress={logout}>
           <View style={[styles.logoutIconWrap, { backgroundColor: '#ef444415' }]}>
             <Ionicons name="log-out" size={18} color="#ef4444" />
@@ -1318,7 +1318,7 @@ export default function AccountPage() {
           colors={isDark ? ['#1a1a2e', '#0f1a12'] : ['#f0fdf4', '#dcfce7']}
           style={styles.pageHeader}
         >
-          <Animated.View entering={FadeInUp.springify()} style={[styles.headerContent, isDesktop && styles.headerContentDesktop]}>
+          <Animated.View entering={FadeInUp.duration(280)} style={[styles.headerContent, isDesktop && styles.headerContentDesktop]}>
             <View style={[styles.headerIcon, { backgroundColor: colors.primary + '20' }]}>
               <Ionicons name="person-circle" size={28} color={colors.primary} />
             </View>

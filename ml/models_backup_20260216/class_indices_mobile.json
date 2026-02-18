@@ -1,0 +1,12 @@
+{
+  "class_to_idx": {
+    "brown": 0,
+    "green": 1,
+    "yellow": 2
+  },
+  "idx_to_class": {
+    "0": "brown",
+    "1": "green",
+    "2": "yellow"
+  }
+}

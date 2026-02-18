@@ -1,0 +1,19 @@
+{
+  "model_type": "MobileNetV3Small/V2",
+  "image_size": [
+    224,
+    224
+  ],
+  "batch_size": 16,
+  "epochs": 50,
+  "fine_tune_epochs": 20,
+  "mobile_augmentation": true,
+  "label_smoothing": 0.1,
+  "final_val_accuracy": 0.8571428656578064,
+  "final_val_loss": 1.497651219367981,
+  "classes": {
+    "brown": 0,
+    "green": 1,
+    "yellow": 2
+  }
+}

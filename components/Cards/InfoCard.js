@@ -36,7 +36,7 @@ export default function InfoCard({
 
   return (
     <AnimatedPressable
-      entering={FadeInUp.delay(delay).springify().damping(14)}
+      entering={FadeInUp.delay(delay).duration(280)}
       onPress={onPress}
       onPressIn={() => { scale.value = withSpring(0.97, { damping: 15 }); }}
       onPressOut={() => { scale.value = withSpring(1, { damping: 12 }); }}

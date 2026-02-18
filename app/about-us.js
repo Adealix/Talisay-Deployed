@@ -58,9 +58,14 @@ function TeamCard({ member, index }) {
   const { isMobile } = useResponsive();
   const memberColor = MEMBER_COLORS[index % MEMBER_COLORS.length];
 
+  // Use theme-aware image if available (member1 has day/night variants)
+  const displayImage = isDark
+    ? (member.nightImage || member.image)
+    : (member.dayImage || member.image);
+
   return (
     <Animated.View
-      entering={ZoomIn.delay(200 + index * 100).springify().damping(12)}
+      entering={ZoomIn.delay(200 + index * 100).duration(280)}
       style={[styles.teamCard, {
         backgroundColor: colors.card,
         borderColor: colors.borderLight,
@@ -70,7 +75,7 @@ function TeamCard({ member, index }) {
       {/* Photo */}
       <View style={[styles.teamAvatarWrap, { borderColor: memberColor }]}>
         <Image
-          source={member.image}
+          source={displayImage}
           style={styles.teamAvatarImg}
           resizeMode="cover"
         />
@@ -134,7 +139,7 @@ function LocationCard({ location, index }) {
 
   return (
     <Animated.View
-      entering={FadeInUp.delay(300 + index * 100).springify()}
+      entering={FadeInUp.delay(300 + index * 100).duration(280)}
       style={[styles.locationCard, {
         backgroundColor: colors.card,
         borderColor: colors.borderLight,
@@ -182,7 +187,7 @@ export default function AboutUsPage() {
         colors={isDark ? ['#1a2b1f', '#0f1a12'] : ['#fdf2f8', '#fce7f3']}
         style={styles.pageHeader}
       >
-        <Animated.View entering={FadeInUp.springify()} style={[styles.headerContent, isDesktop && styles.headerContentDesktop]}>
+        <Animated.View entering={FadeInUp.duration(280)} style={[styles.headerContent, isDesktop && styles.headerContentDesktop]}>
           <View style={[styles.headerIcon, { backgroundColor: '#ec4899' + '20' }]}>
             <Ionicons name="people" size={28} color="#ec4899" />
           </View>
@@ -196,7 +201,7 @@ export default function AboutUsPage() {
       <View style={[styles.content, isDesktop && styles.contentDesktop]}>
         {/* TUP University Section */}
         <Animated.View
-          entering={FadeInUp.delay(100).springify()}
+          entering={FadeInUp.delay(100).duration(280)}
           style={[styles.tupSection, {
             backgroundColor: colors.card,
             borderColor: colors.borderLight,
@@ -213,7 +218,7 @@ export default function AboutUsPage() {
         {/* Mission & Vision */}
         <View style={[styles.missionRow, isMobile && styles.missionRowMobile]}>
           <Animated.View
-            entering={FadeInLeft.delay(150).springify()}
+            entering={FadeInLeft.delay(150).duration(280)}
             style={[styles.missionCard, {
               backgroundColor: colors.card,
               borderColor: colors.borderLight,
@@ -228,7 +233,7 @@ export default function AboutUsPage() {
           </Animated.View>
 
           <Animated.View
-            entering={FadeInRight.delay(200).springify()}
+            entering={FadeInRight.delay(200).duration(280)}
             style={[styles.missionCard, {
               backgroundColor: colors.card,
               borderColor: colors.borderLight,
@@ -260,11 +265,11 @@ export default function AboutUsPage() {
         </View>
 
         {/* Social Links */}
-        <Animated.View entering={FadeInUp.delay(500).springify()} style={styles.socialSection}>
+        <Animated.View entering={FadeInUp.delay(500).duration(280)} style={styles.socialSection}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Connect With Us</Text>
           <View style={styles.socialLinks}>
             {SOCIAL_LINKS.map((link, idx) => (
-              <Animated.View key={link.label} entering={ZoomIn.delay(550 + idx * 60).springify()}>
+              <Animated.View key={link.label} entering={ZoomIn.delay(550 + idx * 60).duration(280)}>
                 <Pressable
                   style={[styles.socialBtn, { backgroundColor: link.color + '15' }]}
                 >
@@ -277,7 +282,7 @@ export default function AboutUsPage() {
 
         {/* Contact Form */}
         <Animated.View
-          entering={FadeInUp.delay(600).springify()}
+          entering={FadeInUp.delay(600).duration(280)}
           style={[styles.contactCard, {
             backgroundColor: colors.card,
             borderColor: colors.borderLight,

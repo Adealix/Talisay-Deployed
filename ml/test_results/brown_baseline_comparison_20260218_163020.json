@@ -1,0 +1,78 @@
+{
+  "test_type": "Brown Talisay Baseline Comparison",
+  "timestamp": "20260218_163020",
+  "objective": "Compare own_datasets predictions against existing_datasets baseline",
+  "datasets": {
+    "existing_datasets_brown": {
+      "stats": {
+        "total_images": 3228,
+        "successful": 3228,
+        "failed": 0,
+        "success_rate": 100.0,
+        "avg_confidence": 86.75,
+        "std_confidence": 1.64,
+        "avg_oil_yield": 53.32,
+        "std_oil_yield": 3.12,
+        "avg_processing_time": 1.21,
+        "color_distribution": {
+          "BROWN": 2302,
+          "YELLOW": 426,
+          "GREEN": 500
+        }
+      },
+      "total_predictions": 3228
+    },
+    "own_datasets_brown": {
+      "stats": {
+        "total_images": 500,
+        "successful": 500,
+        "failed": 0,
+        "success_rate": 100.0,
+        "avg_confidence": 90.47,
+        "std_confidence": 1.01,
+        "avg_oil_yield": 53.67,
+        "std_oil_yield": 1.11,
+        "avg_processing_time": 0.98,
+        "color_distribution": {
+          "BROWN": 494,
+          "YELLOW": 4,
+          "GREEN": 2
+        }
+      },
+      "total_predictions": 500
+    },
+    "own_datasets_brown_nocoin": {
+      "stats": {
+        "total_images": 500,
+        "successful": 500,
+        "failed": 0,
+        "success_rate": 100.0,
+        "avg_confidence": 87.13,
+        "std_confidence": 0.89,
+        "avg_oil_yield": 53.68,
+        "std_oil_yield": 0.72,
+        "avg_processing_time": 0.93,
+        "color_distribution": {
+          "BROWN": 496,
+          "YELLOW": 4
+        }
+      },
+      "total_predictions": 500
+    }
+  },
+  "comparison": {
+    "own_datasets_brown": {
+      "confidence_difference": 3.72,
+      "oil_yield_difference": 0.35,
+      "confidence_deviation_percent": 3.72,
+      "oil_yield_deviation_percent": 0.35
+    },
+    "own_datasets_brown_nocoin": {
+      "confidence_difference": 0.38,
+      "oil_yield_difference": 0.36,
+      "confidence_deviation_percent": 0.38,
+      "oil_yield_deviation_percent": 0.36
+    }
+  },
+  "conclusion": "own_datasets_brown: Good accuracy - predictions align well with baseline. own_datasets_brown_nocoin: Excellent accuracy - predictions very close to baseline"
+}

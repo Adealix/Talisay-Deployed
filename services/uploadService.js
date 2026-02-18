@@ -5,24 +5,20 @@ import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 import { getToken } from './authService';
 
-// ─── Resolve API base URL ───
+// ─── Resolve API base URL — called dynamically so hostUri is available ───
 function getApiUrl() {
   const configured = (process.env.EXPO_PUBLIC_API_URL || '').trim().replace(/\/$/, '');
-  if (configured) return configured;
-
-  if (Platform.OS === 'web') return 'http://localhost:3000';
-
+  if (configured && !configured.includes('localhost') && !configured.includes('127.0.0.1')) {
+    return configured;
+  }
+  if (Platform.OS === 'web') return configured || 'http://localhost:3000';
   const debuggerHost = Constants.expoConfig?.hostUri || Constants.manifest?.debuggerHost;
   if (debuggerHost) {
     const ip = debuggerHost.split(':')[0];
-    if (ip && ip !== 'localhost' && ip !== '127.0.0.1') {
-      return `http://${ip}:3000`;
-    }
+    if (ip && ip !== 'localhost' && ip !== '127.0.0.1') return `http://${ip}:3000`;
   }
   return 'http://localhost:3000';
 }
-
-const API_URL = getApiUrl();
 
 /**
  * Upload an image to Cloudinary for history storage
@@ -62,7 +58,7 @@ export async function uploadImageToCloudinary(imageUri) {
     }
 
     // Upload to server
-    const response = await fetch(`${API_URL}/api/history/upload/image`, {
+    const response = await fetch(`${getApiUrl()}/api/history/upload/image`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${token}`,

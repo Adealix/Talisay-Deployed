@@ -27,7 +27,7 @@ export default function StatsCard({ icon, label, value, color, delay = 0, onPres
 
   return (
     <AnimatedPressable
-      entering={FadeInUp.delay(delay).springify().damping(14)}
+      entering={FadeInUp.delay(delay).duration(280)}
       onPress={onPress}
       onPressIn={() => { scale.value = withSpring(0.96, { damping: 15 }); }}
       onPressOut={() => { scale.value = withSpring(1, { damping: 12 }); }}

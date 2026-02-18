@@ -1,20 +1,38 @@
 {
   "green": {
     "color": "green",
-    "totalImages": 409,
-    "analyzedImages": 409,
-    "oilYieldPercent": 45.38941320293399,
+    "totalImages": 2124,
+    "analyzedImages": 2124,
+    "oilYieldPercent": 45.42,
     "colorCategory": "green",
     "maturityStage": "Immature",
-    "confidence": 0.7261907090464548,
+    "confidence": 0.9089,
     "dimensions": {
-      "length": 3.9379462102689486,
-      "width": 2.686601466992665,
-      "weight": 0.2859144254278729
+      "length": 3.94,
+      "width": 2.69,
+      "weight": 0.286
     },
-    "seedSpotsDetectionRate": 31.784841075794624,
+    "seedSpotsDetectionRate": 0.0,
     "referenceDetectionRate": 0.0,
     "yieldCategory": "Below Average",
     "representativeImageFile": "baseline_green.jpg"
+  },
+  "brown": {
+    "color": "brown",
+    "totalImages": 3228,
+    "analyzedImages": 3228,
+    "oilYieldPercent": 53.32,
+    "colorCategory": "brown",
+    "maturityStage": "Overripe",
+    "confidence": 0.8675,
+    "dimensions": {
+      "length": 4.8,
+      "width": 3.1,
+      "weight": 0.62
+    },
+    "seedSpotsDetectionRate": 0.0,
+    "referenceDetectionRate": 0.0,
+    "yieldCategory": "Above Average",
+    "representativeImageFile": "baseline_brown.jpg"
   }
 }
