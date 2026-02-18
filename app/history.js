@@ -119,107 +119,193 @@ function HistoryCard({ entry, onPress, delay = 0, colors, isDark }) {
   );
 }
 
-// ─── Single Dataset Panel (reusable) ───
+// ─── Single Dataset Panel (matches Scan page ResultDisplay EXACTLY) ───
 function DatasetPanel({ data, label, colors, isDark }) {
+  const [showDetails, setShowDetails] = React.useState(false);
   if (!data) return null;
   const dims = data.dimensions || {};
-  const catColor = getCategoryColor(data.category);
+  const isBaseline = label === 'Baseline';
+  const labelText = isBaseline ? 'EXISTING DATASET (BASELINE)' : 'YOUR OWN DATASET';
+  const labelColor = isBaseline ? '#3b82f6' : colors.primary;
+  const confRaw = data.colorConfidence;
+  const confPercent = confRaw != null
+    ? Math.round(typeof confRaw === 'number' && confRaw <= 1 ? confRaw * 100 : confRaw)
+    : 0;
 
   return (
-    <View style={styles.dsPanel}>
-      {/* Label */}
-      <View style={[styles.dsPanelLabel, { backgroundColor: label === 'Baseline' ? '#3b82f620' : '#22c55e20' }]}>
-        <Ionicons name={label === 'Baseline' ? 'server-outline' : 'camera-outline'} size={13} color={label === 'Baseline' ? '#3b82f6' : '#22c55e'} />
-        <Text style={[styles.dsPanelLabelText, { color: label === 'Baseline' ? '#3b82f6' : '#22c55e' }]}>{label}</Text>
+    <View style={[styles.dsPanel, { backgroundColor: colors.card, borderColor: colors.borderLight }]}>
+      {/* Label badge */}
+      <View style={[styles.dsLabelBadge, { backgroundColor: labelColor + '12' }]}>
+        <Text style={[styles.dsLabelText, { color: labelColor }]}>{labelText}</Text>
       </View>
 
       {/* Image */}
-      <View style={styles.dsPanelImageWrap}>
+      <View style={styles.dsImageCol}>
         {data.imageUri ? (
-          <Image source={{ uri: data.imageUri }} style={styles.dsPanelImage} resizeMode="cover" />
+          <Image source={{ uri: data.imageUri }} style={styles.dsImage} resizeMode="contain" />
         ) : (
-          <View style={[styles.dsPanelImagePlaceholder, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#f1f5f9' }]}>
+          <View style={[styles.dsImage, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#f1f5f9', alignItems: 'center', justifyContent: 'center' }]}>
             <Ionicons name="leaf" size={32} color={colors.textTertiary} />
           </View>
         )}
-      </View>
-
-      {/* Oil Yield */}
-      <View style={[styles.dsPanelStat, { backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : '#f0fdf4', borderColor: colors.borderLight }]}>
-        <Ionicons name="water" size={16} color="#22c55e" />
-        <Text style={[styles.dsPanelStatLabel, { color: colors.textSecondary }]}>Oil Yield</Text>
-        <Text style={[styles.dsPanelStatValue, { color: colors.text }]}>
-          {data.oilYieldPercent?.toFixed(1) ?? '—'}%
+        <Text style={[styles.dsFileName, { color: colors.textTertiary }]} numberOfLines={1}>
+          {data.imageName || (isBaseline ? 'Existing Dataset' : 'Your Image')}
         </Text>
-        {data.yieldCategory && (
-          <Text style={[styles.dsPanelStatSub, { color: colors.textTertiary }]}>{data.yieldCategory}</Text>
-        )}
       </View>
 
-      {/* Color Category */}
-      <View style={[styles.dsPanelStat, { backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : '#fefce8', borderColor: colors.borderLight }]}>
-        <Ionicons name="color-palette" size={16} color={catColor} />
-        <Text style={[styles.dsPanelStatLabel, { color: colors.textSecondary }]}>Color</Text>
-        <View style={[styles.modalCatBadge, { backgroundColor: catColor }]}>
-          <Text style={styles.modalCatText}>{data.category || 'Unknown'}</Text>
-        </View>
-        {data.colorConfidence != null && (
-          <Text style={[styles.dsPanelStatSub, { color: colors.textTertiary }]}>
-            {Math.round((typeof data.colorConfidence === 'number' && data.colorConfidence <= 1 ? data.colorConfidence * 100 : data.colorConfidence))}% conf
-          </Text>
-        )}
+      {/* Oil Yield — large text */}
+      <View style={styles.dsYieldDisplay}>
+        <Text style={[styles.dsYieldPercent, { color: colors.text }]}>
+          {Math.round(data.oilYieldPercent || 0)}%
+        </Text>
+        <Text style={[styles.dsYieldLabel, { color: colors.textSecondary }]}>Oil Yield</Text>
       </View>
 
-      {/* Confidence */}
-      {data.confidence != null && (
-        <View style={[styles.dsPanelStat, { backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : '#eff6ff', borderColor: colors.borderLight }]}>
-          <Ionicons name="checkmark-circle" size={16} color="#3b82f6" />
-          <Text style={[styles.dsPanelStatLabel, { color: colors.textSecondary }]}>Confidence</Text>
-          <Text style={[styles.dsPanelStatValue, { color: colors.text }]}>
-            {(typeof data.confidence === 'number' && data.confidence <= 1 ? (data.confidence * 100).toFixed(1) : Number(data.confidence).toFixed(1))}%
-          </Text>
-        </View>
-      )}
+      {/* Category Badge — full width bar */}
+      <View style={[styles.dsCatBadge, { backgroundColor: getCategoryColor(data.category) }]}>
+        <Text style={styles.dsCatBadgeText}>{data.category || 'Unknown'}</Text>
+        <Text style={styles.dsCatBadgeConf}>{confPercent}%</Text>
+      </View>
 
-      {/* Dimensions */}
-      {dims && Object.keys(dims).length > 0 && (
-        <View style={[styles.dsPanelDims, { borderColor: colors.borderLight }]}>
-          <Text style={[styles.dsPanelDimTitle, { color: colors.textSecondary }]}>Dimensions</Text>
-          <View style={styles.dsPanelDimGrid}>
-            {[
-              { label: 'L', value: dims.lengthCm ?? dims.length_cm, unit: 'cm' },
-              { label: 'W', value: dims.widthCm ?? dims.width_cm, unit: 'cm' },
-              { label: 'Kernel', value: dims.kernelWeightG ?? dims.kernel_mass_g, unit: 'g', dec: 2 },
-              { label: 'Fruit', value: dims.wholeFruitWeightG ?? dims.whole_fruit_weight_g, unit: 'g', dec: 1 },
-            ].map((d, i) => (
-              <View key={i} style={styles.dsPanelDimItem}>
-                <Text style={[styles.dsPanelDimLabel, { color: colors.textTertiary }]}>{d.label}</Text>
-                <Text style={[styles.dsPanelDimValue, { color: colors.text }]}>
-                  {d.value != null ? Number(d.value).toFixed(d.dec ?? 1) : '—'}{d.unit}
+      {/* Toggle Details */}
+      <Pressable onPress={() => setShowDetails(!showDetails)} style={[styles.dsExpandBtn, { borderColor: colors.borderLight }]}>
+        <Ionicons name={showDetails ? 'chevron-up' : 'chevron-down'} size={14} color={colors.primary} />
+        <Text style={[styles.dsExpandBtnText, { color: colors.primary }]}>{showDetails ? 'Hide Details' : 'Show Details'}</Text>
+      </Pressable>
+
+      {showDetails ? (
+        <View style={styles.dsDetailsWrap}>
+          {/* Color Classification */}
+          <View style={[styles.dsDetailCard, { backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : '#fafafa', borderColor: colors.borderLight }]}>
+            <View style={styles.dsDetailCardHeader}>
+              <View style={[styles.dsDetailIconWrap, { backgroundColor: colors.primary + '15' }]}>
+                <Ionicons name="color-palette" size={13} color={colors.primary} />
+              </View>
+              <Text style={[styles.dsDetailCardTitle, { color: colors.text }]}>Color Classification</Text>
+            </View>
+            <View style={styles.dsDetailRow}>
+              <Text style={[styles.dsDetailLabel, { color: colors.textSecondary }]}>Detected</Text>
+              <Text style={[styles.dsDetailValue, { color: getCategoryColor(data.category) }]}>{data.category}</Text>
+            </View>
+            <View style={styles.dsDetailRow}>
+              <Text style={[styles.dsDetailLabel, { color: colors.textSecondary }]}>Confidence</Text>
+              <Text style={[styles.dsDetailValue, { color: colors.text }]}>{confPercent}%</Text>
+            </View>
+            {data.maturityStage && (
+              <View style={styles.dsDetailRow}>
+                <Text style={[styles.dsDetailLabel, { color: colors.textSecondary }]}>Maturity</Text>
+                <Text style={[styles.dsDetailValue, { color: colors.text }]}>{data.maturityStage}</Text>
+              </View>
+            )}
+          </View>
+
+          {/* Dimensions */}
+          {dims && Object.keys(dims).length > 0 && (
+            <View style={[styles.dsDetailCard, { backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : '#fafafa', borderColor: colors.borderLight }]}>
+              <View style={styles.dsDetailCardHeader}>
+                <View style={[styles.dsDetailIconWrap, { backgroundColor: '#3b82f615' }]}>
+                  <Ionicons name="resize" size={13} color="#3b82f6" />
+                </View>
+                <Text style={[styles.dsDetailCardTitle, { color: colors.text }]}>Dimensions</Text>
+              </View>
+              <View style={styles.dsDimGrid}>
+                {[
+                  { label: 'Length', value: dims.lengthCm ?? dims.length_cm, unit: 'cm' },
+                  { label: 'Width', value: dims.widthCm ?? dims.width_cm, unit: 'cm' },
+                  { label: 'Kernel', value: dims.kernelWeightG ?? dims.kernel_mass_g, unit: 'g', dec: 2 },
+                  { label: 'Fruit', value: dims.wholeFruitWeightG ?? dims.whole_fruit_weight_g, unit: 'g', dec: 1 },
+                ].map((d, i) => (
+                  <View key={i} style={[styles.dsDimCell, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#fff' }]}>
+                    <Text style={[styles.dsDimCellLabel, { color: colors.textTertiary }]}>{d.label}</Text>
+                    <Text style={[styles.dsDimCellValue, { color: colors.text }]}>
+                      {d.value != null ? Number(d.value).toFixed(d.dec ?? 1) : '—'} {d.unit}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          )}
+
+          {/* Oil Yield Detail */}
+          <View style={[styles.dsDetailCard, { backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : '#fafafa', borderColor: colors.borderLight }]}>
+            <View style={styles.dsDetailCardHeader}>
+              <View style={[styles.dsDetailIconWrap, { backgroundColor: '#22c55e15' }]}>
+                <Ionicons name="water" size={13} color="#22c55e" />
+              </View>
+              <Text style={[styles.dsDetailCardTitle, { color: colors.text }]}>Oil Yield Prediction</Text>
+            </View>
+            <View style={styles.dsDetailRow}>
+              <Text style={[styles.dsDetailLabel, { color: colors.textSecondary }]}>Predicted</Text>
+              <Text style={[styles.dsDetailValue, { color: colors.text, fontSize: 16, fontWeight: '800' }]}>{data.oilYieldPercent?.toFixed(1) || 0}%</Text>
+            </View>
+            {data.yieldCategory && (
+              <View style={styles.dsDetailRow}>
+                <Text style={[styles.dsDetailLabel, { color: colors.textSecondary }]}>Category</Text>
+                <Text style={[styles.dsDetailValue, { color: colors.text }]}>{data.yieldCategory}</Text>
+              </View>
+            )}
+            {data.confidence != null && (
+              <View style={styles.dsDetailRow}>
+                <Text style={[styles.dsDetailLabel, { color: colors.textSecondary }]}>Confidence</Text>
+                <Text style={[styles.dsDetailValue, { color: colors.text }]}>
+                  {Math.round((typeof data.confidence === 'number' && data.confidence <= 1 ? data.confidence * 100 : data.confidence))}%
                 </Text>
               </View>
-            ))}
+            )}
           </View>
-        </View>
-      )}
 
-      {/* Maturity */}
-      {data.maturityStage && (
-        <View style={styles.dsPanelFeature}>
-          <Text style={[styles.dsPanelStatSub, { color: colors.textSecondary }]}>Maturity: <Text style={{ fontWeight: '700', color: colors.text }}>{data.maturityStage}</Text></Text>
-        </View>
-      )}
+          {/* Total Images (for baseline) */}
+          {data.totalImages > 0 && (
+            <View style={[styles.dsDetailCard, { backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : '#fafafa', borderColor: colors.borderLight }]}>
+              <View style={styles.dsDetailCardHeader}>
+                <View style={[styles.dsDetailIconWrap, { backgroundColor: '#3b82f615' }]}>
+                  <Ionicons name="server" size={13} color="#3b82f6" />
+                </View>
+                <Text style={[styles.dsDetailCardTitle, { color: colors.text }]}>Dataset Info</Text>
+              </View>
+              <View style={styles.dsDetailRow}>
+                <Text style={[styles.dsDetailLabel, { color: colors.textSecondary }]}>Images Analyzed</Text>
+                <Text style={[styles.dsDetailValue, { color: colors.text }]}>{data.totalImages}</Text>
+              </View>
+            </View>
+          )}
 
-      {/* Total Images (for baseline) */}
-      {data.totalImages > 0 && (
-        <View style={styles.dsPanelFeature}>
-          <Text style={[styles.dsPanelStatSub, { color: colors.textSecondary }]}>Dataset: <Text style={{ fontWeight: '700', color: colors.text }}>{data.totalImages} images</Text></Text>
+          {/* Interpretation */}
+          {data.interpretation && (
+            <View style={[styles.dsDetailCard, { backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : '#fafafa', borderColor: colors.borderLight }]}>
+              <View style={styles.dsDetailCardHeader}>
+                <View style={[styles.dsDetailIconWrap, { backgroundColor: '#f59e0b15' }]}>
+                  <Ionicons name="bulb" size={13} color="#f59e0b" />
+                </View>
+                <Text style={[styles.dsDetailCardTitle, { color: colors.text }]}>Interpretation</Text>
+              </View>
+              <Text style={[styles.dsInterpText, { color: colors.textSecondary }]}>{data.interpretation}</Text>
+            </View>
+          )}
         </View>
-      )}
-
-      {/* Interpretation */}
-      {data.interpretation && (
-        <Text style={[styles.dsPanelInterp, { color: colors.textTertiary }]} numberOfLines={4}>{data.interpretation}</Text>
+      ) : (
+        /* Compact view — dimensions + interpretation */
+        <View style={styles.dsCompactView}>
+          {dims && Object.keys(dims).length > 0 && (
+            <View style={styles.dsCompactDims}>
+              <View style={[styles.dsCompactDimItem, { backgroundColor: colors.backgroundSecondary }]}>
+                <Text style={[styles.dsCompactDimVal, { color: colors.text }]}>{(dims.lengthCm ?? dims.length_cm)?.toFixed?.(1) || '—'}</Text>
+                <Text style={[styles.dsCompactDimLbl, { color: colors.textTertiary }]}>L(cm)</Text>
+              </View>
+              <View style={[styles.dsCompactDimItem, { backgroundColor: colors.backgroundSecondary }]}>
+                <Text style={[styles.dsCompactDimVal, { color: colors.text }]}>{(dims.widthCm ?? dims.width_cm)?.toFixed?.(1) || '—'}</Text>
+                <Text style={[styles.dsCompactDimLbl, { color: colors.textTertiary }]}>W(cm)</Text>
+              </View>
+              <View style={[styles.dsCompactDimItem, { backgroundColor: colors.backgroundSecondary }]}>
+                <Text style={[styles.dsCompactDimVal, { color: colors.text }]}>{(dims.wholeFruitWeightG ?? dims.whole_fruit_weight_g)?.toFixed?.(0) || '—'}</Text>
+                <Text style={[styles.dsCompactDimLbl, { color: colors.textTertiary }]}>Wt(g)</Text>
+              </View>
+            </View>
+          )}
+          {data.interpretation && (
+            <Text style={[styles.dsCompactInterp, { color: colors.textSecondary, backgroundColor: colors.backgroundSecondary }]} numberOfLines={3}>{data.interpretation}</Text>
+          )}
+        </View>
       )}
     </View>
   );

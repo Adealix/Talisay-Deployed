@@ -12,7 +12,11 @@ import historyRoutes from './routes/historyRoutes.js';
 const app = express();
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: '*',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+}));
 app.use(express.json({ limit: '10mb' }));
 
 // Health check
@@ -45,8 +49,8 @@ async function start() {
   await mongoose.connect(mongoUri);
   console.log('MongoDB connected');
 
-  const server = app.listen(port, () => {
-    console.log(`API running on http://localhost:${port}`);
+  const server = app.listen(port, '0.0.0.0', () => {
+    console.log(`API running on http://0.0.0.0:${port}`);
   });
 
   server.on('error', (err) => {
