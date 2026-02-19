@@ -14,6 +14,15 @@ const transporter = nodemailer.createTransport({
   },
 });
 
+// Verify SMTP connection at startup so Render logs show the real problem immediately
+transporter.verify((err) => {
+  if (err) {
+    console.error('[email] SMTP connection FAILED at startup:', err);
+  } else {
+    console.log('[email] SMTP connection OK — ready to send emails via', process.env.SMTP_HOST || 'smtp.gmail.com');
+  }
+});
+
 /**
  * Send an OTP verification email.
  * @param {string} to - Recipient email

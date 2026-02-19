@@ -55,10 +55,15 @@ export async function register(req, res) {
       verifyOtpExpires: new Date(Date.now() + OTP_TTL_MS),
     });
 
-    // Send OTP email (non-blocking, don't fail registration if email fails)
-    sendOtpEmail(user.email, otp, 'verify').catch((err) => {
-      console.error('[authController.register] Failed to send OTP email:', err.message);
-    });
+    // Send OTP email — await so failures are clearly logged in Render logs
+    try {
+      await sendOtpEmail(user.email, otp, 'verify');
+    } catch (emailErr) {
+      // Don't block registration, but log the full error for Render debugging
+      console.error('[authController.register] OTP email failed — user still created:');
+      console.error('  To:', user.email);
+      console.error('  Error:', emailErr);
+    }
 
     return res.json({
       ok: true,
