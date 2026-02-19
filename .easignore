@@ -1,0 +1,44 @@
+# EAS Build Archive Exclusions
+# EAS only needs the Expo/React Native JS source.
+# Python ML backend and Node.js server are deployed separately.
+
+# Python ML Backend (not needed for APK)
+ml/
+
+# Node.js Backend (not needed for APK)
+server/
+
+# Top-level backup folders
+MODELS_BACKUP_20260218_001104/
+
+# Expo / Metro build artifacts
+node_modules/
+.expo/
+dist/
+web-build/
+android/
+ios/
+.metro-health-check*
+
+# Env files (secrets baked in via eas.json env)
+.env
+.env.*
+server/.env
+
+# Misc dev files not needed for build
+*.log
+*.apk
+*.aab
+*.ipa
+.DS_Store
+Thumbs.db
+screenshots/
+docs/
+
+# Scripts only used for local dev/deploy
+*.ps1
+*.bat
+*.sh
+
+# Git internals
+.git/

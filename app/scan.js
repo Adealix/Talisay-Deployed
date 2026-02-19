@@ -13,6 +13,9 @@ import {
   StyleSheet,
   Platform,
   ActivityIndicator,
+  Modal,
+  TextInput,
+  Alert,
 } from 'react-native';
 import Animated, {
   FadeInUp,
@@ -97,21 +100,117 @@ function FloatingOrb({ delay = 0, size = 60, color, top, left, right }) {
   );
 }
 
-// ─── ML Status Badge ───
-function MLStatusBadge({ available, onRefresh, colors }) {
+// ─── ML Status Badge + Ngrok Config Modal ───
+function MLStatusBadge({ available, onRefresh, colors, isDark }) {
+  const [modalVisible, setModalVisible] = React.useState(false);
+  const [ngrokInput, setNgrokInput] = React.useState('');
+  const [currentUrl, setCurrentUrl] = React.useState('');
   const scale = useSharedValue(1);
   const badgeStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
 
+  const handleOpen = () => {
+    setCurrentUrl(mlService.getNgrokUrl() || '');
+    setNgrokInput(mlService.getNgrokUrl() || '');
+    setModalVisible(true);
+  };
+
+  const handleSave = async () => {
+    const trimmed = ngrokInput.trim().replace(/\/$/, '');
+    if (trimmed && !trimmed.startsWith('http')) {
+      Alert.alert('Invalid URL', 'URL must start with http:// or https://');
+      return;
+    }
+    await mlService.setNgrokUrl(trimmed);
+    setCurrentUrl(trimmed);
+    setModalVisible(false);
+    onRefresh();
+  };
+
+  const handleClear = async () => {
+    await mlService.clearNgrokUrl();
+    setNgrokInput('');
+    setCurrentUrl('');
+    setModalVisible(false);
+    onRefresh();
+  };
+
+  const activeUrl = mlService.getCurrentMLApiUrl();
+  const isNgrok = activeUrl && !activeUrl.includes('localhost') && !activeUrl.includes('127.0.0.1');
+
   return (
-    <AnimatedPressable
-      onPress={onRefresh}
-      onPressIn={() => { scale.value = withSpring(0.92); }}
-      onPressOut={() => { scale.value = withSpring(1); }}
-      style={[badgeStyle, styles.mlBadge, { backgroundColor: available ? '#22c55e' : '#ef4444' }]}
-    >
-      <Ionicons name={available ? 'cloud-done' : 'cloud-offline'} size={14} color="#fff" />
-      <Text style={styles.mlBadgeText}>{available ? 'ML Online' : 'Offline'}</Text>
-    </AnimatedPressable>
+    <>
+      <AnimatedPressable
+        onPress={handleOpen}
+        onPressIn={() => { scale.value = withSpring(0.92); }}
+        onPressOut={() => { scale.value = withSpring(1); }}
+        style={[badgeStyle, styles.mlBadge, { backgroundColor: available ? '#22c55e' : isNgrok ? '#f59e0b' : '#ef4444' }]}
+      >
+        <Ionicons name={available ? 'cloud-done' : isNgrok ? 'cloud-outline' : 'cloud-offline'} size={14} color="#fff" />
+        <Text style={styles.mlBadgeText}>{available ? (isNgrok ? 'ML NGROK' : 'ML Online') : (isNgrok ? 'Ngrok ↻' : 'Offline')}</Text>
+      </AnimatedPressable>
+
+      {/* Ngrok Config Modal */}
+      <Modal visible={modalVisible} transparent animationType="fade" onRequestClose={() => setModalVisible(false)}>
+        <Pressable style={styles.ngrokModalBg} onPress={() => setModalVisible(false)}>
+          <Pressable style={[styles.ngrokModal, { backgroundColor: colors.card }]} onPress={e => e.stopPropagation()}>
+            <View style={styles.ngrokModalHeader}>
+              <Ionicons name="globe-outline" size={20} color={colors.primary} />
+              <Text style={[styles.ngrokModalTitle, { color: colors.text }]}>ML API Connection</Text>
+              <Pressable onPress={() => setModalVisible(false)} hitSlop={8}>
+                <Ionicons name="close" size={20} color={colors.textTertiary} />
+              </Pressable>
+            </View>
+
+            {/* Current URL display */}
+            <View style={[styles.ngrokCurrentUrl, { backgroundColor: colors.backgroundSecondary, borderColor: colors.borderLight }]}>
+              <Text style={[styles.ngrokLabel, { color: colors.textSecondary }]}>Active URL</Text>
+              <Text style={[styles.ngrokActiveUrl, { color: available ? '#22c55e' : '#ef4444' }]} numberOfLines={1}>
+                {activeUrl}
+              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 }}>
+                <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: available ? '#22c55e' : '#ef4444' }} />
+                <Text style={[styles.ngrokStatusText, { color: available ? '#22c55e' : '#ef4444' }]}>
+                  {available ? 'Connected' : 'Unreachable'}
+                </Text>
+              </View>
+            </View>
+
+            {/* Ngrok URL input */}
+            <Text style={[styles.ngrokLabel, { color: colors.textSecondary, marginTop: 12 }]}>
+              Ngrok Public URL  <Text style={{ color: colors.textTertiary }}>(from start-ngrok.ps1)</Text>
+            </Text>
+            <TextInput
+              value={ngrokInput}
+              onChangeText={setNgrokInput}
+              placeholder="https://xxxx.ngrok-free.app"
+              placeholderTextColor={colors.textTertiary}
+              style={[styles.ngrokInput, { color: colors.text, backgroundColor: colors.backgroundSecondary, borderColor: colors.borderLight }]}
+              autoCapitalize="none"
+              autoCorrect={false}
+              keyboardType="url"
+            />
+
+            <Text style={[styles.ngrokHint, { color: colors.textTertiary }]}>
+              💡 Run <Text style={{ fontFamily: 'monospace', color: colors.primary }}>.\start-ngrok.ps1</Text> on your laptop, then paste the URL above. Leave empty to use localhost.
+            </Text>
+
+            {/* Buttons */}
+            <View style={styles.ngrokBtnRow}>
+              {currentUrl ? (
+                <Pressable onPress={handleClear} style={[styles.ngrokBtn, { backgroundColor: '#ef444415', borderColor: '#ef444440' }]}>
+                  <Ionicons name="trash-outline" size={14} color="#ef4444" />
+                  <Text style={{ color: '#ef4444', fontSize: 13, fontWeight: '600' }}>Clear (use localhost)</Text>
+                </Pressable>
+              ) : null}
+              <Pressable onPress={handleSave} style={[styles.ngrokBtn, styles.ngrokSaveBtn, { backgroundColor: colors.primary }]}>
+                <Ionicons name="checkmark" size={14} color="#fff" />
+                <Text style={{ color: '#fff', fontSize: 13, fontWeight: '700' }}>Save & Reconnect</Text>
+              </Pressable>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
+    </>
   );
 }
 
@@ -556,6 +655,13 @@ export default function ScanPage() {
   const [image2CloudinaryUrl, setImage2CloudinaryUrl] = useState(null);
 
   // ─── Effects ───
+  // Redirect unauthenticated users to account/login page
+  useEffect(() => {
+    if (!isAuthenticated) {
+      router.replace('/account');
+    }
+  }, [isAuthenticated]);
+
   useEffect(() => {
     checkMLBackend();
   }, []);
@@ -814,7 +920,7 @@ export default function ScanPage() {
             <Ionicons name="time-outline" size={16} color={colors.textSecondary} />
             <Text style={[styles.historyBtnText, { color: colors.text }]}>History</Text>
           </Pressable>
-          <MLStatusBadge available={mlBackendAvailable} onRefresh={checkMLBackend} colors={colors} />
+          <MLStatusBadge available={mlBackendAvailable} onRefresh={checkMLBackend} colors={colors} isDark={isDark} />
         </Animated.View>
 
         {/* Mode Toggle */}
@@ -1102,6 +1208,38 @@ const styles = StyleSheet.create({
     ...Platform.select({ web: { cursor: 'pointer' } }),
   },
   mlBadgeText: { color: '#fff', fontSize: 12, fontWeight: '700' },
+
+  /* Ngrok Config Modal */
+  ngrokModalBg: {
+    flex: 1, backgroundColor: 'rgba(0,0,0,0.7)',
+    justifyContent: 'center', alignItems: 'center', padding: Spacing.lg,
+  },
+  ngrokModal: {
+    width: '100%', maxWidth: 440, borderRadius: BorderRadius.xl,
+    padding: Spacing.lg, gap: Spacing.sm, ...Shadows.lg,
+  },
+  ngrokModalHeader: {
+    flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, marginBottom: 4,
+  },
+  ngrokModalTitle: { flex: 1, fontSize: 16, fontWeight: '700' },
+  ngrokCurrentUrl: {
+    padding: Spacing.md, borderRadius: BorderRadius.md, borderWidth: 1, gap: 2,
+  },
+  ngrokLabel: { fontSize: 11, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5 },
+  ngrokActiveUrl: { fontSize: 13, fontWeight: '600', fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace' },
+  ngrokStatusText: { fontSize: 11, fontWeight: '600' },
+  ngrokInput: {
+    borderWidth: 1, borderRadius: BorderRadius.md, paddingHorizontal: 12, paddingVertical: 10,
+    fontSize: 13, fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+  },
+  ngrokHint: { fontSize: 12, lineHeight: 18 },
+  ngrokBtnRow: { flexDirection: 'row', gap: Spacing.sm, marginTop: 4, justifyContent: 'flex-end' },
+  ngrokBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    paddingHorizontal: 14, paddingVertical: 10, borderRadius: BorderRadius.md, borderWidth: 1,
+    ...Platform.select({ web: { cursor: 'pointer' } }),
+  },
+  ngrokSaveBtn: { borderWidth: 0 },
 
   /* Mode Toggle */
   modeRow: {

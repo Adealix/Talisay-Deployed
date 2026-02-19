@@ -6,10 +6,12 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import Constants from 'expo-constants';
 
-// API key from environment variable
-const GEMINI_API_KEY = Constants.expoConfig?.extra?.geminiApiKey
-  || process.env.EXPO_PUBLIC_GEMINI_API_KEY
-  || '';
+// API key — env var (build-time) → app.json extra
+// SECURITY: Never hardcode API keys! They must be in .env file only
+const GEMINI_API_KEY =
+  process.env.EXPO_PUBLIC_GEMINI_API_KEY
+  || Constants.expoConfig?.extra?.geminiApiKey
+  || Constants.manifest?.extra?.geminiApiKey;
 
 // System instruction to give the chatbot context about Talisay
 const SYSTEM_INSTRUCTION = `You are TalisAI, an expert AI assistant specialized in Talisay trees (Terminalia catappa), also known as Indian Almond trees. You are part of the Talisay AI research application developed for studying Talisay fruit oil yield.
@@ -60,7 +62,7 @@ function getChatSession() {
   if (!chatSession) {
     const client = getClient();
     const model = client.getGenerativeModel({
-      model: 'gemini-2.0-flash',
+      model: 'gemini-2.5-flash',
       systemInstruction: SYSTEM_INSTRUCTION,
     });
     chatSession = model.startChat({
@@ -89,6 +91,12 @@ export async function sendMessage(message) {
   } catch (error) {
     if (error.message === 'GEMINI_API_KEY_MISSING') {
       return '⚠️ **Gemini API key not configured.**\n\nTo use the AI chatbot, add your free Gemini API key:\n\n1. Go to [Google AI Studio](https://aistudio.google.com/apikey)\n2. Create a free API key\n3. Add `EXPO_PUBLIC_GEMINI_API_KEY=your_key_here` to your `.env` file\n4. Restart the app\n\nThe free tier includes 15 requests per minute — more than enough!';
+    }
+    // If quota exceeded, reset the session so next attempt starts fresh
+    // with the correct model (avoids stale cached sessions)
+    if (error.message?.includes('429') || error.message?.includes('quota')) {
+      chatSession = null;
+      genAI = null;
     }
     console.error('[GeminiService] Error:', error.message);
     throw error;

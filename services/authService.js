@@ -1,40 +1,11 @@
 /**
  * Auth Service — Frontend API client for authentication.
  * Connects to Express backend at /api/auth/*.
+ * Uses the shared apiClient which tries Render first, falls back to localhost.
  */
 import { Platform } from 'react-native';
-import Constants from 'expo-constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-
-// ─── Resolve API base URL ───
-function getApiUrl() {
-  const configured = (process.env.EXPO_PUBLIC_API_URL || '').trim().replace(/\/$/, '');
-  
-  // Skip localhost URLs for mobile - they won't work on mobile devices
-  if (configured && !configured.includes('localhost') && !configured.includes('127.0.0.1')) {
-    return configured;
-  }
-
-  if (Platform.OS === 'web') {
-    return configured || 'http://localhost:3000';
-  }
-
-  // For mobile, try to get the dev server host IP from Expo
-  const debuggerHost = Constants.expoConfig?.hostUri || Constants.manifest?.debuggerHost;
-  if (debuggerHost) {
-    const ip = debuggerHost.split(':')[0];
-    if (ip && ip !== 'localhost' && ip !== '127.0.0.1') {
-      return `http://${ip}:3000`;
-    }
-  }
-  return 'http://localhost:3000';
-}
-
-// Log the resolved URL once at startup for debugging
-if (Platform.OS !== 'web') {
-  const _resolvedUrl = getApiUrl();
-  console.log(`[authService] Resolved API URL: ${_resolvedUrl} (Platform: ${Platform.OS})`);
-}
+import { apiFetch as clientFetch, getActiveApiUrl } from './apiClient';
 
 // ─── Token management ───
 let _token = null;
@@ -71,7 +42,8 @@ async function apiFetch(path, opts = {}) {
   const config = { method, headers };
   if (body) config.body = JSON.stringify(body);
 
-  const res = await fetch(`${getApiUrl()}${path}`, config);
+  // Use shared client (Render-primary → localhost fallback)
+  const res = await clientFetch(path, config);
   const data = await res.json().catch(() => ({}));
 
   if (!res.ok) {
@@ -187,8 +159,8 @@ export async function uploadAvatar(imageUri) {
       });
     }
 
-    console.log('[uploadAvatar] Uploading to:', `${API_URL}/api/auth/upload-avatar`);
-    const response = await fetch(`${API_URL}/api/auth/upload-avatar`, {
+    console.log('[uploadAvatar] Uploading to:', `${getActiveApiUrl()}/api/auth/upload-avatar`);
+    const response = await clientFetch('/api/auth/upload-avatar', {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${token}`,

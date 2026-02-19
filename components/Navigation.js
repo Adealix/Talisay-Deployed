@@ -3,7 +3,7 @@
  * Dark nav bar below header. Items are CENTERED.
  * Desktop: centered horizontal tabs. Mobile: hamburger drawer.
  */
-import React, { useState, useRef, useCallback, useMemo } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -26,7 +26,6 @@ import Animated, {
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, usePathname } from 'expo-router';
 import { useTheme } from '../contexts/ThemeContext';
-import { useAuth } from '../contexts/AuthContext';
 import { useResponsive } from '../hooks/useResponsive';
 import { Spacing, Shadows, Typography, Layout, BorderRadius } from '../constants/Layout';
 
@@ -37,11 +36,8 @@ export const NAV_HEIGHT = 48;
 const NAV_ITEMS = [
   { key: '/', label: 'Home', icon: 'home-outline', iconActive: 'home' },
   { key: '/grade', label: 'Grade', icon: 'school-outline', iconActive: 'school' },
-  { key: '/history', label: 'History', icon: 'time-outline', iconActive: 'time' },
   { key: '/mapping', label: 'Mapping', icon: 'map-outline', iconActive: 'map' },
   { key: '/chatbot', label: 'TalisAI', icon: 'chatbubbles-outline', iconActive: 'chatbubbles' },
-  { key: '/admin', label: 'Admin', icon: 'bar-chart-outline', iconActive: 'bar-chart' },
-  { key: '/about-us', label: 'About Us', icon: 'people-outline', iconActive: 'people' },
   { key: '/about-talisay', label: 'About Talisay', icon: 'leaf-outline', iconActive: 'leaf' },
   { key: '/publication', label: 'Publication', icon: 'document-text-outline', iconActive: 'document-text' },
 ];
@@ -121,15 +117,12 @@ function NavItem({ item, isActive, onPress, colors, isMobile }) {
         {item.label}
       </Text>
       {isActive && (
-        <View style={{
+        <View style={[styles.activeIndicator, {
           position: 'absolute',
           bottom: 0,
-          left: 0,
-          right: 0,
-          alignItems: 'center',
-        }}>
-          <View style={styles.activeIndicator} />
-        </View>
+          left: Spacing.lg,
+          right: Spacing.lg,
+        }]} />
       )}
     </AnimatedPressable>
   );
@@ -137,22 +130,13 @@ function NavItem({ item, isActive, onPress, colors, isMobile }) {
 
 export default function Navigation() {
   const { colors, isDark } = useTheme();
-  const { user } = useAuth();
   const { isMobile, isDesktop } = useResponsive();
   const router = useRouter();
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
 
-  // Filter nav items based on user role — hide Admin for non-admin users
-  const visibleNavItems = useMemo(() => {
-    return NAV_ITEMS.filter(item => {
-      // Only show Admin menu if user is logged in AND has admin role
-      if (item.key === '/admin') {
-        return user?.role === 'admin';
-      }
-      return true;
-    });
-  }, [user?.role]);
+  // All items are now always visible — Admin moved to profile dropdown
+  const visibleNavItems = NAV_ITEMS;
 
   const handleNav = useCallback((key) => {
     router.push(key);
@@ -302,7 +286,6 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
   activeIndicator: {
-    width: '60%',
     height: 3,
     borderTopLeftRadius: 3,
     borderTopRightRadius: 3,

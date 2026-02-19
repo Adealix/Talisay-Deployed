@@ -1032,23 +1032,33 @@ export default function AdminPage() {
   // Route protection: only admin users can access this page
   const isAdmin = isAuthenticated && user?.role === 'admin';
 
-  const loadData = useCallback(async () => {
+  const loadData = useCallback(async (signal) => {
     try {
-      const data = await fetchAnalyticsOverview();
+      const data = await fetchAnalyticsOverview({ signal });
+      // Don't update state if the request was aborted (component unmounted)
+      if (signal?.aborted) return;
       if (data) setAnalytics(data);
     } catch (e) {
+      if (e.name === 'AbortError') return;
       console.error('Failed to load analytics:', e);
     } finally {
-      setLoading(false);
-      setRefreshing(false);
+      if (!signal?.aborted) {
+        setLoading(false);
+        setRefreshing(false);
+      }
     }
   }, []);
 
-  useEffect(() => { if (isAdmin) loadData(); }, [isAdmin, loadData]);
+  useEffect(() => {
+    if (!isAdmin) return;
+    const controller = new AbortController();
+    loadData(controller.signal);
+    return () => controller.abort();
+  }, [isAdmin, loadData]);
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
-    loadData();
+    loadData(); // no signal needed for manual refresh — user expects it to complete
   }, [loadData]);
 
   // ─── Load users ───
@@ -1068,7 +1078,7 @@ export default function AdminPage() {
   const loadHistory = useCallback(async () => {
     setHistoryLoading(true);
     try {
-      const data = await fetchAllHistory(500);
+      const data = await fetchAllHistory(200);
       setHistoryItems(data || []);
     } catch (e) {
       console.error('Failed to load history:', e);

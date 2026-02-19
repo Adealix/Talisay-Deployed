@@ -76,6 +76,7 @@ class TalisayPredictor:
         self.dimension_estimator = None
         self.segmenter = None
         self.fruit_validator = None
+        self.talisay_guard = None        # NEW: Multi-layer security guard
         
         # Model paths - Use best available models
         self.models_dir = Path(__file__).parent / "models"
@@ -110,6 +111,17 @@ class TalisayPredictor:
     
     def _initialize_components(self):
         """Initialize all prediction components."""
+        # ============================================================
+        # FIRST: Initialize TalisayGuard (multi-layer security)
+        # ============================================================
+        try:
+            from models.talisay_guard import TalisayGuard
+            self.talisay_guard = TalisayGuard()
+            print("✓ TalisayGuard multi-layer security initialized")
+        except Exception as e:
+            print(f"⚠ TalisayGuard unavailable ({e}), using basic validation")
+            self.talisay_guard = None
+        
         # ============================================================
         # NEW: Initialize YOLO detector (coin + fruit detection)
         # ============================================================
@@ -258,6 +270,39 @@ class TalisayPredictor:
                 img_array = cv2.resize(img_array, (new_w, new_h), interpolation=cv2.INTER_AREA)
             
             # ============================================================
+            # Step 0-GUARD: TalisayGuard multi-layer security check
+            # Run BEFORE any analysis to reject non-Talisay images early.
+            # This catches: blank screens, persons/faces, Capsicum/peppers,
+            # non-Talisay fruits, wrong shape, wrong colour, wrong texture.
+            # ============================================================
+            if not skip_fruit_validation and self.talisay_guard:
+                guard_result = self.talisay_guard.verify(
+                    img_array,
+                    fruit_mask=None,        # Let guard build its own mask
+                    yolo_fruit_info=None,   # Don't bias with YOLO yet
+                    coin_info=None,
+                )
+                result["pipeline_info"]["talisay_guard"] = {
+                    "used": True,
+                    "verdict": guard_result["verdict"],
+                    "score": guard_result["score"],
+                }
+                
+                if not guard_result["accepted"]:
+                    result["is_talisay"] = False
+                    result["analysis_complete"] = True
+                    result["analysis_stopped_reason"] = guard_result["verdict"]
+                    result["user_message"] = guard_result["reason"]
+                    result["fruit_validation"] = {
+                        "is_talisay": False,
+                        "result": guard_result["verdict"],
+                        "confidence": guard_result["score"],
+                        "message": guard_result["reason"],
+                        "guard_layers": guard_result.get("layers", {}),
+                    }
+                    return result
+            
+            # ============================================================
             # Step 0a: YOLO Detection (if available) — replaces HoughCircles
             # ============================================================
             yolo_result = None
@@ -373,16 +418,16 @@ class TalisayPredictor:
             # Even when YOLO detects a fruit, do a QUICK color check to ensure
             # it matches Talisay colors (green/yellow/brown). This prevents
             # non-Talisay fruits (red apples, oranges, etc.) from being analyzed.
-            # RAISED THRESHOLD: From 0.5 to 0.7 to reduce false positives bypassing validation
+            # RAISED THRESHOLD: From 0.5 to 0.8 for stricter YOLO confidence
             yolo_confirmed_fruit = (
                 yolo_fruit_info
-                and yolo_fruit_info.get("confidence", 0) >= 0.7
+                and yolo_fruit_info.get("confidence", 0) >= 0.8
             )
             
             if not skip_fruit_validation and self.fruit_validator:
                 if yolo_confirmed_fruit:
-                    # YOLO confirmed fruit — do quick color-only validation
-                    # (skip slow coin detection, just check if colors match Talisay)
+                    # YOLO confirmed fruit — STILL do full validation
+                    # YOLO can misidentify peppers, mangoes, etc. as "talisay_fruit"
                     fruit_mask = segmentation_result.get("mask") if segmentation_result else None
                     validator_coin_info = coin_info if coin_info else {"detected": False}
                     validation_result = self.fruit_validator.validate(
@@ -392,30 +437,40 @@ class TalisayPredictor:
                         coin_info=validator_coin_info
                     )
                     
-                    # Even with YOLO, reject if clearly not Talisay colors
+                    # With YOLO, reject for ANY negative validation result
                     if not validation_result["is_talisay"]:
-                        # Check if the rejection is strong (non-Talisay fruit detected)
                         detection_result = validation_result["result"]
+                        result["fruit_validation"] = {
+                            "is_talisay": False,
+                            "result": detection_result,
+                            "confidence": validation_result["confidence"],
+                            "message": validation_result["message"]
+                        }
+                        result["is_talisay"] = False
+                        result["analysis_complete"] = True
+                        result["analysis_stopped_reason"] = "not_talisay_fruit"
+                        
                         if detection_result == "non_talisay":
-                            result["fruit_validation"] = {
-                                "is_talisay": False,
-                                "result": detection_result,
-                                "confidence": validation_result["confidence"],
-                                "message": validation_result["message"]
-                            }
-                            result["is_talisay"] = False
-                            result["analysis_complete"] = True
-                            result["analysis_stopped_reason"] = "not_talisay_fruit"
                             result["user_message"] = (
                                 "🍎 This appears to be a different type of fruit, not a Talisay. "
                                 "Talisay fruits are green (immature), yellow (mature), or brown (ripe)."
                             )
-                            return result
+                        elif detection_result == "unknown":
+                            result["user_message"] = (
+                                "❓ An object was detected, but it doesn't match Talisay fruit "
+                                "characteristics (shape, colour, texture). Talisay fruits are "
+                                "almond-shaped drupes, NOT round or elongated like peppers."
+                            )
+                        else:
+                            result["user_message"] = validation_result.get("message",
+                                "This doesn't appear to be a Talisay fruit."
+                            )
+                        return result
                     
                     result["is_talisay"] = True
                     result["fruit_validation"] = {
                         "skipped": False,
-                        "reason": "yolo_confirmed_with_color_check",
+                        "reason": "yolo_confirmed_with_full_validation",
                         "yolo_confidence": yolo_fruit_info.get("confidence", 0)
                     }
                 else:
@@ -508,8 +563,8 @@ class TalisayPredictor:
             # likely doesn't contain a recognizable Talisay fruit.
             # This prevents the "Brown with 0% confidence" default.
             
-            # CRITICAL: If confidence is nearly zero, always reject (coins, logos, etc.)
-            if color_result["confidence"] < 0.05:
+            # CRITICAL: If confidence is below 10%, always reject
+            if color_result["confidence"] < 0.10:
                 result["is_talisay"] = False
                 result["analysis_complete"] = True
                 result["analysis_stopped_reason"] = "extremely_low_confidence"
@@ -521,7 +576,7 @@ class TalisayPredictor:
                 return result
             
             # SECONDARY CHECK: Low confidence with unclear color distribution
-            if color_result["confidence"] < 0.15:
+            if color_result["confidence"] < 0.25:
                 # Check if all probabilities are roughly equal (no clear color)
                 probs = color_result.get("probabilities", {})
                 max_prob = max(probs.values()) if probs else 0

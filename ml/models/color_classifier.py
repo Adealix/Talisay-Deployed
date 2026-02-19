@@ -253,19 +253,19 @@ class SimpleColorClassifier:
         # Note: OpenCV uses H: 0-180, S: 0-255, V: 0-255
         self.color_ranges = {
             "green": {
-                "h_min": 35, "h_max": 90,    # Green hue range
+                "h_min": 30, "h_max": 82,    # Talisay green hue range (tightened)
                 "s_min": 30, "s_max": 255,   # Allow lower saturation
-                "v_min": 30, "v_max": 255    # Allow darker greens
+                "v_min": 30, "v_max": 250    # Allow darker greens
             },
             "yellow": {
-                "h_min": 15, "h_max": 35,    # Yellow-orange hue
-                "s_min": 80, "s_max": 255,   # Higher saturation
-                "v_min": 100, "v_max": 255   # Brighter values
+                "h_min": 15, "h_max": 38,    # Yellow-orange hue (slightly wider)
+                "s_min": 55, "s_max": 255,   # Require moderate saturation
+                "v_min": 70, "v_max": 255    # Slightly lower min for shadowed yellows
             },
             "brown": {
-                "h_min": 5, "h_max": 20,     # Brown/reddish hue
-                "s_min": 40, "s_max": 200,   # Medium saturation
-                "v_min": 30, "v_max": 180    # Darker values
+                "h_min": 5, "h_max": 22,     # Brown/reddish hue
+                "s_min": 35, "s_max": 210,   # Medium saturation
+                "v_min": 25, "v_max": 195    # Darker values (tightened upper)
             }
         }
         

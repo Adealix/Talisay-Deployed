@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: talisay-ml-api
+    runtime: docker
+    dockerfilePath: ./ml/Dockerfile
+    dockerContext: ./ml
+    plan: free
+    envVars:
+      - key: PORT
+        value: 5001
+      - key: PYTHON_VERSION
+        value: 3.11.0
+    healthCheckPath: /api/health

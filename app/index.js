@@ -96,6 +96,71 @@ const QUICK_LINKS = [
   { icon: 'people', label: 'About Us', route: '/about-us', color: '#ec4899' },
 ];
 
+// ─── Talisay Fruit Products Preview (Home Page) ───
+// Seed-to-oil products listed first, then others.
+const HOME_PRODUCTS = [
+  {
+    id: 'cooking-oil',
+    imageUri: 'https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=400',
+    icon: 'water',
+    color: '#f97316',
+    title: 'Culinary Kernel Oil',
+    summary: 'Cold-pressed cooking oil comparable to almond oil. Rich in oleic & linoleic fatty acids.',
+    category: 'Seed-to-Oil',
+    stages: ['Yellow', 'Brown'],
+  },
+  {
+    id: 'biodiesel',
+    imageUri: 'https://images.unsplash.com/photo-1620490776268-6fdd63e4af76?w=400',
+    icon: 'flame',
+    color: '#ef4444',
+    title: 'Biodiesel / Biofuel',
+    summary: 'Transesterified seed oil used as a diesel fuel extender. Recognized by DOST Region 3.',
+    category: 'Seed-to-Oil',
+    stages: ['Brown'],
+  },
+  {
+    id: 'cosmetic-oil',
+    imageUri: 'https://images.unsplash.com/photo-1556228453-efd6c1ff04f6?w=400',
+    icon: 'color-palette',
+    color: '#ec4899',
+    title: 'Cosmetic & Skincare Oil',
+    summary: 'Refined kernel oil used in moisturizers, hair oils, and skin-conditioning formulas.',
+    category: 'Seed-to-Oil',
+    stages: ['Yellow', 'Brown'],
+  },
+  {
+    id: 'pharma-oil',
+    imageUri: 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=400',
+    icon: 'medkit',
+    color: '#7c3aed',
+    title: 'Pharmaceutical-Grade Oil',
+    summary: 'High-purity supercritical CO₂ extract used in dietary supplement capsules.',
+    category: 'Seed-to-Oil',
+    stages: ['Yellow', 'Brown'],
+  },
+  {
+    id: 'edible-kernel',
+    imageUri: 'https://images.unsplash.com/photo-1563636619-e9143da7973b?w=400',
+    icon: 'nutrition',
+    color: '#22c55e',
+    title: 'Edible Kernel Snack',
+    summary: 'Nutritious nut snack with 25.4% protein and 11.2% fiber — similar to almonds.',
+    category: 'Food',
+    stages: ['Yellow', 'Brown'],
+  },
+  {
+    id: 'tannin-dye',
+    imageUri: 'https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=400',
+    icon: 'color-filter',
+    color: '#8b5cf6',
+    title: 'Tannin Extract & Natural Dye',
+    summary: 'Bark and husk rich in punicalagin and corilagin, used for textile dyeing and tanning.',
+    category: 'Industrial',
+    stages: ['Green', 'Yellow', 'Brown'],
+  },
+];
+
 // ─── Recent Updates ───
 // Based on real research milestones and publications in the project.
 const UPDATES = [
@@ -249,6 +314,78 @@ function UpdateItem({ item, index }) {
   );
 }
 
+// ─── Fruit Product Card (Home preview) ───
+function FruitProductCard({ item, index }) {
+  const { colors } = useTheme();
+  const router = useRouter();
+  const scale = useSharedValue(1);
+
+  const pressStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
+  const stageColor = (s) =>
+    s === 'Green' ? '#16a34a' : s === 'Yellow' ? '#ca8a04' : '#92400e';
+
+  return (
+    <AnimatedPressable
+      entering={FadeInUp.delay(500 + index * 80).duration(280)}
+      onPress={() => router.push('/about-talisay')}
+      onPressIn={() => { scale.value = withSpring(0.96, { damping: 12 }); }}
+      onPressOut={() => { scale.value = withSpring(1, { damping: 8 }); }}
+      style={[pressStyle, styles.fpCard, {
+        backgroundColor: colors.card,
+        borderColor: colors.borderLight,
+        borderTopColor: item.color,
+        borderTopWidth: 3,
+        ...Shadows.sm,
+      }]}
+    >
+      {/* Product image header */}
+      {item.imageUri && (
+        <Image
+          source={{ uri: item.imageUri }}
+          style={styles.fpImage}
+          resizeMode="cover"
+        />
+      )}
+
+      {/* Row: icon + text + arrow */}
+      <View style={styles.fpCardBody}>
+        {/* Icon */}
+        <View style={[styles.fpIconBg, { backgroundColor: item.color + '18' }]}>
+          <Ionicons name={item.icon} size={20} color={item.color} />
+        </View>
+
+        {/* Text content */}
+        <View style={styles.fpContent}>
+          <View style={styles.fpTitleRow}>
+            <Text style={[styles.fpTitle, { color: colors.text }]} numberOfLines={1}>{item.title}</Text>
+            <View style={[styles.fpCatBadge, { backgroundColor: item.color + '15', borderColor: item.color + '30' }]}>
+              <Text style={[styles.fpCatText, { color: item.color }]}>{item.category}</Text>
+            </View>
+          </View>
+          <Text style={[styles.fpSummary, { color: colors.textSecondary }]} numberOfLines={2}>{item.summary}</Text>
+          <View style={styles.fpStageRow}>
+            {item.stages.map(s => (
+              <View key={s} style={[styles.fpStageBadge, {
+                backgroundColor: stageColor(s) + '15',
+                borderColor: stageColor(s) + '30',
+              }]}>
+                <View style={[styles.fpStageDot, { backgroundColor: stageColor(s) }]} />
+                <Text style={[styles.fpStageText, { color: stageColor(s) }]}>{s}</Text>
+              </View>
+            ))}
+          </View>
+        </View>
+
+        {/* Arrow */}
+        <Ionicons name="chevron-forward" size={16} color={colors.textTertiary} style={{ alignSelf: 'center' }} />
+      </View>
+    </AnimatedPressable>
+  );
+}
+
 // ─── Call to Action Banner ───
 function CTABanner() {
   const { colors, isDark, gradients } = useTheme();
@@ -382,6 +519,39 @@ export default function HomePage() {
             />
           ))}
         </View>
+      </View>
+
+      {/* ════ TALISAY FRUIT PRODUCTS ════ */}
+      <View style={[styles.section, isDesktop && styles.sectionDesktop]}>
+        <SectionHeader
+          title="Talisay Fruit Products"
+          subtitle="From seed oil to natural dyes — what Talisay produces"
+          action="View All"
+          onAction={() => router.push('/about-talisay')}
+          delay={450}
+        />
+        {/* Seed-to-Oil label */}
+        <Animated.View
+          entering={FadeInUp.delay(480).duration(280)}
+          style={[styles.fpGroupBanner, { backgroundColor: '#fff7ed', borderColor: '#fed7aa' }]}
+        >
+          <Ionicons name="water" size={16} color="#f97316" />
+          <Text style={[styles.fpGroupText, { color: '#c2410c' }]}>Seed-to-Oil Yield Products listed first</Text>
+        </Animated.View>
+        <View style={[styles.fpGrid, isMobile && styles.fpGridMobile]}>
+          {HOME_PRODUCTS.map((item, idx) => (
+            <FruitProductCard key={item.id} item={item} index={idx} />
+          ))}
+        </View>
+        <Animated.View entering={FadeInUp.delay(1000).duration(280)}>
+          <Pressable
+            onPress={() => router.push('/about-talisay')}
+            style={[styles.fpViewAllBtn, { borderColor: '#2d6a4f' + '40', backgroundColor: '#2d6a4f' + '08' }]}
+          >
+            <Text style={[styles.fpViewAllText, { color: '#2d6a4f' }]}>View all products & detailed info</Text>
+            <Ionicons name="arrow-forward" size={16} color="#2d6a4f" />
+          </Pressable>
+        </Animated.View>
       </View>
 
       {/* ════ CTA BANNER ════ */}
@@ -628,4 +798,59 @@ const styles = StyleSheet.create({
     flex: 1,
     lineHeight: 20,
   },
+
+  // Fruit Products (home page)
+  fpGroupBanner: {
+    flexDirection: 'row', alignItems: 'center', gap: Spacing.sm,
+    padding: Spacing.sm, paddingHorizontal: Spacing.md,
+    borderRadius: BorderRadius.md, borderWidth: 1,
+    marginBottom: Spacing.md,
+  },
+  fpGroupText: { ...Typography.small, fontWeight: '600' },
+  fpGrid: {
+    flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.md,
+  },
+  fpGridMobile: { flexDirection: 'column', gap: Spacing.sm },
+  fpCard: {
+    width: '47%', minWidth: 260, flexGrow: 1,
+    borderRadius: BorderRadius.lg, borderWidth: 1,
+    overflow: 'hidden',
+    alignItems: 'flex-start',
+    ...Platform.select({ web: { cursor: 'pointer' } }),
+  },
+  fpImage: { width: '100%', height: 110 },
+  fpCardBody: {
+    flexDirection: 'row', gap: Spacing.sm,
+    padding: Spacing.md, alignItems: 'flex-start', flex: 1, width: '100%',
+  },
+  fpIconBg: {
+    width: 40, height: 40,
+    borderRadius: BorderRadius.md,
+    alignItems: 'center', justifyContent: 'center',
+    flexShrink: 0,
+  },
+  fpContent: { flex: 1, gap: 4 },
+  fpTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' },
+  fpTitle: { ...Typography.bodyMedium },
+  fpCatBadge: {
+    paddingHorizontal: 7, paddingVertical: 2,
+    borderRadius: BorderRadius.full, borderWidth: 1,
+  },
+  fpCatText: { ...Typography.tiny, fontWeight: '600' },
+  fpSummary: { ...Typography.small, lineHeight: 18 },
+  fpStageRow: { flexDirection: 'row', gap: 5, flexWrap: 'wrap', marginTop: 2 },
+  fpStageBadge: {
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    paddingHorizontal: 6, paddingVertical: 2,
+    borderRadius: BorderRadius.full, borderWidth: 1,
+  },
+  fpStageDot: { width: 5, height: 5, borderRadius: 3 },
+  fpStageText: { ...Typography.tiny, fontWeight: '600' },
+  fpViewAllBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+    padding: Spacing.md, borderRadius: BorderRadius.lg, borderWidth: 1,
+    marginTop: Spacing.md,
+    ...Platform.select({ web: { cursor: 'pointer' } }),
+  },
+  fpViewAllText: { ...Typography.captionMedium },
 });

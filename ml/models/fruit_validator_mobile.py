@@ -36,32 +36,32 @@ class MobileTalisayValidator(TalisayValidator):
         """Initialize mobile-enhanced validator."""
         super().__init__()
         
-        # Expanded color ranges for mobile auto-white-balance variations
+        # Expanded but still strict color ranges for mobile auto-white-balance
         self.talisay_colors_mobile = {
             "green": {
-                "lower": np.array([20, 25, 25]),      # Even wider range for shadows
-                "upper": np.array([95, 255, 255]),    # Include very yellower greens
+                "lower": np.array([25, 30, 30]),      # Slightly wider than desktop
+                "upper": np.array([85, 255, 250]),    # But not as wide as before
                 "description": "Immature Talisay (mobile)"
             },
             "yellow": {
-                "lower": np.array([12, 50, 50]),      # Include much darker yellows
-                "upper": np.array([45, 255, 255]),    # Include very pale yellows
+                "lower": np.array([15, 50, 60]),      # Include slightly darker yellows
+                "upper": np.array([40, 255, 255]),    # Strict upper bound
                 "description": "Mature Talisay (mobile)"
             },
             "brown": {
-                "lower": np.array([3, 35, 25]),       # Very wide range for shadows
-                "upper": np.array([28, 230, 210]),    # Include lighter browns
+                "lower": np.array([4, 35, 25]),       # Extend slightly for shadows
+                "upper": np.array([26, 215, 200]),    # Strict upper bound
                 "description": "Fully Ripe Talisay (mobile)"
             }
         }
         
-        # More lenient shape parameters for mobile blur/angle
+        # Tighter shape parameters — still allow some blur/angle tolerance
         self.talisay_shape_mobile = {
-            "min_circularity": 0.35,    # More lenient for blur
-            "max_circularity": 0.82,    # More lenient for angles
-            "min_aspect_ratio": 1.15,   # Slightly more lenient
-            "max_aspect_ratio": 2.8,    # Allow more elongation
-            "min_convexity": 0.78,      # More lenient
+            "min_circularity": 0.32,    # Allow some blur distortion
+            "max_circularity": 0.82,    # Reject near-circular objects
+            "min_aspect_ratio": 1.15,   # Must be elongated
+            "max_aspect_ratio": 2.6,    # Not too elongated (reject peppers)
+            "min_convexity": 0.78,      # Allow some imperfections
         }
     
     def validate(
@@ -69,7 +69,8 @@ class MobileTalisayValidator(TalisayValidator):
         image,
         segmentation_mask: Optional[np.ndarray] = None,
         return_details: bool = True,
-        mobile_mode: bool = True
+        mobile_mode: bool = True,
+        coin_info: Optional[dict] = None
     ) -> Dict:
         """
         Validate with mobile-specific preprocessing.
@@ -98,8 +99,30 @@ class MobileTalisayValidator(TalisayValidator):
         
         h, w = img.shape[:2]
         
-        # Enhanced coin detection for mobile
-        coin_result = self._detect_coin_mobile(img)
+        # Enhanced coin detection for mobile — skip if already provided
+        if coin_info is not None:
+            if coin_info.get("detected"):
+                coin_result = {
+                    "is_coin": True,
+                    "coin_type": coin_info.get("coin_name", "peso_5"),
+                    "coin_center": coin_info.get("coin_center"),
+                    "coin_radius": coin_info.get("coin_radius"),
+                    "coin_area_ratio": 0.0,
+                    "confidence": coin_info.get("confidence", 0.7),
+                    "detection_method": "external_precomputed"
+                }
+            else:
+                coin_result = {
+                    "is_coin": False,
+                    "coin_type": None,
+                    "coin_center": None,
+                    "coin_radius": None,
+                    "coin_area_ratio": 0.0,
+                    "confidence": 0.0,
+                    "detection_method": "external_no_coin"
+                }
+        else:
+            coin_result = self._detect_coin_mobile(img)
         
         # Enhanced fruit detection
         fruit_mask, fruit_info = self._detect_fruit_regions_mobile(
@@ -453,8 +476,8 @@ class MobileTalisayValidator(TalisayValidator):
                 max_coverage = coverage
                 detected_type = color_name
         
-        # More lenient threshold for mobile
-        if max_coverage > 0.25:  # 25% instead of 30%
+        # More lenient threshold for mobile but still strict
+        if max_coverage > 0.22:  # 22% instead of 25%
             return {
                 "is_non_talisay": True,
                 "detected_type": detected_type,
@@ -595,13 +618,13 @@ class MobileTalisayValidator(TalisayValidator):
         self, score: float, color_result: Dict, shape_result: Dict, coin_result: Dict
     ) -> Tuple[FruitDetectionResult, bool, str]:
         """Determine final result with mobile-adjusted thresholds."""
-        if score >= 0.45:  # Lower threshold for mobile (was 0.55)
+        if score >= 0.50:  # Raised from 0.45 — more strict
             return (
                 FruitDetectionResult.TALISAY_FRUIT,
                 True,
                 "Talisay fruit detected successfully."
             )
-        elif score >= 0.30:  # Lower threshold (was 0.35)
+        elif score >= 0.35:  # Raised from 0.30
             if color_result.get("has_talisay_color"):
                 return (
                     FruitDetectionResult.TALISAY_FRUIT,

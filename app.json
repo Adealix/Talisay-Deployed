@@ -38,6 +38,13 @@
     "plugins": [
       "expo-router",
       "expo-font"
-    ]
+    ],
+    "extra": {
+      "geminiApiKey": "AIzaSyA1diROUWW3ELDaUyjGmI-iP8DtwhaHPJQ",
+      "router": {},
+      "eas": {
+        "projectId": "5364e601-0535-4edb-8c43-323a168b9d85"
+      }
+    }
   }
 }

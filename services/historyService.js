@@ -1,26 +1,9 @@
 /**
  * History Service — CRUD operations against the talisay_ai Express backend.
- * Server runs on port 3000 by default (configurable via EXPO_PUBLIC_API_URL).
+ * Uses the shared apiClient which tries Render first, falls back to localhost.
  */
-import { Platform } from 'react-native';
-import Constants from 'expo-constants';
+import { apiFetch as clientFetch } from './apiClient';
 import { getToken } from './authService';
-
-// ─── Resolve API base URL — called dynamically so hostUri is available ───
-function getApiUrl() {
-  const configured = (process.env.EXPO_PUBLIC_API_URL || '').trim().replace(/\/$/, '');
-  // Only use configured URL if it isn't a localhost address (localhost fails on physical devices)
-  if (configured && !configured.includes('localhost') && !configured.includes('127.0.0.1')) {
-    return configured;
-  }
-  if (Platform.OS === 'web') return configured || 'http://localhost:3000';
-  const debuggerHost = Constants.expoConfig?.hostUri || Constants.manifest?.debuggerHost;
-  if (debuggerHost) {
-    const ip = debuggerHost.split(':')[0];
-    if (ip && ip !== 'localhost' && ip !== '127.0.0.1') return `http://${ip}:3000`;
-  }
-  return 'http://localhost:3000';
-}
 
 async function apiFetch(path, opts = {}) {
   const { method = 'GET', body } = opts;
@@ -33,7 +16,7 @@ async function apiFetch(path, opts = {}) {
   const config = { method, headers };
   if (body) config.body = JSON.stringify(body);
 
-  const res = await fetch(`${getApiUrl()}${path}`, config);
+  const res = await clientFetch(path, config);
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw new Error(err.error || `API ${res.status}`);

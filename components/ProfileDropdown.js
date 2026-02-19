@@ -172,6 +172,47 @@ export default function ProfileDropdown() {
                   <Text style={[styles.menuText, { color: isDark ? '#ccc' : '#374151' }]}>Profile</Text>
                 </Pressable>
 
+                {/* History */}
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.menuItem,
+                    pressed && { backgroundColor: isDark ? '#2a2a2a' : '#f9fafb' },
+                  ]}
+                  onPress={() => { setIsOpen(false); router.push('/history'); }}
+                >
+                  <Ionicons name="time-outline" size={18} color={isDark ? '#ccc' : '#374151'} />
+                  <Text style={[styles.menuText, { color: isDark ? '#ccc' : '#374151' }]}>History</Text>
+                </Pressable>
+
+                {/* About Us */}
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.menuItem,
+                    pressed && { backgroundColor: isDark ? '#2a2a2a' : '#f9fafb' },
+                  ]}
+                  onPress={() => { setIsOpen(false); router.push('/about-us'); }}
+                >
+                  <Ionicons name="people-outline" size={18} color={isDark ? '#ccc' : '#374151'} />
+                  <Text style={[styles.menuText, { color: isDark ? '#ccc' : '#374151' }]}>About Us</Text>
+                </Pressable>
+
+                {/* Admin — only for admin role */}
+                {user?.role === 'admin' && (
+                  <Pressable
+                    style={({ pressed }) => [
+                      styles.menuItem,
+                      pressed && { backgroundColor: isDark ? '#2a2a2a' : '#f9fafb' },
+                    ]}
+                    onPress={() => { setIsOpen(false); router.push('/admin'); }}
+                  >
+                    <Ionicons name="bar-chart-outline" size={18} color="#f97316" />
+                    <Text style={[styles.menuText, { color: '#f97316' }]}>Admin</Text>
+                  </Pressable>
+                )}
+
+                {/* Divider */}
+                <View style={[styles.separator, { backgroundColor: isDark ? '#333' : '#f3f4f6' }]} />
+
                 {/* Logout */}
                 <Pressable
                   style={({ pressed }) => [
@@ -260,7 +301,7 @@ const styles = StyleSheet.create({
     top: '100%',
     right: 0,
     marginTop: 10,
-    width: 220,
+    width: 240,
     borderRadius: 12,
     borderWidth: 1,
     overflow: 'hidden',
@@ -333,6 +374,10 @@ const styles = StyleSheet.create({
   menuItemLast: {
     borderBottomLeftRadius: 12,
     borderBottomRightRadius: 12,
+  },
+  separator: {
+    height: 1,
+    marginVertical: 2,
   },
   menuText: {
     fontSize: 14,

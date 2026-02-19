@@ -18,6 +18,16 @@ const HistorySchema = new mongoose.Schema(
       index: true
     },
     comparisonLabel: { type: String, default: null },
+    comparisonId: { type: String, default: null, index: true },
+    
+    // Embedded baseline data for comparison pairs
+    baselineData: {
+      type: mongoose.Schema.Types.Mixed,
+      default: null,
+    },
+    
+    // Total images analysed (for existing-dataset comparisons)
+    totalImages: { type: Number, default: null },
     
     // Image info
     imageName: { type: String, default: null },
@@ -85,5 +95,11 @@ const HistorySchema = new mongoose.Schema(
 
 // Compound index for user history queries
 HistorySchema.index({ userId: 1, createdAt: -1 });
+
+// Indexes for analytics aggregations (date-range + category filtering)
+HistorySchema.index({ createdAt: 1, category: 1 });          // date-range + groupBy category
+HistorySchema.index({ category: 1, oilYieldPercent: 1 });     // yield averages per category
+HistorySchema.index({ confidence: 1 });                       // confidence buckets / counts
+HistorySchema.index({ createdAt: 1, userId: 1 });             // user activity trend
 
 export const History = mongoose.model('History', HistorySchema);

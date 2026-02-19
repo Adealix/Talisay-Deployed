@@ -89,11 +89,11 @@ class TalisayValidator:
         # === NON-TALISAY FRUIT COLORS (to reject other fruits) ===
         self.non_talisay_colors = {
             "red": {
-                "lower1": np.array([0, 100, 80]),    # Red wraps around 0
+                "lower1": np.array([0, 90, 60]),     # Red wraps around 0
                 "upper1": np.array([10, 255, 255]),
-                "lower2": np.array([160, 100, 80]),
+                "lower2": np.array([160, 90, 60]),
                 "upper2": np.array([180, 255, 255]),
-                "fruits": ["apple", "cherry", "strawberry", "tomato", "peach"]
+                "fruits": ["apple", "cherry", "strawberry", "tomato", "red pepper", "siling labuyo"]
             },
             "orange": {
                 "lower": np.array([10, 100, 100]),
@@ -101,37 +101,37 @@ class TalisayValidator:
                 "fruits": ["orange", "tangerine", "persimmon"]
             },
             "pink": {
-                "lower": np.array([140, 30, 150]),
-                "upper": np.array([170, 150, 255]),
+                "lower": np.array([140, 30, 140]),
+                "upper": np.array([172, 160, 255]),
                 "fruits": ["dragon fruit", "peach", "guava"]
             },
             "purple": {
-                "lower": np.array([125, 50, 50]),
-                "upper": np.array([155, 255, 255]),
+                "lower": np.array([120, 40, 40]),
+                "upper": np.array([158, 255, 255]),
                 "fruits": ["grape", "plum", "mangosteen"]
             },
             "blue": {
-                "lower": np.array([100, 50, 50]),
+                "lower": np.array([95, 50, 50]),
                 "upper": np.array([130, 255, 255]),
                 "fruits": ["blueberry"]
             }
         }
         
-        # === TALISAY-SPECIFIC COLORS ===
+        # === TALISAY-SPECIFIC COLORS (STRICT) ===
         self.talisay_colors = {
             "green": {
-                "lower": np.array([30, 40, 40]),     # Tightened range
-                "upper": np.array([85, 255, 255]),
+                "lower": np.array([30, 35, 35]),     # Strict green range
+                "upper": np.array([80, 255, 245]),
                 "description": "Immature Talisay"
             },
             "yellow": {
-                "lower": np.array([20, 80, 80]),     # More saturated yellow (not silver)
-                "upper": np.array([35, 255, 255]),
+                "lower": np.array([18, 60, 70]),     # Strict yellow (high sat needed)
+                "upper": np.array([38, 255, 255]),
                 "description": "Mature Talisay"
             },
             "brown": {
-                "lower": np.array([8, 50, 40]),
-                "upper": np.array([22, 200, 180]),
+                "lower": np.array([6, 40, 30]),
+                "upper": np.array([25, 210, 195]),
                 "description": "Fully Ripe Talisay"
             }
         }
@@ -644,8 +644,8 @@ class TalisayValidator:
                 max_coverage = coverage
                 detected_type = color_name
         
-        # If more than 35% of pixels are non-Talisay colors, reject
-        is_non_talisay = max_coverage > 0.35
+        # If more than 25% of pixels are non-Talisay colors, reject (was 35%)
+        is_non_talisay = max_coverage > 0.25
         
         fruit_name = detected_type
         if is_non_talisay and detected_type in self.non_talisay_colors:
@@ -710,9 +710,9 @@ class TalisayValidator:
             dominant_color = "unknown"
             maturity = "Unknown"
         
-        # Stricter threshold: at least 40% Talisay colors
-        is_talisay_color = talisay_coverage >= 0.40
-        has_fruit_colors = talisay_coverage >= 0.20
+        # Stricter threshold: at least 30% Talisay colors (strict bands)
+        is_talisay_color = talisay_coverage >= 0.30
+        has_fruit_colors = talisay_coverage >= 0.15
         
         return {
             "has_fruit_colors": has_fruit_colors,
@@ -952,7 +952,7 @@ class TalisayValidator:
                     "The detected object is too circular to be a Talisay fruit. Talisay fruits have an elongated, almond shape."
                 )
         
-        if score >= 0.65:
+        if score >= 0.55:
             return (
                 FruitDetectionResult.TALISAY_FRUIT,
                 True,

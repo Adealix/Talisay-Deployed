@@ -51,9 +51,8 @@ export const LOGO_OVERLAP_MOBILE = 20;
 const NAV_ITEMS = [
   { key: '/', label: 'Home', icon: 'home-outline', iconActive: 'home' },
   { key: '/scan', label: 'Scan', icon: 'scan-outline', iconActive: 'scan' },
-  { key: '/history', label: 'History', icon: 'time-outline', iconActive: 'time' },
-  { key: '/admin', label: 'Admin', icon: 'bar-chart-outline', iconActive: 'bar-chart' },
-  { key: '/about-us', label: 'About Us', icon: 'people-outline', iconActive: 'people' },
+  { key: '/mapping', label: 'Mapping', icon: 'map-outline', iconActive: 'map' },
+  { key: '/chatbot', label: 'TalisAI', icon: 'chatbubbles-outline', iconActive: 'chatbubbles' },
   { key: '/about-talisay', label: 'Talisay', icon: 'leaf-outline', iconActive: 'leaf' },
   { key: '/publication', label: 'Publications', icon: 'document-text-outline', iconActive: 'document-text' },
 ];
@@ -206,16 +205,18 @@ export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [itemPositions, setItemPositions] = useState({});
 
-  // Filter nav items based on user role — hide Admin for non-admin users
+  // Scan requires login; everything else is always visible
   const visibleNavItems = useMemo(() => {
     return NAV_ITEMS.filter(item => {
-      if (item.key === '/admin') return user?.role === 'admin';
+      if (item.key === '/scan') return !!user;
       return true;
     });
-  }, [user?.role]);
+  }, [user]);
 
-  // When nav items change (login/logout), positions will be naturally
-  // updated via onLayout callbacks — no reset needed.
+  // Reset measured positions when visible items change (login/logout)
+  useEffect(() => {
+    setItemPositions({});
+  }, [user]);
 
   // Logo animation
   const logoScale = useSharedValue(1);

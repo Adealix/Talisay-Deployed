@@ -3,7 +3,7 @@
  * Wraps entire app with providers and sets up the navigation shell.
  * Navigation is now merged into the Header — no separate nav bar.
  */
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, StyleSheet, StatusBar, Platform } from 'react-native';
 import { Slot } from 'expo-router';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
@@ -12,10 +12,14 @@ import { ThemeProvider, useTheme } from '../contexts/ThemeContext';
 import { AuthProvider } from '../contexts/AuthContext';
 import Header from '../components/Header';
 import { useResponsive } from '../hooks/useResponsive';
+import { loadNgrokUrl } from '../services/mlService';
 
 function AppShell() {
   const { colors, isDark, isReady } = useTheme();
   const { isMobile } = useResponsive();
+
+  // Load saved ngrok URL from AsyncStorage on startup
+  useEffect(() => { loadNgrokUrl(); }, []);
 
   if (!isReady) return null;
 

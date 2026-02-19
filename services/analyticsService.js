@@ -1,34 +1,10 @@
 /**
  * Talisay AI — Analytics Service
  * Frontend API client for admin analytics endpoints.
+ * Uses the shared apiClient which tries Render first, falls back to localhost.
  */
-import { Platform } from 'react-native';
-import Constants from 'expo-constants';
+import { apiFetch } from './apiClient';
 import { getToken } from './authService';
-
-// ─── Resolve API base URL (called dynamically per-request so hostUri is available) ───
-function getApiUrl() {
-  const configured = (process.env.EXPO_PUBLIC_API_URL || '').trim().replace(/\/$/, '');
-
-  // Only use the configured URL if it is NOT a localhost address (localhost won't
-  // work on a physical device — only on the dev machine itself).
-  if (configured && !configured.includes('localhost') && !configured.includes('127.0.0.1')) {
-    return configured;
-  }
-
-  if (Platform.OS === 'web') {
-    return configured || 'http://localhost:3000';
-  }
-
-  // On a physical device/emulator, derive the IP from the Expo Metro bundler host.
-  const debuggerHost = Constants.expoConfig?.hostUri || Constants.manifest?.debuggerHost;
-  if (debuggerHost) {
-    const ip = debuggerHost.split(':')[0];
-    if (ip && ip !== 'localhost' && ip !== '127.0.0.1') return `http://${ip}:3000`;
-  }
-
-  return 'http://localhost:3000';
-}
 
 async function authHeaders() {
   const headers = { 'Content-Type': 'application/json' };
@@ -39,15 +15,23 @@ async function authHeaders() {
 
 /**
  * Fetch comprehensive analytics overview.
+ * @param {{ signal?: AbortSignal, _retried?: boolean }} opts
  */
-export async function fetchAnalyticsOverview() {
+export async function fetchAnalyticsOverview(opts = {}) {
+  const { signal, _retried = false } = opts;
   try {
     const headers = await authHeaders();
-    const res = await fetch(`${getApiUrl()}/api/admin/analytics/overview`, { headers });
+    const res = await apiFetch('/api/admin/analytics/overview', { headers, signal });
     const data = await res.json();
     if (!data.ok) throw new Error(data.error || 'Failed to fetch analytics');
     return data.analytics;
   } catch (e) {
+    // Auto-retry once on AbortError (handles React Strict Mode double-mount)
+    if (e.name === 'AbortError' && !_retried && (!signal || !signal.aborted)) {
+      return fetchAnalyticsOverview({ signal, _retried: true });
+    }
+    // Silently ignore intentional aborts (component unmount)
+    if (e.name === 'AbortError') return null;
     console.error('[analyticsService.fetchAnalyticsOverview]', e);
     return null;
   }
@@ -60,7 +44,7 @@ export async function fetchAnalyticsOverview() {
 export async function fetchChartData(chartType) {
   try {
     const headers = await authHeaders();
-    const res = await fetch(`${getApiUrl()}/api/admin/analytics/charts?chartType=${chartType}`, { headers });
+    const res = await apiFetch(`/api/admin/analytics/charts?chartType=${chartType}`, { headers });
     const data = await res.json();
     if (!data.ok) throw new Error(data.error || 'Failed to fetch chart');
     return data.data;
@@ -76,7 +60,7 @@ export async function fetchChartData(chartType) {
 export async function fetchUsers() {
   try {
     const headers = await authHeaders();
-    const res = await fetch(`${getApiUrl()}/api/admin/users`, { headers });
+    const res = await apiFetch('/api/admin/users', { headers });
     const data = await res.json();
     return data.ok ? data.users : [];
   } catch (e) {
@@ -91,7 +75,7 @@ export async function fetchUsers() {
 export async function fetchAllHistory(limit = 100) {
   try {
     const headers = await authHeaders();
-    const res = await fetch(`${getApiUrl()}/api/admin/history?limit=${limit}`, { headers });
+    const res = await apiFetch(`/api/admin/history?limit=${limit}`, { headers });
     const data = await res.json();
     return data.ok ? data.items : [];
   } catch (e) {
@@ -106,7 +90,7 @@ export async function fetchAllHistory(limit = 100) {
 export async function updateUser(userId, updates) {
   try {
     const headers = await authHeaders();
-    const res = await fetch(`${getApiUrl()}/api/admin/users/${userId}`, {
+    const res = await apiFetch(`/api/admin/users/${userId}`, {
       method: 'PUT',
       headers,
       body: JSON.stringify(updates),
@@ -125,7 +109,7 @@ export async function updateUser(userId, updates) {
 export async function deleteUser(userId) {
   try {
     const headers = await authHeaders();
-    const res = await fetch(`${getApiUrl()}/api/admin/users/${userId}`, {
+    const res = await apiFetch(`/api/admin/users/${userId}`, {
       method: 'DELETE',
       headers,
     });
@@ -143,7 +127,7 @@ export async function deleteUser(userId) {
 export async function deleteHistory(historyId) {
   try {
     const headers = await authHeaders();
-    const res = await fetch(`${getApiUrl()}/api/admin/history/${historyId}`, {
+    const res = await apiFetch(`/api/admin/history/${historyId}`, {
       method: 'DELETE',
       headers,
     });

@@ -110,6 +110,263 @@ const GALLERY = [
   { uri: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=600', caption: 'Forest environment' },
 ];
 
+// ─── Fruit Maturity Stages ───
+const MATURITY_STAGES = [
+  {
+    key: 'GREEN',
+    color: '#16a34a',
+    gradientColors: ['#dcfce7', '#bbf7d0'],
+    darkGradient: ['#14532d', '#166534'],
+    icon: 'leaf',
+    label: 'Green',
+    subtitle: 'Immature Stage',
+    oilYield: '24–39%',
+    oilMean: '~31.5%',
+    description:
+      'The green stage represents an immature Talisay fruit where the kernel is still actively developing inside the husk. The outer shell remains firm, bright green, and moisture-rich. Oil content is the lowest across all three stages, making green fruits less suitable for oil extraction but valuable for studying early ripening physiology and tannin-rich by-products.',
+    characteristics: [
+      'Bright green, firm and moisture-rich outer husk',
+      'Kernel still forming — lipid accumulation incomplete',
+      'Highest moisture content of the three stages',
+      'Lowest oil yield: 24–39% of kernel weight',
+      'Elevated chlorophyll and tannin concentration',
+    ],
+    uses: ['Maturity research & phenology studies', 'Tannin and polyphenol extraction', 'Traditional herbal medicine (hull & leaf decoctions)'],
+    note: 'Not recommended for commercial oil extraction due to underdeveloped kernel.',
+    images: [
+      require('../assets/images/talisay/green/slide1.jpg'),
+      require('../assets/images/talisay/green/slide2.jpg'),
+      require('../assets/images/talisay/green/slide3.jpg'),
+    ],
+  },
+  {
+    key: 'YELLOW',
+    color: '#ca8a04',
+    gradientColors: ['#fef9c3', '#fde68a'],
+    darkGradient: ['#713f12', '#92400e'],
+    icon: 'sunny',
+    label: 'Yellow',
+    subtitle: 'Mature Stage',
+    oilYield: '40–58.5%',
+    oilMean: '~49.3%',
+    description:
+      'The yellow (mature) stage marks the transition to full ripeness. The outer husk softens and changes from green to yellow or yellowish-green. The kernel is now fully formed and holds a well-balanced oil content. This stage offers the best trade-off between oil quality and yield, making it the preferred choice for premium food-grade and cosmetic-grade oil production.',
+    characteristics: [
+      'Yellow to yellowish-green, slightly softened husk',
+      'Fully developed kernel with balanced lipid profile',
+      'Moderate moisture content',
+      'Good oil yield: 40–58.5% of kernel weight',
+      'Optimal fatty acid composition (oleic + linoleic balance)',
+    ],
+    uses: [
+      'High-quality culinary / cooking oil',
+      'Cosmetic and skincare formulations',
+      'Pharmaceutical dietary supplements',
+      'Premium edible kernel snacks',
+    ],
+    note: 'Best balance of yield and oil quality. Strongly preferred for food and cosmetic applications.',
+    images: [
+      require('../assets/images/talisay/yellow/slide1.jpg'),
+      require('../assets/images/talisay/yellow/slide2.jpg'),
+      require('../assets/images/talisay/yellow/slide3.jpg'),
+    ],
+  },
+  {
+    key: 'BROWN',
+    color: '#92400e',
+    gradientColors: ['#fef3c7', '#fde68a'],
+    darkGradient: ['#451a03', '#78350f'],
+    icon: 'earth',
+    label: 'Brown',
+    subtitle: 'Overripe Stage',
+    oilYield: '51.2–65%',
+    oilMean: '~58.1%',
+    description:
+      'The brown (overripe) stage is characterized by a fully dried, dark brown outer husk and the maximum concentration of oil in the kernel. All moisture has been lost, concentrating the lipids to their peak level. This stage delivers the highest extraction yield, making it the most economically valuable for industrial biodiesel and large-scale seed-to-oil processing — the primary focus of Talisay AI research.',
+    characteristics: [
+      'Dark brown, dried and cracked outer husk',
+      'Maximum kernel oil concentration achieved',
+      'Lowest moisture content of the three stages',
+      'Highest oil yield: 51.2–65% of kernel weight',
+      'Ideal for industrial-scale and biodiesel extraction',
+    ],
+    uses: [
+      'Biodiesel and biofuel production',
+      'Industrial lubricant (bio-based)',
+      'Maximum-yield oil extraction (Soxhlet / solvent)',
+      'Protein-rich press cake for animal feed',
+    ],
+    note: 'Highest commercial value for oil extraction. Primary classification target of the Talisay AI scanning system.',
+    images: [
+      require('../assets/images/talisay/brown/slide1.jpg'),
+      require('../assets/images/talisay/brown/slide2.jpg'),
+      require('../assets/images/talisay/brown/slide3.jpg'),
+    ],
+  },
+];
+
+// ─── Products from Talisay Fruits ───
+const TALISAY_PRODUCTS = [
+  // ── Seed-to-Oil Yield Products (listed first) ──
+  {
+    id: 'cooking-oil',
+    imageUri: 'https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=500',
+    category: 'Seed-to-Oil',
+    categoryColor: '#f97316',
+    icon: 'water',
+    color: '#f97316',
+    title: 'Culinary Kernel Oil',
+    description:
+      'Cold-pressed or solvent-extracted oil from the Talisay kernel. Rich in oleic (33%) and linoleic (22%) acids, it is nutritionally comparable to almond oil and suitable for sautéing, dressings, and food processing.',
+    yieldNote: '38–65% of kernel mass',
+    stages: ['Yellow', 'Brown'],
+  },
+  {
+    id: 'biodiesel',
+    imageUri: 'https://images.unsplash.com/photo-1620490776268-6fdd63e4af76?w=500',
+    category: 'Seed-to-Oil',
+    categoryColor: '#ef4444',
+    icon: 'flame',
+    color: '#ef4444',
+    title: 'Biodiesel / Biofuel',
+    description:
+      'Talisay seed oil undergoes transesterification to produce biodiesel. Recognized by DOST Region 3 as a viable diesel fuel extender with ~51.2% oil content in Philippine samples, offering a renewable alternative to petroleum fuel.',
+    yieldNote: '~51.2% oil content (DOST Region 3)',
+    stages: ['Brown'],
+  },
+  {
+    id: 'cosmetic-oil',
+    imageUri: 'https://images.unsplash.com/photo-1556228453-efd6c1ff04f6?w=500',
+    category: 'Seed-to-Oil',
+    categoryColor: '#ec4899',
+    icon: 'color-palette',
+    color: '#ec4899',
+    title: 'Cosmetic & Skincare Oil',
+    description:
+      'Refined Talisay kernel oil is formulated into skincare creams, hair oils, and moisturizers. Its high palmitic and oleic acid content provides excellent skin conditioning and emollient properties.',
+    yieldNote: '40–60% of kernel mass',
+    stages: ['Yellow', 'Brown'],
+  },
+  {
+    id: 'pharma-oil',
+    imageUri: 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=500',
+    category: 'Seed-to-Oil',
+    categoryColor: '#7c3aed',
+    icon: 'medkit',
+    color: '#7c3aed',
+    title: 'Pharmaceutical-Grade Oil',
+    description:
+      'Supercritical CO₂-extracted Talisay kernel oil is encapsulated as dietary supplements and nutraceuticals. Its high purity and retained antioxidant compounds make it suitable for health formulations.',
+    yieldNote: '50–60% yield (supercritical CO₂)',
+    stages: ['Yellow', 'Brown'],
+  },
+  {
+    id: 'lubricant',
+    imageUri: 'https://images.unsplash.com/photo-1611284446314-60a58ac0deb9?w=500',
+    category: 'Seed-to-Oil',
+    categoryColor: '#64748b',
+    icon: 'settings',
+    color: '#64748b',
+    title: 'Industrial Bio-Lubricant',
+    description:
+      'The high oleic acid content (33%) makes Talisay seed oil suitable as a bio-based industrial lubricant and metalworking cutting fluid — a biodegradable alternative to petroleum-derived lubricants.',
+    yieldNote: '38–65% of kernel mass',
+    stages: ['Brown'],
+  },
+  // ── Other Value-Added Products ──
+  {
+    id: 'edible-kernel',
+    imageUri: 'https://images.unsplash.com/photo-1563636619-e9143da7973b?w=500',
+    category: 'Food',
+    categoryColor: '#22c55e',
+    icon: 'nutrition',
+    color: '#22c55e',
+    title: 'Edible Kernel (Nut Snack)',
+    description:
+      'The raw or roasted kernel is consumed as a nutritious nut snack. With 25.4% protein, 11.2% fiber, and a flavor reminiscent of almonds, it is commonly eaten in coastal Philippine communities and exported as a specialty nut.',
+    yieldNote: '~10% of whole fruit weight is kernel',
+    stages: ['Yellow', 'Brown'],
+  },
+  {
+    id: 'kernel-flour',
+    imageUri: 'https://images.unsplash.com/photo-1574170609396-a2fec97bc1e4?w=500',
+    category: 'Food',
+    categoryColor: '#a16207',
+    icon: 'cafe',
+    color: '#a16207',
+    title: 'High-Protein Kernel Flour',
+    description:
+      'Defatted (post-extraction) Talisay kernel meal is milled into a high-protein flour (up to 30% protein after defatting). Used in baked goods, protein bars, food fortification, and aquaculture feed blends.',
+    yieldNote: 'Press cake by-product after oil extraction',
+    stages: ['Yellow', 'Brown'],
+  },
+  {
+    id: 'tannin-dye',
+    imageUri: 'https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=500',
+    category: 'Industrial',
+    categoryColor: '#8b5cf6',
+    icon: 'color-filter',
+    color: '#8b5cf6',
+    title: 'Tannin Extract & Natural Dye',
+    description:
+      'Bark, fruit husk, and leaves are rich in hydrolyzable tannins (punicalagin, corilagin, geraniin). Traditionally used across Southeast Asia for textile dyeing and leather tanning, producing deep black to brown hues.',
+    yieldNote: 'From bark, fruit husk, and leaves (all stages)',
+    stages: ['Green', 'Yellow', 'Brown'],
+  },
+  {
+    id: 'medicinal-extract',
+    imageUri: 'https://images.unsplash.com/photo-1512069772995-ec65ed45afd6?w=500',
+    category: 'Medicinal',
+    categoryColor: '#14b8a6',
+    icon: 'flask',
+    color: '#14b8a6',
+    title: 'Medicinal Leaf & Bark Extract',
+    description:
+      'Aqueous and ethanolic extracts from Talisay leaves and bark are standardized for herbal medicine products: anti-inflammatory, antimicrobial, hepatoprotective, and antidiabetic formulations supported by peer-reviewed studies.',
+    yieldNote: 'From leaves and bark (all stages)',
+    stages: ['Green', 'Yellow', 'Brown'],
+  },
+  {
+    id: 'aquarium-leaf',
+    imageUri: 'https://images.unsplash.com/photo-1535591273668-578e31182c4f?w=500',
+    category: 'Aquaculture',
+    categoryColor: '#3b82f6',
+    icon: 'fish',
+    color: '#3b82f6',
+    title: 'Aquarium Conditioning Leaves',
+    description:
+      'Dried Talisay leaves are a globally traded aquarium product. They release tannins and humic acids that lower water pH, inhibit harmful bacteria, and create natural blackwater conditions ideal for bettas, discus, and other tropical fish.',
+    yieldNote: 'Dried fallen leaves harvested from the ground',
+    stages: ['Brown'],
+  },
+  {
+    id: 'animal-feed',
+    imageUri: 'https://images.unsplash.com/photo-1500595046743-cd271d694d30?w=500',
+    category: 'Agriculture',
+    categoryColor: '#84cc16',
+    icon: 'paw',
+    color: '#84cc16',
+    title: 'Animal Feed (Press Cake)',
+    description:
+      'The protein-rich oil cake remaining after kernel oil extraction (~25% crude protein) is used as a nutritional supplement in poultry, swine, and aquaculture feed, reducing dependency on imported soybean meal.',
+    yieldNote: 'By-product of kernel oil extraction',
+    stages: ['Brown'],
+  },
+  {
+    id: 'charcoal',
+    imageUri: 'https://images.unsplash.com/photo-1513436539083-9d2127e742f1?w=500',
+    category: 'Energy',
+    categoryColor: '#374151',
+    icon: 'bonfire',
+    color: '#374151',
+    title: 'Shell Charcoal & Activated Carbon',
+    description:
+      'The hard outer hull and shell of Talisay fruits are carbonized to produce charcoal briquettes and activated carbon suitable for water filtration, air purification, and as a soil amendment (biochar).',
+    yieldNote: 'From outer shell and husk waste',
+    stages: ['Brown'],
+  },
+];
+
 function ClassificationTable() {
   const { colors } = useTheme();
 
@@ -200,26 +457,217 @@ function MedicinalGrid({ isMobile }) {
   );
 }
 
-function GallerySection({ isMobile }) {
-  const { colors } = useTheme();
+// function GallerySection({ isMobile }) {
+//   const { colors } = useTheme();
+
+//   return (
+//     <View style={[styles.galleryGrid, isMobile && styles.galleryGridMobile]}>
+//       {GALLERY.map((img, idx) => (
+//         <Animated.View
+//           key={idx}
+//           entering={ZoomIn.delay(200 + idx * 100).duration(280)}
+//           style={[styles.galleryItem, { borderRadius: BorderRadius.lg, overflow: 'hidden', ...Shadows.sm }]}
+//         >
+//           <Image source={{ uri: img.uri }} style={styles.galleryImage} resizeMode="cover" />
+//           <LinearGradient
+//             colors={['transparent', 'rgba(0,0,0,0.55)']}
+//             style={styles.galleryOverlay}
+//           >
+//             <Text style={styles.galleryCaption}>{img.caption}</Text>
+//           </LinearGradient>
+//         </Animated.View>
+//       ))}
+//     </View>
+//   );
+// }
+
+// ─── Fruit Maturity Stages Section ───
+function MaturityStagesSection({ isMobile }) {
+  const { colors, isDark } = useTheme();
+  const [expanded, setExpanded] = React.useState(null);
 
   return (
-    <View style={[styles.galleryGrid, isMobile && styles.galleryGridMobile]}>
-      {GALLERY.map((img, idx) => (
-        <Animated.View
-          key={idx}
-          entering={ZoomIn.delay(200 + idx * 100).duration(280)}
-          style={[styles.galleryItem, { borderRadius: BorderRadius.lg, overflow: 'hidden', ...Shadows.sm }]}
-        >
-          <Image source={{ uri: img.uri }} style={styles.galleryImage} resizeMode="cover" />
-          <LinearGradient
-            colors={['transparent', 'rgba(0,0,0,0.55)']}
-            style={styles.galleryOverlay}
+    <View style={styles.maturityContainer}>
+      {MATURITY_STAGES.map((stage, idx) => {
+        const isOpen = expanded === idx;
+        return (
+          <Animated.View
+            key={stage.key}
+            entering={FadeInUp.delay(200 + idx * 100).duration(280)}
+            style={[styles.maturityCard, {
+              backgroundColor: colors.card,
+              borderColor: isOpen ? stage.color : colors.borderLight,
+              borderLeftColor: stage.color,
+              borderLeftWidth: 4,
+              ...Shadows.sm,
+            }]}
           >
-            <Text style={styles.galleryCaption}>{img.caption}</Text>
-          </LinearGradient>
-        </Animated.View>
-      ))}
+            {/* Header row */}
+            <Pressable
+              onPress={() => setExpanded(isOpen ? null : idx)}
+              style={styles.maturityHeader}
+            >
+              <View style={[styles.maturityIconBg, { backgroundColor: stage.color + '18' }]}>
+                <Ionicons name={stage.icon} size={24} color={stage.color} />
+              </View>
+              <View style={{ flex: 1, gap: 2 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <Text style={[styles.maturityLabel, { color: stage.color }]}>{stage.label}</Text>
+                  <View style={[styles.maturityBadge, { backgroundColor: stage.color + '15', borderColor: stage.color + '30' }]}>
+                    <Text style={[styles.maturityBadgeText, { color: stage.color }]}>{stage.subtitle}</Text>
+                  </View>
+                </View>
+                <Text style={[styles.maturityYield, { color: colors.textSecondary }]}>
+                  Oil Yield: <Text style={{ color: stage.color, fontWeight: '700' }}>{stage.oilYield}</Text>
+                  {'  ·  Mean: '}<Text style={{ color: colors.text, fontWeight: '600' }}>{stage.oilMean}</Text>
+                </Text>
+              </View>
+              <Ionicons
+                name={isOpen ? 'chevron-up' : 'chevron-down'}
+                size={20}
+                color={colors.textTertiary}
+              />
+            </Pressable>
+
+            {/* Photo strip — actual fruit photos from the dataset */}
+            {stage.images && stage.images.length > 0 && (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                style={styles.maturityImageStrip}
+                contentContainerStyle={styles.maturityImageStripContent}
+              >
+                {stage.images.map((img, imgIdx) => (
+                  <Image
+                    key={imgIdx}
+                    source={img}
+                    style={styles.maturityThumbnail}
+                    resizeMode="cover"
+                  />
+                ))}
+              </ScrollView>
+            )}
+
+            {/* Description (always visible) */}
+            <Text style={[styles.maturityDesc, { color: colors.textSecondary }]}>{stage.description}</Text>
+
+            {/* Expanded details */}
+            {isOpen && (
+              <Animated.View entering={FadeInUp.duration(200)} style={[styles.maturityExpanded, { borderTopColor: colors.borderLight }]}>
+                {/* Characteristics */}
+                <Text style={[styles.maturitySubhead, { color: colors.text }]}>Key Characteristics</Text>
+                {stage.characteristics.map((c, i) => (
+                  <View key={i} style={styles.maturityBulletRow}>
+                    <View style={[styles.maturityBullet, { backgroundColor: stage.color }]} />
+                    <Text style={[styles.maturityBulletText, { color: colors.textSecondary }]}>{c}</Text>
+                  </View>
+                ))}
+
+                {/* Common Uses */}
+                <Text style={[styles.maturitySubhead, { color: colors.text, marginTop: Spacing.md }]}>Common Uses</Text>
+                {stage.uses.map((u, i) => (
+                  <View key={i} style={styles.maturityBulletRow}>
+                    <Ionicons name="checkmark-circle" size={15} color={stage.color} />
+                    <Text style={[styles.maturityBulletText, { color: colors.textSecondary }]}>{u}</Text>
+                  </View>
+                ))}
+
+                {/* Note */}
+                <View style={[styles.maturityNote, { backgroundColor: stage.color + '10', borderColor: stage.color + '25' }]}>
+                  <Ionicons name="information-circle" size={16} color={stage.color} />
+                  <Text style={[styles.maturityNoteText, { color: colors.textSecondary }]}>{stage.note}</Text>
+                </View>
+              </Animated.View>
+            )}
+          </Animated.View>
+        );
+      })}
+    </View>
+  );
+}
+
+// ─── Talisay Fruit Products Section ───
+function TalisayProductsSection({ isMobile }) {
+  const { colors } = useTheme();
+
+  const oilProducts = TALISAY_PRODUCTS.filter(p => p.category === 'Seed-to-Oil');
+  const otherProducts = TALISAY_PRODUCTS.filter(p => p.category !== 'Seed-to-Oil');
+
+  const renderProduct = (product, idx, baseDelay = 0) => (
+    <Animated.View
+      key={product.id}
+      entering={FadeInUp.delay(baseDelay + idx * 80).duration(280)}
+      style={[styles.productCard, {
+        backgroundColor: colors.card,
+        borderColor: colors.borderLight,
+        borderTopColor: product.color,
+        borderTopWidth: 3,
+        ...Shadows.sm,
+      }]}
+    >
+      {/* Product image header */}
+      {product.imageUri && (
+        <Image
+          source={{ uri: product.imageUri }}
+          style={styles.productImage}
+          resizeMode="cover"
+        />
+      )}
+
+      {/* Icon + text body */}
+      <View style={styles.productCardBody}>
+        <View style={[styles.productIconBg, { backgroundColor: product.color + '18' }]}>
+          <Ionicons name={product.icon} size={22} color={product.color} />
+        </View>
+        <View style={{ flex: 1, gap: Spacing.xs }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+            <Text style={[styles.productTitle, { color: colors.text }]}>{product.title}</Text>
+            <View style={[styles.productCategoryBadge, { backgroundColor: product.categoryColor + '15', borderColor: product.categoryColor + '30' }]}>
+              <Text style={[styles.productCategoryText, { color: product.categoryColor }]}>{product.category}</Text>
+            </View>
+          </View>
+          <Text style={[styles.productDesc, { color: colors.textSecondary }]}>{product.description}</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap', marginTop: 2 }}>
+            <Ionicons name="flask" size={13} color={colors.textTertiary} />
+            <Text style={[styles.productYield, { color: colors.textTertiary }]}>{product.yieldNote}</Text>
+          </View>
+          <View style={styles.productStageRow}>
+            {product.stages.map(s => {
+              const stageColor = s === 'Green' ? '#16a34a' : s === 'Yellow' ? '#ca8a04' : '#92400e';
+              return (
+                <View key={s} style={[styles.productStageBadge, { backgroundColor: stageColor + '15', borderColor: stageColor + '30' }]}>
+                  <View style={[styles.productStageDot, { backgroundColor: stageColor }]} />
+                  <Text style={[styles.productStageText, { color: stageColor }]}>{s}</Text>
+                </View>
+              );
+            })}
+          </View>
+        </View>
+      </View>
+    </Animated.View>
+  );
+
+  return (
+    <View>
+      {/* Seed-to-Oil group */}
+      <View style={[styles.productGroupHeader, { backgroundColor: '#fff7ed', borderColor: '#fed7aa' }]}>
+        <Ionicons name="water" size={18} color="#f97316" />
+        <Text style={[styles.productGroupTitle, { color: '#c2410c' }]}>Seed-to-Oil Yield Products</Text>
+        <Text style={[styles.productGroupSub, { color: '#9a3412' }]}>Primary commercial focus</Text>
+      </View>
+      <View style={[styles.productGrid, isMobile && styles.productGridMobile]}>
+        {oilProducts.map((p, i) => renderProduct(p, i, 200))}
+      </View>
+
+      {/* Other Products group */}
+      <View style={[styles.productGroupHeader, { backgroundColor: '#f0fdf4', borderColor: '#bbf7d0', marginTop: Spacing.lg }]}>
+        <Ionicons name="leaf" size={18} color="#16a34a" />
+        <Text style={[styles.productGroupTitle, { color: '#15803d' }]}>Other Value-Added Products</Text>
+        <Text style={[styles.productGroupSub, { color: '#166534' }]}>Beyond oil — full-tree utilization</Text>
+      </View>
+      <View style={[styles.productGrid, isMobile && styles.productGridMobile]}>
+        {otherProducts.map((p, i) => renderProduct(p, i, 600))}
+      </View>
     </View>
   );
 }
@@ -265,6 +713,17 @@ export default function AboutTalisayPage() {
             branching pattern and large, leathery leaves that turn vivid red and orange before falling.
           </Text>
         </Animated.View>
+
+        {/* ═══ FRUIT MATURITY STAGES ═══ */}
+        <Animated.View entering={FadeInUp.delay(140).duration(280)}>
+          <Text style={[styles.sectionTitle, { color: colors.text, marginTop: Spacing.xl }]}>
+            Fruit Maturity Stages
+          </Text>
+          <Text style={[styles.sectionSubtitle, { color: colors.textSecondary }]}>
+            The three ripeness stages — Green (Immature), Yellow (Mature), and Brown (Overripe) — each have distinct oil yields, characteristics, and applications. Tap each card to expand details.
+          </Text>
+        </Animated.View>
+        <MaturityStagesSection isMobile={isMobile} />
 
         {/* Classification & Nutrition side by side on desktop */}
         <View style={[styles.twoCol, isMobile && styles.twoColMobile]}>
@@ -323,10 +782,10 @@ export default function AboutTalisayPage() {
         </View>
 
         {/* Gallery */}
-        <Text style={[styles.sectionTitle, { color: colors.text, marginTop: Spacing.xl }]}>
+        {/* <Text style={[styles.sectionTitle, { color: colors.text, marginTop: Spacing.xl }]}>
           Gallery
-        </Text>
-        <GallerySection isMobile={isMobile} />
+        </Text> */}
+        {/* <GallerySection isMobile={isMobile} /> */}
 
         {/* ═══ SCIENTIFIC RESEARCH DATA ═══ */}
         <Text style={[styles.sectionTitle, { color: colors.text, marginTop: Spacing.xxl }]}>
@@ -614,6 +1073,15 @@ export default function AboutTalisayPage() {
           ))}
         </Animated.View>
 
+        {/* ═══ PRODUCTS FROM TALISAY FRUITS ═══ */}
+        <Text style={[styles.sectionTitle, { color: colors.text, marginTop: Spacing.xxl }]}>
+          Products from Talisay Fruits
+        </Text>
+        <Text style={[styles.sectionSubtitle, { color: colors.textSecondary }]}>
+          From seed oil to industrial by-products — full-tree utilization of Terminalia catappa
+        </Text>
+        <TalisayProductsSection isMobile={isMobile} />
+
         {/* Fun Fact Banner */}
         <Animated.View entering={FadeInUp.delay(500).duration(280)}>
           <LinearGradient
@@ -863,4 +1331,103 @@ const styles = StyleSheet.create({
   refTitle: { ...Typography.small, fontStyle: 'italic' },
   refJournal: { ...Typography.tiny },
   refOrigin: { ...Typography.tiny, fontWeight: '600' },
+
+  /* ── Maturity Stages ── */
+  maturityContainer: { gap: Spacing.md, marginBottom: Spacing.md },
+  maturityCard: {
+    borderRadius: BorderRadius.lg,
+    borderWidth: 1,
+    overflow: 'hidden',
+  },
+  maturityHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+    padding: Spacing.md,
+    ...Platform.select({ web: { cursor: 'pointer' } }),
+  },
+  maturityIconBg: {
+    width: 48, height: 48,
+    borderRadius: BorderRadius.md,
+    alignItems: 'center', justifyContent: 'center',
+    flexShrink: 0,
+  },
+  maturityLabel: { ...Typography.h4, fontWeight: '700' },
+  maturityBadge: {
+    paddingHorizontal: 8, paddingVertical: 2,
+    borderRadius: BorderRadius.full, borderWidth: 1,
+  },
+  maturityBadgeText: { ...Typography.tiny, fontWeight: '600' },
+  maturityYield: { ...Typography.small },
+  maturityDesc: {
+    ...Typography.body, lineHeight: 22,
+    paddingHorizontal: Spacing.md,
+    paddingBottom: Spacing.md,
+  },
+  maturityExpanded: {
+    borderTopWidth: 1,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.md,
+    gap: Spacing.xs,
+  },
+  maturitySubhead: { ...Typography.captionMedium, fontWeight: '700', marginBottom: 4 },
+  maturityBulletRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, paddingVertical: 2 },
+  maturityBullet: { width: 6, height: 6, borderRadius: 3, marginTop: 7, flexShrink: 0 },
+  maturityBulletText: { ...Typography.small, flex: 1, lineHeight: 20 },
+  maturityNote: {
+    flexDirection: 'row', alignItems: 'flex-start', gap: 8,
+    padding: Spacing.sm, borderRadius: BorderRadius.md,
+    borderWidth: 1, marginTop: Spacing.sm,
+  },
+  maturityNoteText: { ...Typography.small, flex: 1, lineHeight: 18 },
+  maturityImageStrip: { marginTop: Spacing.xs, marginBottom: Spacing.xs },
+  maturityImageStripContent: { paddingHorizontal: Spacing.md },
+  maturityThumbnail: {
+    width: 100,
+    height: 72,
+    borderRadius: BorderRadius.sm,
+    marginRight: Spacing.xs,
+  },
+
+  /* ── Talisay Products ── */
+  productGroupHeader: {
+    flexDirection: 'row', alignItems: 'center', gap: Spacing.sm,
+    padding: Spacing.md, borderRadius: BorderRadius.md, borderWidth: 1,
+    marginBottom: Spacing.md, flexWrap: 'wrap',
+  },
+  productGroupTitle: { ...Typography.bodyMedium },
+  productGroupSub: { ...Typography.small, marginLeft: 'auto' },
+  productGrid: {
+    flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.md, marginBottom: Spacing.sm,
+  },
+  productGridMobile: { flexDirection: 'column', gap: Spacing.sm },
+  productCard: {
+    width: '47%', minWidth: 280, flexGrow: 1,
+    borderRadius: BorderRadius.lg, borderWidth: 1,
+    overflow: 'hidden',
+  },
+  productImage: { width: '100%', height: 130 },
+  productCardBody: { flexDirection: 'row', gap: Spacing.md, padding: Spacing.md },
+  productIconBg: {
+    width: 44, height: 44,
+    borderRadius: BorderRadius.md,
+    alignItems: 'center', justifyContent: 'center',
+    flexShrink: 0,
+  },
+  productTitle: { ...Typography.bodyMedium },
+  productCategoryBadge: {
+    paddingHorizontal: 7, paddingVertical: 2,
+    borderRadius: BorderRadius.full, borderWidth: 1,
+  },
+  productCategoryText: { ...Typography.tiny, fontWeight: '600' },
+  productDesc: { ...Typography.small, lineHeight: 19 },
+  productYield: { ...Typography.tiny },
+  productStageRow: { flexDirection: 'row', gap: 6, flexWrap: 'wrap', marginTop: 2 },
+  productStageBadge: {
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    paddingHorizontal: 7, paddingVertical: 2,
+    borderRadius: BorderRadius.full, borderWidth: 1,
+  },
+  productStageDot: { width: 6, height: 6, borderRadius: 3 },
+  productStageText: { ...Typography.tiny, fontWeight: '600' },
 });

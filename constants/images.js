@@ -48,10 +48,10 @@ export const TALISAY_IMAGES = {
 export const PAGE_HERO = {
   grade: require('../assets/images/page-hero/grade.jpg'),
   history: require('../assets/images/page-hero/history.jpg'),
-  login: require('../assets/images/login/why-join.png'),
+  login: require('../assets/images/login/why-join.jpg'),
   publications: require('../assets/images/page-hero/publications.jpg'),
 };
 
 export const LOGIN_IMAGES = {
-  whyJoin: require('../assets/images/login/why-join.png'),
+  whyJoin: require('../assets/images/login/why-join.jpg'),
 };

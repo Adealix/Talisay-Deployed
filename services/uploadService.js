@@ -1,24 +1,10 @@
 /**
  * Upload Service — Handles image uploads to Cloudinary via backend
+ * Uses the shared apiClient which races Render vs localhost automatically.
  */
 import { Platform } from 'react-native';
-import Constants from 'expo-constants';
 import { getToken } from './authService';
-
-// ─── Resolve API base URL — called dynamically so hostUri is available ───
-function getApiUrl() {
-  const configured = (process.env.EXPO_PUBLIC_API_URL || '').trim().replace(/\/$/, '');
-  if (configured && !configured.includes('localhost') && !configured.includes('127.0.0.1')) {
-    return configured;
-  }
-  if (Platform.OS === 'web') return configured || 'http://localhost:3000';
-  const debuggerHost = Constants.expoConfig?.hostUri || Constants.manifest?.debuggerHost;
-  if (debuggerHost) {
-    const ip = debuggerHost.split(':')[0];
-    if (ip && ip !== 'localhost' && ip !== '127.0.0.1') return `http://${ip}:3000`;
-  }
-  return 'http://localhost:3000';
-}
+import { getActiveApiUrl } from './apiClient';
 
 /**
  * Upload an image to Cloudinary for history storage
@@ -58,7 +44,7 @@ export async function uploadImageToCloudinary(imageUri) {
     }
 
     // Upload to server
-    const response = await fetch(`${getApiUrl()}/api/history/upload/image`, {
+    const response = await fetch(`${getActiveApiUrl()}/api/history/upload/image`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${token}`,
@@ -69,7 +55,8 @@ export async function uploadImageToCloudinary(imageUri) {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error || `Upload failed with status ${response.status}`);
+      // Throw a concise error — caller treats upload failure as non-fatal
+      throw new Error(errorData.error || `upload_failed (${response.status})`);
     }
 
     const data = await response.json();
@@ -80,7 +67,8 @@ export async function uploadImageToCloudinary(imageUri) {
       publicId: data.publicId,
     };
   } catch (error) {
-    console.error('[uploadService] Upload failed:', error);
+    // Upload failure is non-fatal — scan still saves with local URI fallback
+    console.warn('[uploadService] Image upload skipped:', error.message);
     return {
       success: false,
       error: error.message || 'Upload failed',

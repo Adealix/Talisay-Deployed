@@ -8,6 +8,7 @@
 import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 import * as ImageManipulator from 'expo-image-manipulator';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // ─── Performance settings ───
 const IMAGE_CONFIG = {
@@ -18,10 +19,56 @@ const IMAGE_CONFIG = {
   targetSizeBytes: 1024 * 1024, // 1 MB
 };
 
+// ─── Runtime ngrok URL (stored in AsyncStorage, overrides localhost) ───
+const NGROK_URL_KEY = '@talisay_ai/ngrok_url';
+let _cachedNgrokUrl = null;  // In-memory cache to avoid AsyncStorage reads every request
+
+/** Load the saved ngrok URL from AsyncStorage into memory */
+export async function loadNgrokUrl() {
+  try {
+    const saved = await AsyncStorage.getItem(NGROK_URL_KEY);
+    _cachedNgrokUrl = saved || null;
+    if (saved) console.log('[mlService] Loaded ngrok URL:', saved);
+  } catch (_) { _cachedNgrokUrl = null; }
+}
+
+/** Save a new ngrok URL and cache it */
+export async function setNgrokUrl(url) {
+  const trimmed = (url || '').trim().replace(/\/$/, '');
+  try {
+    if (trimmed) {
+      await AsyncStorage.setItem(NGROK_URL_KEY, trimmed);
+    } else {
+      await AsyncStorage.removeItem(NGROK_URL_KEY);
+    }
+    _cachedNgrokUrl = trimmed || null;
+    console.log('[mlService] Ngrok URL updated:', trimmed || '(cleared)');
+  } catch (e) {
+    console.warn('[mlService] Failed to save ngrok URL:', e.message);
+  }
+}
+
+/** Get the currently configured ngrok URL (null if not set) */
+export function getNgrokUrl() {
+  return _cachedNgrokUrl || null;
+}
+
+/** Clear the ngrok URL and fall back to localhost */
+export async function clearNgrokUrl() {
+  await setNgrokUrl('');
+}
+
 // ─── Resolve the ML API URL based on platform ───
+// Priority: runtime ngrok URL → EXPO_PUBLIC_ML_API_URL (if non-localhost) → auto-detect IP → localhost fallback
 function getMLApiUrl() {
+  // 1. Runtime ngrok URL (highest priority — set via Admin panel or scan page)
+  if (_cachedNgrokUrl) {
+    return _cachedNgrokUrl;
+  }
+
   const configuredUrl = (process.env.EXPO_PUBLIC_ML_API_URL || '').trim().replace(/\/$/, '');
 
+  // 2. If .env points to a real external URL (not localhost), use it
   if (configuredUrl && !configuredUrl.includes('localhost') && !configuredUrl.includes('127.0.0.1')) {
     return configuredUrl;
   }
@@ -30,7 +77,7 @@ function getMLApiUrl() {
     return configuredUrl || 'http://localhost:5001';
   }
 
-  // For mobile, try to get the dev server host IP from Expo
+  // 3. For mobile, try to get the dev server host IP from Expo
   const debuggerHost = Constants.expoConfig?.hostUri || Constants.manifest?.debuggerHost;
   if (debuggerHost) {
     const hostIp = debuggerHost.split(':')[0];
@@ -39,25 +86,37 @@ function getMLApiUrl() {
     }
   }
 
+  // 4. Localhost fallback (always last resort)
   return 'http://localhost:5001';
 }
 
 const ML_API_URL_STARTUP = getMLApiUrl();
 console.log(`[mlService] Initial ML API URL: ${ML_API_URL_STARTUP} (Platform: ${Platform.OS})`);
 
-// ════════════════════════════════════════════════
-// Public API
-// ════════════════════════════════════════════════
+// ─── Build fetch headers ───────────────────────────────────────────────────
+// ngrok-skip-browser-warning is sent on every request.
+// Free-tier ngrok injects an HTML interstitial page unless this header is
+// present — which would cause "JSON Parse error: Unexpected character: <".
+// Sending it unconditionally is safe for non-ngrok endpoints.
+function getApiHeaders(extra = {}) {
+  return {
+    'Accept': 'application/json',
+    'ngrok-skip-browser-warning': 'true',
+    ...extra,
+  };
+}
+
+/** Expose the current active ML API URL for display in UI */
+export function getCurrentMLApiUrl() {
+  return getMLApiUrl();
+}
 
 /** Check if the ML backend is healthy and reachable */
 export async function isMLBackendAvailable() {
   try {
     const res = await fetch(`${getMLApiUrl()}/`, {
       method: 'GET',
-      headers: { 
-        'Accept': 'application/json',
-        // 'ngrok-skip-browser-warning': 'true',  // Skip ngrok browser warning (commented out - using localhost)
-      },
+      headers: getApiHeaders(),
     });
     
     // Check if response is ok and content-type is JSON
@@ -85,10 +144,7 @@ export async function getMLSystemInfo() {
   try {
     const res = await fetch(`${getMLApiUrl()}/api/info`, {
       method: 'GET',
-      headers: { 
-        'Accept': 'application/json',
-        // 'ngrok-skip-browser-warning': 'true',  // (commented out - using localhost)
-      },
+      headers: getApiHeaders(),
     });
     
     if (!res.ok) {
@@ -173,11 +229,7 @@ export async function analyzeImage(imageUri, options = {}) {
     try {
       const response = await fetch(`${getMLApiUrl()}/api/predict/image`, {
         method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json', 
-          'Accept': 'application/json',
-          // 'ngrok-skip-browser-warning': 'true',  // (commented out - using localhost)
-        },
+        headers: getApiHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify(requestBody),
         signal: controller.signal,
       });
@@ -217,11 +269,7 @@ export async function predictFromMeasurements({ color, lengthCm, widthCm, kernel
   try {
     const response = await fetch(`${getMLApiUrl()}/api/predict/measurements`, {
       method: 'POST',
-      headers: { 
-        'Content-Type': 'application/json', 
-        'Accept': 'application/json',
-        // 'ngrok-skip-browser-warning': 'true',  // (commented out - using localhost)
-      },
+      headers: getApiHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify({
         color: color.toLowerCase(),
         length_cm: lengthCm,
@@ -254,14 +302,7 @@ export async function getExistingDatasetAnalysis(color = 'green', sampleSize = 3
 
     const response = await fetch(
       `${getMLApiUrl()}/api/existing-dataset/average?color=${encodeURIComponent(color)}`,
-      { 
-        method: 'GET', 
-        headers: { 
-          'Accept': 'application/json',
-          // 'ngrok-skip-browser-warning': 'true',  // (commented out - using localhost)
-        }, 
-        signal: controller.signal 
-      }
+      { method: 'GET', headers: getApiHeaders(), signal: controller.signal }
     );
     clearTimeout(timeoutId);
 
