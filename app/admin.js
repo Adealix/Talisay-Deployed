@@ -1995,6 +1995,30 @@ export default function AdminPage() {
                       <Text style={[s.modalSubtitle, { color: colors.textSecondary, marginBottom: 0 }]}>{editingUser.email}</Text>
                     </View>
 
+                    {/* First Name */}
+                    <View style={s.modalField}>
+                      <Text style={[s.modalLabel, { color: colors.textSecondary }]}>First Name</Text>
+                      <TextInput
+                        value={editForm.firstName || ''}
+                        onChangeText={v => setEditForm(f => ({ ...f, firstName: v }))}
+                        style={[s.modalInput, { color: colors.text, borderColor: colors.border, backgroundColor: colors.background }]}
+                        placeholder="First name"
+                        placeholderTextColor={colors.textTertiary}
+                      />
+                    </View>
+
+                    {/* Last Name */}
+                    <View style={s.modalField}>
+                      <Text style={[s.modalLabel, { color: colors.textSecondary }]}>Last Name</Text>
+                      <TextInput
+                        value={editForm.lastName || ''}
+                        onChangeText={v => setEditForm(f => ({ ...f, lastName: v }))}
+                        style={[s.modalInput, { color: colors.text, borderColor: colors.border, backgroundColor: colors.background }]}
+                        placeholder="Last name"
+                        placeholderTextColor={colors.textTertiary}
+                      />
+                    </View>
+
                     {/* Role selector */}
                     <View style={s.modalField}>
                       <Text style={[s.modalLabel, { color: colors.textSecondary }]}>Role</Text>
