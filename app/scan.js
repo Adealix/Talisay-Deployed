@@ -649,7 +649,7 @@ function ResultDisplay({ result, imageUri, imageName, showDetails, setShowDetail
           <Pressable onPress={() => setShowDetails(!showDetails)} style={[styles.expandBtn, { borderColor: colors.borderLight }]}>
             <Ionicons name={showDetails ? 'chevron-up' : 'chevron-down'} size={16} color={colors.primary} />
             <Text style={[styles.expandBtnText, { color: colors.primary }]}>
-              {showDetails ? 'Hide Full Details' : 'Show Full Details'}
+              {showDetails ? 'Hide Details' : 'Show Details'}
             </Text>
           </Pressable>
           {showDetails && <FullDetailsView result={result} colors={colors} isDark={isDark} />}
@@ -1448,8 +1448,8 @@ const styles = StyleSheet.create({
 
   /* Result Card */
   resultCard: {
-    borderRadius: BorderRadius.lg, borderWidth: 1, padding: Spacing.md,
-    gap: Spacing.sm, ...Shadows.md,
+    borderRadius: BorderRadius.lg, borderWidth: 1, padding: Spacing.lg,
+    gap: Spacing.md, ...Shadows.md,
   },
   resultLabelBadge: {
     alignSelf: 'flex-start', paddingHorizontal: Spacing.md, paddingVertical: 4,
@@ -1460,77 +1460,78 @@ const styles = StyleSheet.create({
   /* Result: 2-column layout (image left | stats right) */
   resultTwoCol: {
     flexDirection: 'row',
-    gap: Spacing.sm,
-    alignItems: 'flex-start',
+    gap: Spacing.md,
+    alignItems: 'stretch',
   },
   resultImgWrap: {
-    width: 130,
-    flexShrink: 0,
+    flex: 1.1,
+    minWidth: 100,
+    maxWidth: 220,
   },
   resultImg: {
-    width: 130,
-    height: 165,
+    width: '100%',
+    aspectRatio: 3 / 4,
     borderRadius: BorderRadius.md,
-    backgroundColor: '#000',
+    backgroundColor: '#111',
   },
   resultImgName: {
     fontSize: 10,
-    marginTop: 4,
+    marginTop: 5,
     textAlign: 'center',
-    lineHeight: 13,
+    lineHeight: 14,
   },
   resultStatsCol: {
     flex: 1,
-    gap: Spacing.sm,
+    gap: 10,
     justifyContent: 'center',
+    paddingTop: 4,
+    paddingBottom: 4,
   },
   resultStatMain: {
-    marginBottom: 4,
+    marginBottom: 2,
   },
   resultStatYield: {
-    fontSize: 52,
+    fontSize: 42,
     fontWeight: '800',
-    lineHeight: 56,
-    letterSpacing: -1,
+    lineHeight: 46,
+    letterSpacing: -0.5,
   },
   resultStatYieldLabel: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '600',
     textTransform: 'uppercase',
-    letterSpacing: 0.4,
+    letterSpacing: 0.5,
+    marginTop: 1,
   },
   resultStatBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
     alignSelf: 'flex-start',
-    paddingHorizontal: 14,
-    paddingVertical: 7,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
     borderRadius: BorderRadius.md,
-    marginBottom: 2,
   },
-  resultStatBadgeText: { color: '#fff', fontSize: 15, fontWeight: '700' },
+  resultStatBadgeText: { color: '#fff', fontSize: 14, fontWeight: '700' },
   resultStatBadgeConf: { color: 'rgba(255,255,255,0.85)', fontSize: 12, fontWeight: '600' },
   resultStatRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     paddingTop: 8,
     borderTopWidth: 1,
-    gap: 6,
+    gap: 0,
   },
   resultStatRowLabel: {
-    fontSize: 13,
+    width: 84,
+    fontSize: 11,
     fontWeight: '600',
     textTransform: 'uppercase',
-    letterSpacing: 0.3,
-    flexShrink: 0,
+    letterSpacing: 0.4,
   },
   resultStatRowVal: {
+    flex: 1,
     fontSize: 14,
     fontWeight: '700',
-    textAlign: 'right',
-    flex: 1,
   },
   resultColorDist: {
     padding: Spacing.sm,
@@ -1538,12 +1539,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   /* shared small label used in dist header + rec header */
-  resultInfoCellLabel: { fontSize: 12, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.3 },
+  resultInfoCellLabel: { fontSize: 11, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.4 },
   resultInfoCellValue: { fontSize: 15, fontWeight: '700' },
 
   /* Recommendation box */
-  resultRecBox: { padding: Spacing.sm, borderRadius: BorderRadius.md, borderWidth: 1 },
-  resultRecText: { fontSize: 14, lineHeight: 21, fontWeight: '500' },
+  resultRecBox: { padding: Spacing.md, borderRadius: BorderRadius.md, borderWidth: 1 },
+  resultRecText: { fontSize: 13, lineHeight: 20, fontWeight: '500' },
 
   /* File name */
   fileName: { ...Typography.small, textAlign: 'center' },
