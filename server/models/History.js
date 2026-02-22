@@ -13,7 +13,7 @@ const HistorySchema = new mongoose.Schema(
     // Analysis type
     analysisType: {
       type: String,
-      enum: ['single', 'comparison'],
+      enum: ['single', 'comparison', 'multi_fruit'],
       default: 'single',
       index: true
     },
@@ -28,6 +28,14 @@ const HistorySchema = new mongoose.Schema(
     
     // Total images analysed (for existing-dataset comparisons)
     totalImages: { type: Number, default: null },
+
+    // Multi-fruit detection fields
+    multiFruit: { type: Boolean, default: false },
+    fruitCount: { type: Number, default: null },
+    colorDistribution: { type: mongoose.Schema.Types.Mixed, default: null },
+    averageOilYield: { type: Number, default: null },
+    oilYieldRange: { type: mongoose.Schema.Types.Mixed, default: null },
+    fruits: { type: mongoose.Schema.Types.Mixed, default: null },
     
     // Image info
     imageName: { type: String, default: null },

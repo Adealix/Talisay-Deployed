@@ -60,9 +60,21 @@ export async function createHistoryItem(req, res) {
       hasSpots,
       spotCoverage,
       colorProbabilities,
+      // Multi-fruit fields
+      multiFruit,
+      fruitCount,
+      colorDistribution,
+      averageOilYield,
+      oilYieldRange,
+      fruits,
     } = req.body ?? {};
 
-    if (!category) {
+    const isMultiFruit = analysisType === 'multi_fruit' || !!multiFruit;
+
+    // category is required by the schema but multi-fruit results may not have one —
+    // default to 'BROWN' (the dominant/most-common) so the save never fails.
+    const resolvedCategory = category || (isMultiFruit ? 'BROWN' : null);
+    if (!resolvedCategory) {
       return res.status(400).json({ ok: false, error: 'category_required' });
     }
 
@@ -76,7 +88,7 @@ export async function createHistoryItem(req, res) {
       imageName: imageName || null,
       imageUri: imageUri || null,
       cloudinaryPublicId: req.body.cloudinaryPublicId || null,
-      category,
+      category: resolvedCategory,
       maturityStage: maturityStage || null,
       confidence: typeof confidence === 'number' ? confidence : null,
       colorConfidence: typeof colorConfidence === 'number' ? colorConfidence : null,
@@ -97,6 +109,13 @@ export async function createHistoryItem(req, res) {
       hasSpots: !!hasSpots,
       spotCoverage: typeof spotCoverage === 'number' ? spotCoverage : null,
       colorProbabilities: colorProbabilities || null,
+      // Multi-fruit fields
+      multiFruit: !!multiFruit,
+      fruitCount: typeof fruitCount === 'number' ? fruitCount : null,
+      colorDistribution: colorDistribution || null,
+      averageOilYield: typeof averageOilYield === 'number' ? averageOilYield : null,
+      oilYieldRange: Array.isArray(oilYieldRange) ? oilYieldRange : null,
+      fruits: Array.isArray(fruits) ? fruits : null,
     });
 
     return res.json({ ok: true, id: String(doc._id) });
