@@ -1,6 +1,6 @@
 import { User } from '../models/User.js';
 import { History } from '../models/History.js';
-import { sendDeactivationEmail } from '../lib/email.js';
+import { sendDeactivationEmail, sendReactivationEmail } from '../lib/email.js';
 
 /**
  * GET /api/admin/users
@@ -159,12 +159,18 @@ export async function toggleUserStatus(req, res) {
     }
     await user.save();
 
-    // Send email notification on deactivation
+    // Send email notification on deactivation or reactivation
     if (!newActive) {
       try {
         await sendDeactivationEmail(user.email, user.deactivationReason);
       } catch (emailErr) {
-        console.error('[adminController.toggleUserStatus] email failed:', emailErr);
+        console.error('[adminController.toggleUserStatus] deactivation email failed:', emailErr?.message);
+      }
+    } else {
+      try {
+        await sendReactivationEmail(user.email);
+      } catch (emailErr) {
+        console.error('[adminController.toggleUserStatus] reactivation email failed:', emailErr?.message);
       }
     }
 

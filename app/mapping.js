@@ -163,7 +163,7 @@ function buildMapHTML(locations, isDark) {
       try {
         var msg = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
         if (msg && msg.type === 'flyTo') {
-          map.flyTo([msg.lat, msg.lng], 13, { animate: true, duration: 1 });
+          map.flyTo([msg.lat, msg.lng], 15, { animate: true, duration: 1 });
         }
       } catch(err) {}
     });
@@ -285,7 +285,7 @@ export default function MappingPage() {
       try { iframeRef.current?.contentWindow?.postMessage(msg, '*'); } catch (err) {}
     } else {
       webViewRef.current?.injectJavaScript(
-        `if (typeof map !== 'undefined') { map.flyTo([${loc.lat}, ${loc.lng}], 13, { animate: true, duration: 1 }); } true;`
+        `if (typeof map !== 'undefined') { map.flyTo([${loc.lat}, ${loc.lng}], 15, { animate: true, duration: 1 }); } true;`
       );
     }
   };

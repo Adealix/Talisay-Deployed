@@ -110,14 +110,18 @@ function LikeButton({ isLiked, count, onPress }) {
 // ──────────────────────────────────────────
 function PostImageGrid({ images }) {
   if (!images || images.length === 0) return null;
+  const screenW = Dimensions.get('window').width;
+  // Cap to a reasonable card width (never wider than 640px on desktop)
+  const cardW = Math.min(screenW, 640);
   if (images.length === 1) {
-    const h = Math.round(Dimensions.get('window').width * 0.52);
     return (
-      <Image
-        source={{ uri: images[0].url }}
-        style={{ width: '100%', height: h }}
-        resizeMode="cover"
-      />
+      <View style={{ alignItems: 'center', paddingHorizontal: 14, paddingBottom: 10 }}>
+        <Image
+          source={{ uri: images[0].url }}
+          style={{ width: '100%', maxWidth: 560, height: Math.min(Math.round(cardW * 0.55), 340), borderRadius: 10 }}
+          resizeMode="cover"
+        />
+      </View>
     );
   }
   return (
@@ -130,7 +134,7 @@ function PostImageGrid({ images }) {
         <Image
           key={i}
           source={{ uri: img.url }}
-          style={{ width: 180, height: 130, borderRadius: 10 }}
+          style={{ width: 200, height: 150, borderRadius: 10 }}
           resizeMode="cover"
         />
       ))}

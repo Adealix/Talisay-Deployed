@@ -141,5 +141,40 @@ export async function sendDeactivationEmail(to, reason) {
     </div>
   `;
 
-  return sendViaBrevo({ to, subject: `${fromName}  Account Deactivated`, html });
+  return sendViaBrevo({ to, subject: `${fromName} — Account Deactivated`, html });
+}
+
+/**
+ * Send account reactivation notification email.
+ * @param {string} to - Recipient email
+ */
+export async function sendReactivationEmail(to) {
+  const { fromName } = getConfig();
+  const contactEmail = 'talisayfruit@gmail.com';
+
+  const html = `
+    <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 480px; margin: 0 auto; background: #f8faf9; border-radius: 16px; overflow: hidden; border: 1px solid #e5e7eb;">
+      <div style="background: linear-gradient(135deg, #1b4332, #2d6a4f); padding: 32px 24px; text-align: center;">
+        <h1 style="color: #fff; margin: 0; font-size: 24px; font-weight: 800; letter-spacing: -0.5px;">${fromName}</h1>
+        <p style="color: #a7f3d0; margin: 8px 0 0; font-size: 14px;">Account Reactivated</p>
+      </div>
+      <div style="padding: 32px 24px; text-align: center;">
+        <div style="font-size: 48px; margin-bottom: 12px;">&#x2705;</div>
+        <p style="color: #374151; font-size: 15px; line-height: 1.6; margin: 0 0 16px;">
+          Good news! Your account has been <strong style="color: #166534;">reactivated</strong> by an administrator.
+          You can now log in and access all features again.
+        </p>
+        <a href="https://talisay-server-backend.onrender.com" style="display: inline-block; margin-top: 8px; padding: 12px 28px; background: #2d6a4f; color: #fff; border-radius: 8px; text-decoration: none; font-weight: 700; font-size: 14px;">Go to App</a>
+        <p style="color: #6b7280; font-size: 13px; line-height: 1.6; margin-top: 20px;">
+          If you have any questions, contact us at
+          <a href="mailto:${contactEmail}" style="color: #2d6a4f; font-weight: 600;">${contactEmail}</a>.
+        </p>
+      </div>
+      <div style="background: #f3f4f6; padding: 16px 24px; text-align: center;">
+        <p style="color: #9ca3af; font-size: 12px; margin: 0;">Smart Talisay Fruit Analysis powered by AI</p>
+      </div>
+    </div>
+  `;
+
+  return sendViaBrevo({ to, subject: `${fromName} — Your Account Has Been Reactivated`, html });
 }
