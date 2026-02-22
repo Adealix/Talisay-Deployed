@@ -436,7 +436,7 @@ function LoginForm({ onSwitch }) {
       const errMap = {
         invalid_credentials: 'Invalid email or password.',
         email_and_password_required: 'Please fill in all fields.',
-        account_deactivated: res.reason || 'Your account has been deactivated. Contact talisayfruit@gmail.com for assistance.',
+        account_deactivated: `Your account has been deactivated due to: "${res.reason || 'violation of guidelines'}". Please contact the Administrator at talisayfruit@gmail.com for assistance.`,
       };
       setError(errMap[res.error] || 'Login failed. Please try again.');
     }

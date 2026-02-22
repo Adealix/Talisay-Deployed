@@ -236,6 +236,18 @@ export default function ProfileDropdown() {
                   </Text>
                 </View>
 
+                {/* About Us — always visible */}
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.menuItem,
+                    pressed && { backgroundColor: isDark ? '#2a2a2a' : '#f9fafb' },
+                  ]}
+                  onPress={() => { setIsOpen(false); router.push('/about-us'); }}
+                >
+                  <Ionicons name="people-outline" size={18} color={isDark ? '#ccc' : '#374151'} />
+                  <Text style={[styles.menuText, { color: isDark ? '#ccc' : '#374151' }]}>About Us</Text>
+                </Pressable>
+
                 {/* Login */}
                 <Pressable
                   style={({ pressed }) => [

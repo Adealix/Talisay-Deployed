@@ -14,7 +14,6 @@ import {
   StyleSheet,
   Platform,
   ActivityIndicator,
-  Dimensions,
   Keyboard,
 } from 'react-native';
 import Animated, {
@@ -28,7 +27,6 @@ import Animated, {
   withSpring,
   Easing,
 } from 'react-native-reanimated';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../contexts/ThemeContext';
 import { Shadows } from '../constants/Layout';
@@ -159,23 +157,8 @@ export default function FloatingChatbot() {
   const fabScale = useSharedValue(1);
   const keyboardOffset = useSharedValue(0);
 
-  // ── Draggable FAB ──
-  const tx = useSharedValue(0);
-  const ty = useSharedValue(0);
-  const sx = useSharedValue(0);
-  const sy = useSharedValue(0);
-
-  const panGesture = Gesture.Pan()
-    .onStart(() => { sx.value = tx.value; sy.value = ty.value; })
-    .onUpdate(e => { tx.value = sx.value + e.translationX; ty.value = sy.value + e.translationY; })
-    .onEnd(() => {
-      const w = Dimensions.get('window').width;
-      const clampedX = Math.max(-(w / 2 - FAB_SIZE - 8), Math.min(tx.value, w / 2 - FAB_SIZE - 8));
-      tx.value = withTiming(clampedX, { duration: 250, easing: Easing.out(Easing.cubic) });
-    });
-
   const fabStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: tx.value }, { translateY: ty.value }, { scale: fabScale.value }],
+    transform: [{ scale: fabScale.value }],
   }));
 
   const chatStyle = useAnimatedStyle(() => ({
@@ -250,9 +233,7 @@ export default function FloatingChatbot() {
     setHasStarted(false);
   }, []);
 
-  // Compute chat window width
-  const screenW = Dimensions.get('window').width;
-  const chatW = Math.min(screenW - 28, 348);
+  const chatW = 348;
 
   return (
     <View style={ST.container} pointerEvents="box-none">
@@ -291,12 +272,12 @@ export default function FloatingChatbot() {
           </View>
         </View>
 
-        {/* Messages area — FIXED height, no flex */}
+        {/* Messages area — fixed height, scrollable on all platforms */}
         <ScrollView
           ref={scrollRef}
-          style={{ height: MSG_LIST_H }}
+          style={[{ height: MSG_LIST_H }, Platform.OS === 'web' && { overflowY: 'auto' }]}
           contentContainerStyle={ST.msgContent}
-          showsVerticalScrollIndicator={false}
+          showsVerticalScrollIndicator={Platform.OS !== 'web'}
           keyboardShouldPersistTaps="handled"
           nestedScrollEnabled
         >
@@ -379,28 +360,26 @@ export default function FloatingChatbot() {
         </View>
       </Animated.View>
 
-      {/* ── FAB (draggable) ── */}
-      <GestureDetector gesture={panGesture}>
-        <Animated.View style={[ST.fab, fabStyle]}>
-          <Pressable
-            onPress={toggleChat}
-            onPressIn={() => { fabScale.value = withTiming(0.88, { duration: 100 }); }}
-            onPressOut={() => { fabScale.value = withTiming(1, { duration: 120 }); }}
-            style={[ST.fabInner, { backgroundColor: colors.primary }]}
-          >
-            <Ionicons
-              name={open ? 'close' : 'chatbubble-ellipses'}
-              size={22}
-              color="#fff"
-            />
-            {unread > 0 && !open && (
-              <View style={ST.badge}>
-                <Text style={ST.badgeText}>{unread > 9 ? '9+' : unread}</Text>
-              </View>
-            )}
-          </Pressable>
-        </Animated.View>
-      </GestureDetector>
+      {/* ── FAB (fixed position, no drag) ── */}
+      <Animated.View style={[ST.fab, fabStyle]}>
+        <Pressable
+          onPress={toggleChat}
+          onPressIn={() => { fabScale.value = withTiming(0.88, { duration: 100 }); }}
+          onPressOut={() => { fabScale.value = withTiming(1, { duration: 120 }); }}
+          style={[ST.fabInner, { backgroundColor: colors.primary }]}
+        >
+          <Ionicons
+            name={open ? 'close' : 'chatbubble-ellipses'}
+            size={22}
+            color="#fff"
+          />
+          {unread > 0 && !open && (
+            <View style={ST.badge}>
+              <Text style={ST.badgeText}>{unread > 9 ? '9+' : unread}</Text>
+            </View>
+          )}
+        </Pressable>
+      </Animated.View>
     </View>
   );
 }
