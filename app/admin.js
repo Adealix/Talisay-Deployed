@@ -38,7 +38,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useResponsive } from '../hooks/useResponsive';
 import StatsCard from '../components/Cards/StatsCard';
 import { Spacing, Shadows, BorderRadius, Typography, Layout as LayoutConst } from '../constants/Layout';
-import { fetchAnalyticsOverview, fetchUsers, fetchAllHistory, updateUser, deleteUser, deleteHistory } from '../services/analyticsService';
+import { fetchAnalyticsOverview, fetchUsers, fetchAllHistory, updateUser, toggleUserStatus, deleteHistory } from '../services/analyticsService';
 import {
   generateCategoryCSV,
   generateOverallCSV,
@@ -1017,7 +1017,8 @@ export default function AdminPage() {
   const [editForm, setEditForm] = useState({});
   const [userSearch, setUserSearch] = useState('');
   const [historySearch, setHistorySearch] = useState('');
-  const [confirmDelete, setConfirmDelete] = useState(null); // { type: 'user'|'history', id, label }
+  const [confirmDelete, setConfirmDelete] = useState(null); // { type: 'user'|'history', id, label, isActive }
+  const [deactivateReason, setDeactivateReason] = useState('');
   const [chartType, setChartType] = useState('bar'); // 'bar' | 'line' | 'donut'
   // Per-card chart types for Analytics tab
   const [chartTypeMonthly, setChartTypeMonthly] = useState('bar');
@@ -1117,16 +1118,18 @@ export default function AdminPage() {
     }
   }, [editingUser, editForm]);
 
-  const handleDeleteUser = useCallback(async (userId) => {
-    const result = await deleteUser(userId);
+  const handleToggleUserStatus = useCallback(async (userId, newActive, reason = '') => {
+    const result = await toggleUserStatus(userId, newActive, reason);
     if (result.ok) {
-      setUsers(prev => prev.filter(u => u.id !== userId));
+      setUsers(prev => prev.map(u => u.id === userId ? { ...u, ...result.user } : u));
       setConfirmDelete(null);
+      setDeactivateReason('');
     } else {
-      const msg = result.error === 'cannot_delete_self' ? 'Cannot delete your own account' : 'Failed to delete user';
+      const msg = result.error === 'cannot_deactivate_self' ? 'Cannot deactivate your own account' : 'Failed to update user status';
       if (Platform.OS === 'web') window.alert(msg);
       else Alert.alert('Error', msg);
       setConfirmDelete(null);
+      setDeactivateReason('');
     }
   }, []);
 
@@ -1831,10 +1834,15 @@ export default function AdminPage() {
                         (u.role || '').toLowerCase().includes(q);
                     })
                     .map((u, idx) => (
-                      <Animated.View
+                      <Pressable
                         key={u.id}
-                        entering={FadeInUp.delay(100 + idx * 30).duration(280)}
-                        style={[s.dtRow, { borderBottomColor: colors.divider }, idx % 2 === 0 && { backgroundColor: colors.background + '60' }]}
+                        onPress={() => setSelectedUser(u)}
+                        style={({ pressed }) => [
+                          s.dtRow,
+                          { borderBottomColor: colors.divider },
+                          idx % 2 === 0 && { backgroundColor: colors.background + '60' },
+                          pressed && { backgroundColor: colors.primary + '10' },
+                        ]}
                       >
                         <Text style={[s.dtCell, s.dtCellName, { color: colors.text }]} numberOfLines={1}>
                           {[u.firstName, u.lastName].filter(Boolean).join(' ') || '—'}
@@ -1850,29 +1858,18 @@ export default function AdminPage() {
                           </View>
                         </View>
                         <View style={s.dtCellStatus}>
-                          <View style={[s.statusDot, { backgroundColor: u.isVerified ? '#22c55e' : '#ef4444' }]} />
+                          <View style={[s.statusDot, { backgroundColor: u.isActive !== false ? '#22c55e' : '#ef4444' }]} />
                           <Text style={[s.dtCellStatusText, { color: colors.textTertiary }]}>
-                            {u.isVerified ? 'Verified' : 'Pending'}
+                            {u.isActive !== false ? 'Active' : 'Inactive'}
                           </Text>
                         </View>
                         <Text style={[s.dtCell, s.dtCellDate, { color: colors.textTertiary }]} numberOfLines={1}>
                           {u.createdAt ? new Date(u.createdAt).toLocaleDateString() : '—'}
                         </Text>
                         <View style={[s.dtCellActions, s.dtActionsRow]}>
-                          <Pressable
-                            onPress={() => { setEditingUser(u); setEditForm({ role: u.role, firstName: u.firstName, lastName: u.lastName }); }}
-                            style={[s.dtActionBtn, { backgroundColor: '#3b82f615' }]}
-                          >
-                            <Ionicons name="create-outline" size={14} color="#3b82f6" />
-                          </Pressable>
-                          <Pressable
-                            onPress={() => setConfirmDelete({ type: 'user', id: u.id, label: u.email })}
-                            style={[s.dtActionBtn, { backgroundColor: '#ef444415' }]}
-                          >
-                            <Ionicons name="trash-outline" size={14} color="#ef4444" />
-                          </Pressable>
+                          <Ionicons name="chevron-forward" size={16} color={colors.textTertiary} />
                         </View>
-                      </Animated.View>
+                      </Pressable>
                     ))}
 
                   {users.length === 0 && (
@@ -1888,73 +1885,8 @@ export default function AdminPage() {
               )}
             </Card>
 
-            {/* Desktop: Edit User Modal (separate from details) */}
-            {editingUser && !isMobile && (
-              <Modal transparent animationType="fade" visible={!!editingUser} onRequestClose={() => setEditingUser(null)}>
-                <Pressable style={s.modalOverlay} onPress={() => setEditingUser(null)}>
-                  <Pressable style={[s.modalContent, { backgroundColor: colors.card, borderColor: colors.borderLight }]} onPress={e => e.stopPropagation()}>
-                    <Text style={[s.modalTitle, { color: colors.text }]}>Edit User</Text>
-                    <Text style={[s.modalSubtitle, { color: colors.textSecondary }]}>{editingUser.email}</Text>
-
-                    <View style={s.modalField}>
-                      <Text style={[s.modalLabel, { color: colors.textSecondary }]}>First Name</Text>
-                      <TextInput
-                        value={editForm.firstName || ''}
-                        onChangeText={v => setEditForm(f => ({ ...f, firstName: v }))}
-                        style={[s.modalInput, { color: colors.text, borderColor: colors.border, backgroundColor: colors.background }]}
-                        placeholder="First name"
-                        placeholderTextColor={colors.textTertiary}
-                      />
-                    </View>
-
-                    <View style={s.modalField}>
-                      <Text style={[s.modalLabel, { color: colors.textSecondary }]}>Last Name</Text>
-                      <TextInput
-                        value={editForm.lastName || ''}
-                        onChangeText={v => setEditForm(f => ({ ...f, lastName: v }))}
-                        style={[s.modalInput, { color: colors.text, borderColor: colors.border, backgroundColor: colors.background }]}
-                        placeholder="Last name"
-                        placeholderTextColor={colors.textTertiary}
-                      />
-                    </View>
-
-                    <View style={s.modalField}>
-                      <Text style={[s.modalLabel, { color: colors.textSecondary }]}>Role</Text>
-                      <View style={s.roleToggleRow}>
-                        {['user', 'admin'].map(r => (
-                          <Pressable
-                            key={r}
-                            onPress={() => setEditForm(f => ({ ...f, role: r }))}
-                            style={[
-                              s.roleToggleBtn,
-                              { borderColor: colors.border },
-                              editForm.role === r && { backgroundColor: r === 'admin' ? '#7c3aed18' : '#22c55e18', borderColor: r === 'admin' ? '#7c3aed' : '#22c55e' },
-                            ]}
-                          >
-                            <Ionicons name={r === 'admin' ? 'shield' : 'person'} size={14} color={editForm.role === r ? (r === 'admin' ? '#7c3aed' : '#22c55e') : colors.textTertiary} />
-                            <Text style={[s.roleToggleText, { color: editForm.role === r ? (r === 'admin' ? '#7c3aed' : '#22c55e') : colors.textSecondary }]}>
-                              {r.charAt(0).toUpperCase() + r.slice(1)}
-                            </Text>
-                          </Pressable>
-                        ))}
-                      </View>
-                    </View>
-
-                    <View style={s.modalBtnRow}>
-                      <Pressable onPress={() => setEditingUser(null)} style={[s.modalBtn, { borderColor: colors.border }]}>
-                        <Text style={[s.modalBtnText, { color: colors.textSecondary }]}>Cancel</Text>
-                      </Pressable>
-                      <Pressable onPress={handleUpdateUser} style={[s.modalBtn, s.modalBtnPrimary, { backgroundColor: colors.primary }]}>
-                        <Text style={[s.modalBtnText, { color: '#fff' }]}>Save</Text>
-                      </Pressable>
-                    </View>
-                  </Pressable>
-                </Pressable>
-              </Modal>
-            )}
-
             {/* ─── Modal 1: User Details ─── */}
-            {selectedUser && isMobile && (
+            {selectedUser && (
               <Modal transparent animationType="slide" visible={!!selectedUser} onRequestClose={() => setSelectedUser(null)}>
                 <Pressable style={s.modalOverlay} onPress={() => setSelectedUser(null)}>
                   <Pressable style={[s.modalContent, { backgroundColor: colors.card, borderColor: colors.borderLight }]} onPress={e => e.stopPropagation()}>
@@ -2007,11 +1939,19 @@ export default function AdminPage() {
                         <Text style={{ ...Typography.captionMedium, color: '#fff', fontWeight: '700' }}>Edit User</Text>
                       </Pressable>
                       <Pressable
-                        onPress={() => { setConfirmDelete({ type: 'user', id: selectedUser.id, label: selectedUser.email }); setSelectedUser(null); }}
-                        style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#ef444412', borderRadius: BorderRadius.md, paddingVertical: 13, borderWidth: 1, borderColor: '#ef444430' }}
+                        onPress={() => {
+                          if (selectedUser.isActive !== false) {
+                            setConfirmDelete({ type: 'user', id: selectedUser.id, label: selectedUser.email, isActive: true });
+                            setSelectedUser(null);
+                          } else {
+                            handleToggleUserStatus(selectedUser.id, true);
+                            setSelectedUser(null);
+                          }
+                        }}
+                        style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: selectedUser.isActive !== false ? '#ef444412' : '#22c55e12', borderRadius: BorderRadius.md, paddingVertical: 13, borderWidth: 1, borderColor: selectedUser.isActive !== false ? '#ef444430' : '#22c55e30' }}
                       >
-                        <Ionicons name="trash-outline" size={17} color="#ef4444" />
-                        <Text style={{ ...Typography.captionMedium, color: '#ef4444', fontWeight: '700' }}>Delete User</Text>
+                        <Ionicons name={selectedUser.isActive !== false ? 'ban-outline' : 'checkmark-circle-outline'} size={17} color={selectedUser.isActive !== false ? '#ef4444' : '#22c55e'} />
+                        <Text style={{ ...Typography.captionMedium, color: selectedUser.isActive !== false ? '#ef4444' : '#22c55e', fontWeight: '700' }}>{selectedUser.isActive !== false ? 'Deactivate User' : 'Activate User'}</Text>
                       </Pressable>
                     </View>
                   </Pressable>
@@ -2020,7 +1960,7 @@ export default function AdminPage() {
             )}
 
             {/* ─── Modal 2: Edit User ─── */}
-            {mobileEditUserOpen && editingUser && isMobile && (
+            {mobileEditUserOpen && editingUser && (
               <Modal transparent animationType="slide" visible={mobileEditUserOpen} onRequestClose={() => setMobileEditUserOpen(false)}>
                 <Pressable style={s.modalOverlay} onPress={() => setMobileEditUserOpen(false)}>
                   <Pressable style={[s.modalContent, { backgroundColor: colors.card, borderColor: colors.borderLight }]} onPress={e => e.stopPropagation()}>
@@ -2323,34 +2263,81 @@ export default function AdminPage() {
           </View>
         )}
 
-        {/* Confirm Delete Modal */}
+        {/* Confirm Action Modal (Deactivate User / Delete History) */}
         {confirmDelete && (
-          <Modal transparent animationType="fade" visible={!!confirmDelete} onRequestClose={() => setConfirmDelete(null)}>
-            <Pressable style={s.modalOverlay} onPress={() => setConfirmDelete(null)}>
+          <Modal transparent animationType="fade" visible={!!confirmDelete} onRequestClose={() => { setConfirmDelete(null); setDeactivateReason(''); }}>
+            <Pressable style={s.modalOverlay} onPress={() => { setConfirmDelete(null); setDeactivateReason(''); }}>
               <Pressable style={[s.modalContent, { backgroundColor: colors.card, borderColor: colors.borderLight }]} onPress={e => e.stopPropagation()}>
-                <View style={[s.modalDeleteIcon, { backgroundColor: '#ef444418' }]}>
-                  <Ionicons name="warning" size={28} color="#ef4444" />
+                <View style={[s.modalDeleteIcon, { backgroundColor: confirmDelete.type === 'user' ? '#f97316' + '18' : '#ef444418' }]}>
+                  <Ionicons name={confirmDelete.type === 'user' ? 'ban' : 'warning'} size={28} color={confirmDelete.type === 'user' ? '#f97316' : '#ef4444'} />
                 </View>
-                <Text style={[s.modalTitle, { color: colors.text, textAlign: 'center' }]}>Confirm Delete</Text>
+                <Text style={[s.modalTitle, { color: colors.text, textAlign: 'center' }]}>
+                  {confirmDelete.type === 'user' ? 'Deactivate User' : 'Confirm Delete'}
+                </Text>
                 <Text style={[s.modalSubtitle, { color: colors.textSecondary, textAlign: 'center' }]}>
-                  Are you sure you want to delete {confirmDelete.type === 'user' ? 'user' : 'scan record'}{'\n'}
-                  <Text style={{ fontWeight: '600', color: colors.text }}>{confirmDelete.label}</Text>?
-                  {confirmDelete.type === 'user' && (
-                    <Text>{'\n'}This will also delete all their scan history.</Text>
+                  {confirmDelete.type === 'user' ? (
+                    <>Are you sure you want to deactivate{'\n'}<Text style={{ fontWeight: '600', color: colors.text }}>{confirmDelete.label}</Text>?{'\n'}They will receive an email notification.</>
+                  ) : (
+                    <>Are you sure you want to delete scan record{'\n'}<Text style={{ fontWeight: '600', color: colors.text }}>{confirmDelete.label}</Text>?</>
                   )}
                 </Text>
+
+                {/* Preset deactivation reasons (only for user deactivation) */}
+                {confirmDelete.type === 'user' && (
+                  <View style={{ gap: 6, marginTop: 10, width: '100%' }}>
+                    <Text style={{ fontSize: 12, fontWeight: '600', color: colors.textSecondary, marginBottom: 2 }}>Select a reason:</Text>
+                    {[
+                      'Violation of terms of service',
+                      'Inappropriate behavior or content',
+                      'Spam or fraudulent activity',
+                      'Inactive account',
+                      'User requested deactivation',
+                      'Other',
+                    ].map(reason => (
+                      <Pressable
+                        key={reason}
+                        onPress={() => setDeactivateReason(reason)}
+                        style={{
+                          flexDirection: 'row', alignItems: 'center', gap: 8,
+                          paddingVertical: 8, paddingHorizontal: 12,
+                          borderRadius: 10, borderWidth: 1,
+                          borderColor: deactivateReason === reason ? '#f97316' : colors.borderLight,
+                          backgroundColor: deactivateReason === reason ? '#f9731610' : 'transparent',
+                        }}
+                      >
+                        <Ionicons
+                          name={deactivateReason === reason ? 'radio-button-on' : 'radio-button-off'}
+                          size={16}
+                          color={deactivateReason === reason ? '#f97316' : colors.textTertiary}
+                        />
+                        <Text style={{ fontSize: 13, color: colors.text, flex: 1 }}>{reason}</Text>
+                      </Pressable>
+                    ))}
+                  </View>
+                )}
+
                 <View style={s.modalBtnRow}>
-                  <Pressable onPress={() => setConfirmDelete(null)} style={[s.modalBtn, { borderColor: colors.border }]}>
+                  <Pressable onPress={() => { setConfirmDelete(null); setDeactivateReason(''); }} style={[s.modalBtn, { borderColor: colors.border }]}>
                     <Text style={[s.modalBtnText, { color: colors.textSecondary }]}>Cancel</Text>
                   </Pressable>
                   <Pressable
                     onPress={() => {
-                      if (confirmDelete.type === 'user') handleDeleteUser(confirmDelete.id);
-                      else handleDeleteHistory(confirmDelete.id);
+                      if (confirmDelete.type === 'user') {
+                        handleToggleUserStatus(confirmDelete.id, false, deactivateReason || 'Deactivated by admin');
+                      } else {
+                        handleDeleteHistory(confirmDelete.id);
+                      }
                     }}
-                    style={[s.modalBtn, s.modalBtnPrimary, { backgroundColor: '#ef4444' }]}
+                    disabled={confirmDelete.type === 'user' && !deactivateReason}
+                    style={[s.modalBtn, s.modalBtnPrimary, {
+                      backgroundColor: confirmDelete.type === 'user'
+                        ? (deactivateReason ? '#f97316' : '#f9731640')
+                        : '#ef4444',
+                    }]}
                   >
-                    <Text style={[s.modalBtnText, { color: '#fff' }]}>Delete</Text>
+                    <Text style={[s.modalBtnText, { color: '#fff' }]}>
+                      {confirmDelete.type === 'user' ? 'Deactivate' : 'Delete'}
+                    </Text>
                   </Pressable>
                 </View>
               </Pressable>

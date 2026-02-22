@@ -1,5 +1,6 @@
 import { User } from '../models/User.js';
 import { History } from '../models/History.js';
+import { sendDeactivationEmail } from '../lib/email.js';
 
 /**
  * GET /api/admin/users
@@ -16,6 +17,9 @@ export async function listUsers(req, res) {
         firstName: u.firstName || '',
         lastName: u.lastName || '',
         isVerified: u.isVerified,
+        isActive: u.isActive !== false, // default true for older docs
+        deactivationReason: u.deactivationReason || '',
+        deactivatedAt: u.deactivatedAt || null,
         createdAt: u.createdAt,
       })),
     });
@@ -125,27 +129,63 @@ export async function updateUser(req, res) {
 }
 
 /**
- * DELETE /api/admin/users/:id
- * Delete a user (cannot delete self).
+ * PATCH /api/admin/users/:id/status
+ * Activate or deactivate a user (soft delete). Sends email notification on deactivation.
  */
-export async function deleteUser(req, res) {
+export async function toggleUserStatus(req, res) {
   try {
     const { id } = req.params;
+    const { isActive, reason } = req.body;
 
-    // Prevent admin from deleting themselves
+    // Prevent admin from deactivating themselves
     if (id === String(req.auth.userId)) {
-      return res.status(400).json({ ok: false, error: 'cannot_delete_self' });
+      return res.status(400).json({ ok: false, error: 'cannot_deactivate_self' });
     }
 
-    const user = await User.findByIdAndDelete(id);
+    const user = await User.findById(id);
     if (!user) return res.status(404).json({ ok: false, error: 'user_not_found' });
 
-    // Optionally delete all their history too
-    await History.deleteMany({ userId: id });
+    const newActive = isActive !== undefined ? Boolean(isActive) : !user.isActive;
 
-    return res.json({ ok: true, message: 'User deleted' });
+    user.isActive = newActive;
+    if (!newActive) {
+      user.deactivationReason = reason || 'Account deactivated by admin';
+      user.deactivatedAt = new Date();
+      user.deactivatedBy = req.auth.userId;
+    } else {
+      user.deactivationReason = '';
+      user.deactivatedAt = null;
+      user.deactivatedBy = null;
+    }
+    await user.save();
+
+    // Send email notification on deactivation
+    if (!newActive) {
+      try {
+        await sendDeactivationEmail(user.email, user.deactivationReason);
+      } catch (emailErr) {
+        console.error('[adminController.toggleUserStatus] email failed:', emailErr);
+      }
+    }
+
+    return res.json({
+      ok: true,
+      user: {
+        id: String(user._id),
+        email: user.email,
+        role: user.role,
+        firstName: user.firstName || '',
+        lastName: user.lastName || '',
+        isVerified: user.isVerified,
+        isActive: user.isActive,
+        deactivationReason: user.deactivationReason || '',
+        deactivatedAt: user.deactivatedAt || null,
+        createdAt: user.createdAt,
+      },
+      message: newActive ? 'User activated' : 'User deactivated',
+    });
   } catch (e) {
-    console.error('[adminController.deleteUser]', e);
+    console.error('[adminController.toggleUserStatus]', e);
     return res.status(500).json({ ok: false, error: 'server_error' });
   }
 }

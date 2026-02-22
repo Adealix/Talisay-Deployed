@@ -24,6 +24,12 @@ const UserSchema = new mongoose.Schema(
     avatar: { type: String, default: '' }, // Cloudinary image URL
     cloudinaryPublicId: { type: String, default: '' }, // For deleting old images
 
+    // ── Active / Inactive State ──
+    isActive: { type: Boolean, default: true },
+    deactivationReason: { type: String, default: '' },
+    deactivatedAt: { type: Date, default: null },
+    deactivatedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+
     createdAt: { type: Date, default: Date.now },
   },
   { versionKey: false }

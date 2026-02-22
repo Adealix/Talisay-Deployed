@@ -9,7 +9,7 @@ router.use(requireAuth, requireAdmin);
 
 router.get('/users', adminController.listUsers);
 router.put('/users/:id', adminController.updateUser);
-router.delete('/users/:id', adminController.deleteUser);
+router.patch('/users/:id/status', adminController.toggleUserStatus);
 router.get('/predictions', adminController.listAllPredictions);
 router.get('/history', adminController.listAllHistory);
 router.delete('/history/:id', adminController.deleteHistory);

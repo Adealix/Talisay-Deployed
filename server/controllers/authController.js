@@ -167,6 +167,15 @@ export async function login(req, res) {
       return res.status(401).json({ ok: false, error: 'invalid_credentials' });
     }
 
+    // Block deactivated users
+    if (user.isActive === false) {
+      return res.status(403).json({
+        ok: false,
+        error: 'account_deactivated',
+        reason: user.deactivationReason || 'Your account has been deactivated. Contact talisayfruit@gmail.com for assistance.',
+      });
+    }
+
     if (!user.isVerified) {
       // Resend OTP automatically
       const otp = generateOtp();

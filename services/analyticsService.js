@@ -104,19 +104,20 @@ export async function updateUser(userId, updates) {
 }
 
 /**
- * Delete a user (admin).
+ * Toggle user active/inactive status (admin).
  */
-export async function deleteUser(userId) {
+export async function toggleUserStatus(userId, isActive, reason = '') {
   try {
     const headers = await authHeaders();
-    const res = await apiFetch(`/api/admin/users/${userId}`, {
-      method: 'DELETE',
+    const res = await apiFetch(`/api/admin/users/${userId}/status`, {
+      method: 'PATCH',
       headers,
+      body: JSON.stringify({ isActive, reason }),
     });
     const data = await res.json();
     return data;
   } catch (e) {
-    console.error('[analyticsService.deleteUser]', e);
+    console.error('[analyticsService.toggleUserStatus]', e);
     return { ok: false, error: 'network_error' };
   }
 }
