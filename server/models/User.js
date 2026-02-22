@@ -24,6 +24,17 @@ const UserSchema = new mongoose.Schema(
     avatar: { type: String, default: '' }, // Cloudinary image URL
     cloudinaryPublicId: { type: String, default: '' }, // For deleting old images
 
+    // ── Push Notification Tokens ──
+    // An array because a user can be logged in on multiple devices
+    pushTokens: [{ type: String }],
+
+    // ── Notification Preferences ──
+    notificationSettings: {
+      newPost: { type: Boolean, default: true },
+      newComment: { type: Boolean, default: true },
+      newLike: { type: Boolean, default: true },
+    },
+
     // ── Active / Inactive State ──
     isActive: { type: Boolean, default: true },
     deactivationReason: { type: String, default: '' },

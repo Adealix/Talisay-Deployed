@@ -9,6 +9,7 @@ import predictionRoutes from './routes/predictionRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
 import historyRoutes from './routes/historyRoutes.js';
 import forumRoutes from './routes/forumRoutes.js';
+import notificationRoutes from './routes/notificationRoutes.js';
 
 const app = express();
 
@@ -31,6 +32,7 @@ app.use('/api/predictions', predictionRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/history', historyRoutes);
 app.use('/api/forum', forumRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // ---------------------------------------------------------------------------
 // Startup

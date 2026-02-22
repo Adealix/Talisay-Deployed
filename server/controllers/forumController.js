@@ -2,7 +2,9 @@
  * Forum Controller — CRUD for posts, toggle likes, add comments.
  */
 import { ForumPost } from '../models/ForumPost.js';
+import { User } from '../models/User.js';
 import { uploadToCloudinary, deleteFromCloudinary } from '../lib/cloudinary.js';
+import { createNotifications } from './notificationController.js';
 
 // Populate options used by multiple endpoints
 const AUTHOR_POP = { path: 'author', select: 'firstName lastName avatar' };
@@ -92,6 +94,33 @@ export async function createPost(req, res) {
       .lean();
 
     res.status(201).json({ ok: true, post: populated });
+
+    // ── Fire notifications asynchronously (don't block response) ──
+    setImmediate(async () => {
+      try {
+        const actor = populated.author;
+        const actorName = `${actor?.firstName || ''} ${actor?.lastName || ''}`.trim() || 'Someone';
+
+        // Notify ALL other users about the new forum post
+        const allUsers = await User.find(
+          { _id: { $ne: req.auth.userId }, isActive: true },
+          '_id'
+        ).lean();
+        const recipientIds = allUsers.map(u => u._id);
+
+        await createNotifications({
+          actorId: req.auth.userId,
+          recipientIds,
+          type: 'new_post',
+          title: '📢 New forum post',
+          body: `${actorName} posted: "${title.trim().substring(0, 60)}"`,
+          data: { type: 'new_post', postId: String(post._id) },
+          settingKey: 'newPost',
+        });
+      } catch (err) {
+        console.error('[forum.createPost] notification error:', err);
+      }
+    });
   } catch (e) {
     console.error('[forum.createPost]', e);
     res.status(500).json({ ok: false, error: 'server_error' });
@@ -131,6 +160,7 @@ export async function toggleLike(req, res) {
 
     const uid = req.auth.userId;
     const idx = post.likes.findIndex(id => String(id) === uid);
+    const isNowLiked = idx < 0;
     if (idx >= 0) {
       post.likes.splice(idx, 1);
     } else {
@@ -138,7 +168,28 @@ export async function toggleLike(req, res) {
     }
     await post.save();
 
-    res.json({ ok: true, liked: idx < 0, likesCount: post.likes.length });
+    res.json({ ok: true, liked: isNowLiked, likesCount: post.likes.length });
+
+    // ── Notify post author when someone new likes their post ──
+    if (isNowLiked && String(post.author) !== uid) {
+      setImmediate(async () => {
+        try {
+          const actor = await User.findById(uid, 'firstName lastName').lean();
+          const actorName = `${actor?.firstName || ''} ${actor?.lastName || ''}`.trim() || 'Someone';
+          await createNotifications({
+            actorId: uid,
+            recipientIds: [post.author],
+            type: 'new_like',
+            title: '❤️ New like',
+            body: `${actorName} liked your post.`,
+            data: { type: 'new_like', postId: String(post._id) },
+            settingKey: 'newLike',
+          });
+        } catch (err) {
+          console.error('[forum.toggleLike] notification error:', err);
+        }
+      });
+    }
   } catch (e) {
     console.error('[forum.toggleLike]', e);
     res.status(500).json({ ok: false, error: 'server_error' });
@@ -163,6 +214,27 @@ export async function addComment(req, res) {
       .lean();
 
     res.json({ ok: true, comments: updated.comments });
+
+    // ── Notify post author when someone comments (skip if same person) ──
+    if (String(post.author) !== req.auth.userId) {
+      setImmediate(async () => {
+        try {
+          const actor = await User.findById(req.auth.userId, 'firstName lastName').lean();
+          const actorName = `${actor?.firstName || ''} ${actor?.lastName || ''}`.trim() || 'Someone';
+          await createNotifications({
+            actorId: req.auth.userId,
+            recipientIds: [post.author],
+            type: 'new_comment',
+            title: '💬 New comment',
+            body: `${actorName} commented on your post: "${text.trim().substring(0, 60)}"`,
+            data: { type: 'new_comment', postId: String(post._id) },
+            settingKey: 'newComment',
+          });
+        } catch (err) {
+          console.error('[forum.addComment] notification error:', err);
+        }
+      });
+    }
   } catch (e) {
     console.error('[forum.addComment]', e);
     res.status(500).json({ ok: false, error: 'server_error' });
