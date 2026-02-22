@@ -2,6 +2,7 @@
  * Talisay AI — Forum Service
  * Frontend API client for forum endpoints.
  */
+import { Platform } from 'react-native';
 import { apiFetch, getActiveApiUrl } from './apiClient';
 import { getToken } from './authService';
 
@@ -33,13 +34,32 @@ export async function createPost({ title, content, files = [] }) {
     const formData = new FormData();
     formData.append('title', title);
     formData.append('content', content);
-    files.forEach(f => {
-      formData.append('files', {
-        uri: f.uri,
-        name: f.name || f.fileName || 'file',
-        type: f.type || f.mimeType || 'application/octet-stream',
+
+    if (Platform.OS === 'web') {
+      // On web, {uri,name,type} is NOT a file — must fetch the blob URI and create a real File
+      for (const f of files) {
+        try {
+          const response = await fetch(f.uri);
+          const blob = await response.blob();
+          const file = new File([blob], f.name || `photo_${Date.now()}.jpg`, {
+            type: f.type || blob.type || 'image/jpeg',
+          });
+          formData.append('files', file);
+        } catch (blobErr) {
+          console.error('[forumService] Failed to convert image to blob:', blobErr);
+        }
+      }
+    } else {
+      // React Native: use the {uri,name,type} object format
+      files.forEach(f => {
+        formData.append('files', {
+          uri: f.uri,
+          name: f.name || f.fileName || 'file',
+          type: f.type || f.mimeType || 'application/octet-stream',
+        });
       });
-    });
+    }
+
     const base = getActiveApiUrl();
     const res = await fetch(`${base}/api/forum`, {
       method: 'POST',

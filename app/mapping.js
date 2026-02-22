@@ -157,6 +157,16 @@ function buildMapHTML(locations, isDark) {
       return div;
     };
     legend.addTo(map);
+
+    // Listen for flyTo messages from React Native / iframe parent
+    window.addEventListener('message', function(e) {
+      try {
+        var msg = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
+        if (msg && msg.type === 'flyTo') {
+          map.flyTo([msg.lat, msg.lng], 13, { animate: true, duration: 1 });
+        }
+      } catch(err) {}
+    });
   </script>
 </body>
 </html>`;
@@ -261,6 +271,25 @@ export default function MappingPage() {
   const [showList, setShowList] = useState(false);
   const [filterDensity, setFilterDensity] = useState('all');
 
+  const scrollViewRef = useRef(null);
+  const iframeRef = useRef(null);
+  const webViewRef = useRef(null);
+  const mapCardY = useRef(0);
+
+  const handleLocationSelect = (loc) => {
+    // Scroll back up to the map
+    scrollViewRef.current?.scrollTo({ y: mapCardY.current, animated: true });
+    // Send flyTo message to the embedded map
+    const msg = JSON.stringify({ type: 'flyTo', lat: loc.lat, lng: loc.lng });
+    if (Platform.OS === 'web') {
+      try { iframeRef.current?.contentWindow?.postMessage(msg, '*'); } catch (err) {}
+    } else {
+      webViewRef.current?.injectJavaScript(
+        `if (typeof map !== 'undefined') { map.flyTo([${loc.lat}, ${loc.lng}], 13, { animate: true, duration: 1 }); } true;`
+      );
+    }
+  };
+
   const filteredLocations = useMemo(() => {
     let locs = TALISAY_LOCATIONS;
     if (filterDensity !== 'all') {
@@ -286,6 +315,7 @@ export default function MappingPage() {
       return (
         <View style={styles.mapContainer}>
           <iframe
+            ref={iframeRef}
             srcDoc={mapHTML}
             style={{ width: '100%', height: '100%', border: 'none', borderRadius: 12 }}
             title="Talisay Tree Map"
@@ -298,6 +328,7 @@ export default function MappingPage() {
       return (
         <View style={styles.mapContainer}>
           <WebView
+            ref={webViewRef}
             source={{ html: mapHTML }}
             style={{ flex: 1, borderRadius: 12 }}
             javaScriptEnabled
@@ -312,7 +343,7 @@ export default function MappingPage() {
   };
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: colors.background }]} showsVerticalScrollIndicator={false}>
+    <ScrollView ref={scrollViewRef} style={[styles.container, { backgroundColor: colors.background }]} showsVerticalScrollIndicator={false}>
       {/* ─── Page Header ─── */}
       <LinearGradient
         colors={isDark ? ['#2d1b1b', '#0f1318'] : ['#fef2f2', '#fecaca']}
@@ -339,7 +370,11 @@ export default function MappingPage() {
         </Animated.View>
 
         {/* ─── Map ─── */}
-        <Animated.View entering={FadeInUp.delay(200).duration(280)} style={[styles.mapCard, { backgroundColor: colors.card, borderColor: colors.borderLight }]}>
+        <Animated.View
+          entering={FadeInUp.delay(200).duration(280)}
+          style={[styles.mapCard, { backgroundColor: colors.card, borderColor: colors.borderLight }]}
+          onLayout={e => { mapCardY.current = e.nativeEvent.layout.y; }}
+        >
           <View style={styles.mapCardHeader}>
             <View style={{ flex: 1 }}>
               <Text style={[styles.mapCardTitle, { color: colors.text }]}>Philippine Talisay Distribution</Text>
@@ -423,7 +458,7 @@ export default function MappingPage() {
                   <LocationItem
                     key={loc.name + loc.province}
                     loc={loc}
-                    onPress={() => setSelectedLoc(loc)}
+                    onPress={() => handleLocationSelect(loc)}
                     colors={colors}
                     isDark={isDark}
                     delay={Math.min(idx * 30, 300)}
