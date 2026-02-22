@@ -1,25 +1,49 @@
 /**
- * Email Service — Gmail SMTP via Nodemailer
+ * Email Service — Brevo SMTP via Nodemailer
  * Sends OTP verification emails for registration and password change.
+ *
+ * Required Render env vars:
+ *   SMTP_HOST       = smtp-relay.brevo.com
+ *   SMTP_PORT       = 587
+ *   SMTP_USER       = a2cf49001@smtp-brevo.com   ← Brevo SMTP login (NOT your Gmail)
+ *   SMTP_PASSWORD   = xsmtpsib-...               ← Brevo SMTP key
+ *   SMTP_FROM_EMAIL = adealixmaranan123@gmail.com ← verified sender shown to recipients
+ *   SMTP_FROM_NAME  = TalisayOil
+ *
+ * SMTP_USER (Brevo login) is different from SMTP_FROM_EMAIL (displayed sender).
  */
 import nodemailer from 'nodemailer';
 
+const smtpHost = process.env.SMTP_HOST || 'smtp-relay.brevo.com';
+const smtpPort = Number(process.env.SMTP_PORT || 587);
+const smtpUser = process.env.SMTP_USER; // must be Brevo login: a2cf49001@smtp-brevo.com
+const smtpPass = process.env.SMTP_PASSWORD;
+
+if (!smtpUser) console.error('[email] MISSING: SMTP_USER env var. Set it to your Brevo SMTP login (e.g. a2cf49001@smtp-brevo.com)');
+if (!smtpPass) console.error('[email] MISSING: SMTP_PASSWORD env var. Set it to your Brevo SMTP key (xsmtpsib-...)');
+
 const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST || 'smtp.gmail.com',
-  port: Number(process.env.SMTP_PORT || 587),
-  secure: false, // true for 465, false for other ports
+  host: smtpHost,
+  port: smtpPort,
+  secure: false,       // use STARTTLS (port 587)
+  requireTLS: true,    // enforce STARTTLS
   auth: {
-    user: process.env.SMTP_EMAIL,
-    pass: process.env.SMTP_PASSWORD,
+    user: smtpUser,    // Brevo SMTP login — NOT your Gmail
+    pass: smtpPass,    // Brevo SMTP key
   },
+  tls: { rejectUnauthorized: false },
 });
 
-// Verify SMTP connection at startup so Render logs show the real problem immediately
+// Log and verify SMTP at startup
+const fromEmail = process.env.SMTP_FROM_EMAIL || '(not set)';
+console.log(`[email] SMTP config: host=${smtpHost}:${smtpPort}, user=${smtpUser || '(MISSING)'}, from=${fromEmail}`);
+
 transporter.verify((err) => {
   if (err) {
-    console.error('[email] SMTP connection FAILED at startup:', err);
+    console.error('[email] SMTP connection FAILED:', err.message);
+    console.error('[email] Fix: set SMTP_USER=a2cf49001@smtp-brevo.com and SMTP_PASSWORD=<brevo-key> in Render env vars');
   } else {
-    console.log('[email] SMTP connection OK — ready to send emails via', process.env.SMTP_HOST || 'smtp.gmail.com');
+    console.log('[email] SMTP ready — connected to', smtpHost);
   }
 });
 
