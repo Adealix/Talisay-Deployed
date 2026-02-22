@@ -43,6 +43,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '../contexts/ToastContext';
 import { useResponsive } from '../hooks/useResponsive';
 import { Spacing, Shadows, BorderRadius, Typography, Layout as LayoutConst } from '../constants/Layout';
 
@@ -432,7 +433,11 @@ function LoginForm({ onSwitch }) {
     setError(null);
     const res = await login(email, password);
     if (!res.ok && res.error !== 'email_not_verified') {
-      const errMap = { invalid_credentials: 'Invalid email or password.', email_and_password_required: 'Please fill in all fields.' };
+      const errMap = {
+        invalid_credentials: 'Invalid email or password.',
+        email_and_password_required: 'Please fill in all fields.',
+        account_deactivated: res.reason || 'Your account has been deactivated. Contact talisayfruit@gmail.com for assistance.',
+      };
       setError(errMap[res.error] || 'Login failed. Please try again.');
     }
     // If email_not_verified → AuthContext sets pendingVerification → parent shows OTP screen
@@ -727,6 +732,7 @@ function ProfileView() {
   const { colors, isDark } = useTheme();
   const { user, logout, updateProfile, requestPasswordOtp, changePassword, getUserStats, profileImage, setProfileImage } = useAuth();
   const { isMobile, isDesktop } = useResponsive();
+  const { showToast } = useToast();
 
   // Profile fields
   const [firstName, setFirstName] = useState(user?.firstName || '');
@@ -873,6 +879,7 @@ function ProfileView() {
             
             setProfileMsg(errorMsg);
             setProfileMsgType('error');
+            showToast(errorMsg, 'error');
             setTimeout(() => setProfileMsg(null), 5000);
             return;
           }
@@ -881,6 +888,7 @@ function ProfileView() {
           imageWasUploaded = true; // Mark that image was uploaded
           setSelectedImageUri(null); // Clear selected image after successful upload
           setProfileMsg('Photo uploaded successfully! Saving profile...');
+          showToast('Photo uploaded!', 'success');
         } catch (uploadError) {
           setImageUploading(false);
           setProfileSaving(false);
@@ -912,9 +920,11 @@ function ProfileView() {
         setProfileMsg(imageWasUploaded ? 'Profile and photo updated successfully!' : 'Profile updated successfully!');
         setProfileMsgType('success');
         setProfileEditing(false);
+        showToast(imageWasUploaded ? 'Profile and photo updated!' : 'Profile updated successfully!', 'success');
       } else {
         setProfileMsg('Failed to save profile. Please try again.');
         setProfileMsgType('error');
+        showToast('Failed to save profile.', 'error');
       }
     } catch (error) {
       setImageUploading(false);
@@ -957,11 +967,13 @@ function ProfileView() {
       setConfirmNewPassword('');
       setPasswordOtp('');
       setOtpSent(false);
+      showToast('Password changed successfully!', 'success');
       setTimeout(() => { setShowPasswordSection(false); setPasswordMsg(null); }, 3000);
     } else {
       const errMap = { invalid_otp: 'Invalid OTP code.', otp_expired: 'OTP expired. Request a new one.', password_too_short: 'Password must be at least 6 characters.' };
       setPasswordMsg(errMap[res.error] || 'Failed to change password.');
       setPasswordMsgType('error');
+      showToast(errMap[res.error] || 'Failed to change password.', 'error');
     }
   };
 

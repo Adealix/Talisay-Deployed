@@ -10,7 +10,9 @@ import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { ThemeProvider, useTheme } from '../contexts/ThemeContext';
 import { AuthProvider } from '../contexts/AuthContext';
+import { ToastProvider } from '../contexts/ToastContext';
 import Header from '../components/Header';
+import FloatingChatbot from '../components/FloatingChatbot';
 import { useResponsive } from '../hooks/useResponsive';
 import { loadNgrokUrl } from '../services/mlService';
 
@@ -39,6 +41,7 @@ function AppShell() {
       {/* Page Content */}
       <View style={[styles.content, { backgroundColor: colors.background }]}>
         <Slot />
+        <FloatingChatbot />
       </View>
     </SafeAreaView>
   );
@@ -50,7 +53,9 @@ export default function RootLayout() {
       <SafeAreaProvider>
         <ThemeProvider>
           <AuthProvider>
-            <AppShell />
+            <ToastProvider>
+              <AppShell />
+            </ToastProvider>
           </AuthProvider>
         </ThemeProvider>
       </SafeAreaProvider>

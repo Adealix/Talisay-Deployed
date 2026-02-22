@@ -35,6 +35,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '../contexts/ToastContext';
 import { useResponsive } from '../hooks/useResponsive';
 import StatsCard from '../components/Cards/StatsCard';
 import { Spacing, Shadows, BorderRadius, Typography, Layout as LayoutConst } from '../constants/Layout';
@@ -1099,51 +1100,76 @@ export default function AdminPage() {
     }
   }, [activeTab, isAdmin]);
 
+  const { showToast } = useToast();
+  const [actionLoading, setActionLoading] = useState(null); // track which userId is loading
+
   // ─── User CRUD handlers ───
   const handleUpdateUser = useCallback(async (overrideUser) => {
     const targetUser = overrideUser || editingUser;
     if (!targetUser) return;
-    const result = await updateUser(targetUser.id, editForm);
-    if (result.ok) {
-      setUsers(prev => prev.map(u => u.id === targetUser.id ? { ...u, ...editForm } : u));
-      setEditingUser(null);
-      setSelectedUser(null);
-      setEditForm({});
-    } else {
-      if (Platform.OS === 'web') {
-        window.alert(result.error === 'cannot_change_own_role' ? 'Cannot change your own role' : 'Failed to update user');
+    setActionLoading(targetUser.id);
+    try {
+      const result = await updateUser(targetUser.id, editForm);
+      if (result.ok) {
+        setUsers(prev => prev.map(u => u.id === targetUser.id ? { ...u, ...editForm } : u));
+        setEditingUser(null);
+        setSelectedUser(null);
+        setEditForm({});
+        showToast('User updated successfully!', 'success');
       } else {
-        Alert.alert('Error', result.error === 'cannot_change_own_role' ? 'Cannot change your own role' : 'Failed to update user');
+        const msg = result.error === 'cannot_change_own_role' ? 'Cannot change your own role' : 'Failed to update user';
+        showToast(msg, 'error');
       }
+    } catch {
+      showToast('Network error. Please try again.', 'error');
+    } finally {
+      setActionLoading(null);
     }
-  }, [editingUser, editForm]);
+  }, [editingUser, editForm, showToast]);
 
   const handleToggleUserStatus = useCallback(async (userId, newActive, reason = '') => {
-    const result = await toggleUserStatus(userId, newActive, reason);
-    if (result.ok) {
-      setUsers(prev => prev.map(u => u.id === userId ? { ...u, ...result.user } : u));
+    setActionLoading(userId);
+    try {
+      const result = await toggleUserStatus(userId, newActive, reason);
+      if (result.ok) {
+        setUsers(prev => prev.map(u => u.id === userId ? { ...u, ...result.user } : u));
+        setConfirmDelete(null);
+        setDeactivateReason('');
+        showToast(newActive ? 'User activated successfully!' : 'User deactivated successfully!', 'success');
+      } else {
+        const msg = result.error === 'cannot_deactivate_self' ? 'Cannot deactivate your own account' : 'Failed to update user status';
+        showToast(msg, 'error');
+        setConfirmDelete(null);
+        setDeactivateReason('');
+      }
+    } catch {
+      showToast('Network error. Please try again.', 'error');
       setConfirmDelete(null);
       setDeactivateReason('');
-    } else {
-      const msg = result.error === 'cannot_deactivate_self' ? 'Cannot deactivate your own account' : 'Failed to update user status';
-      if (Platform.OS === 'web') window.alert(msg);
-      else Alert.alert('Error', msg);
-      setConfirmDelete(null);
-      setDeactivateReason('');
+    } finally {
+      setActionLoading(null);
     }
-  }, []);
+  }, [showToast]);
 
   const handleDeleteHistory = useCallback(async (historyId) => {
-    const result = await deleteHistory(historyId);
-    if (result.ok) {
-      setHistoryItems(prev => prev.filter(h => h.id !== historyId));
+    setActionLoading(historyId);
+    try {
+      const result = await deleteHistory(historyId);
+      if (result.ok) {
+        setHistoryItems(prev => prev.filter(h => h.id !== historyId));
+        setConfirmDelete(null);
+        showToast('History record deleted.', 'success');
+      } else {
+        showToast('Failed to delete history record.', 'error');
+        setConfirmDelete(null);
+      }
+    } catch {
+      showToast('Network error. Please try again.', 'error');
       setConfirmDelete(null);
-    } else {
-      if (Platform.OS === 'web') window.alert('Failed to delete history record');
-      else Alert.alert('Error', 'Failed to delete history record');
-      setConfirmDelete(null);
+    } finally {
+      setActionLoading(null);
     }
-  }, []);
+  }, [showToast]);
 
   useEffect(() => {
     if (!isAdmin && !loading) {
@@ -1864,6 +1890,7 @@ export default function AdminPage() {
                         <View style={[s.dtCellActions, s.dtActionsRow]}>
                           <Pressable
                             onPress={() => setSelectedUser(u)}
+                            disabled={actionLoading === u.id}
                             style={[s.dtActionBtn, { backgroundColor: '#3b82f615' }]}
                           >
                             <Ionicons name="create-outline" size={14} color="#3b82f6" />
@@ -1876,9 +1903,14 @@ export default function AdminPage() {
                                 handleToggleUserStatus(u.id, true);
                               }
                             }}
+                            disabled={actionLoading === u.id}
                             style={[s.dtActionBtn, { backgroundColor: u.isActive !== false ? '#ef444415' : '#22c55e15' }]}
                           >
-                            <Ionicons name={u.isActive !== false ? 'ban-outline' : 'checkmark-circle-outline'} size={14} color={u.isActive !== false ? '#ef4444' : '#22c55e'} />
+                            {actionLoading === u.id ? (
+                              <ActivityIndicator size={14} color={colors.textTertiary} />
+                            ) : (
+                              <Ionicons name={u.isActive !== false ? 'ban-outline' : 'checkmark-circle-outline'} size={14} color={u.isActive !== false ? '#ef4444' : '#22c55e'} />
+                            )}
                           </Pressable>
                         </View>
                       </Animated.View>
@@ -2046,10 +2078,17 @@ export default function AdminPage() {
                           setMobileEditUserOpen(false);
                           setSelectedUser(null);
                         }}
-                        style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: colors.primary, borderRadius: BorderRadius.md, paddingVertical: 13 }}
+                        disabled={!!actionLoading}
+                        style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: actionLoading ? colors.primary + '80' : colors.primary, borderRadius: BorderRadius.md, paddingVertical: 13 }}
                       >
-                        <Ionicons name="save-outline" size={17} color="#fff" />
-                        <Text style={{ ...Typography.captionMedium, color: '#fff', fontWeight: '700' }}>Save Changes</Text>
+                        {actionLoading ? (
+                          <ActivityIndicator size="small" color="#fff" />
+                        ) : (
+                          <>
+                            <Ionicons name="save-outline" size={17} color="#fff" />
+                            <Text style={{ ...Typography.captionMedium, color: '#fff', fontWeight: '700' }}>Save Changes</Text>
+                          </>
+                        )}
                       </Pressable>
                     </View>
                   </Pressable>
@@ -2353,7 +2392,7 @@ export default function AdminPage() {
                 )}
 
                 <View style={s.modalBtnRow}>
-                  <Pressable onPress={() => { setConfirmDelete(null); setDeactivateReason(''); }} style={[s.modalBtn, { borderColor: colors.border }]}>
+                  <Pressable onPress={() => { setConfirmDelete(null); setDeactivateReason(''); }} style={[s.modalBtn, { borderColor: colors.border }]} disabled={!!actionLoading}>
                     <Text style={[s.modalBtnText, { color: colors.textSecondary }]}>Cancel</Text>
                   </Pressable>
                   <Pressable
@@ -2364,16 +2403,20 @@ export default function AdminPage() {
                         handleDeleteHistory(confirmDelete.id);
                       }
                     }}
-                    disabled={confirmDelete.type === 'user' && !deactivateReason}
+                    disabled={(confirmDelete.type === 'user' && !deactivateReason) || !!actionLoading}
                     style={[s.modalBtn, s.modalBtnPrimary, {
                       backgroundColor: confirmDelete.type === 'user'
-                        ? (deactivateReason ? '#f97316' : '#f9731640')
-                        : '#ef4444',
+                        ? (deactivateReason && !actionLoading ? '#f97316' : '#f9731640')
+                        : (actionLoading ? '#ef444480' : '#ef4444'),
                     }]}
                   >
-                    <Text style={[s.modalBtnText, { color: '#fff' }]}>
-                      {confirmDelete.type === 'user' ? 'Deactivate' : 'Delete'}
-                    </Text>
+                    {actionLoading ? (
+                      <ActivityIndicator size="small" color="#fff" />
+                    ) : (
+                      <Text style={[s.modalBtnText, { color: '#fff' }]}>
+                        {confirmDelete.type === 'user' ? 'Deactivate' : 'Delete'}
+                      </Text>
+                    )}
                   </Pressable>
                 </View>
               </Pressable>

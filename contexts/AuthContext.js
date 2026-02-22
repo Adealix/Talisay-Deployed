@@ -59,6 +59,10 @@ export function AuthProvider({ children }) {
         setPendingVerification({ email });
         return { ok: false, error: 'email_not_verified' };
       }
+      // If account deactivated, return with reason
+      if (e.status === 403 && e.data?.error === 'account_deactivated') {
+        return { ok: false, error: 'account_deactivated', reason: e.data?.reason };
+      }
       return { ok: false, error: e.data?.error || e.message };
     } finally {
       setIsLoading(false);
