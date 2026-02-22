@@ -529,7 +529,9 @@ function FullDetailsView({ result, colors, isDark, compact = false }) {
   );
 }
 
-// ─── Single Result Display (2-column: image left, stats right, details below) ───
+// ─── Single Result Display — responsive ───
+// Desktop: LEFT photo panel | RIGHT stats panel (side-by-side)
+// Mobile:  single card — image on top, results stacked below
 function ResultDisplay({ result, imageUri, imageName, showDetails, setShowDetails, colors, isDark, isDesktop, label, isComparison = false }) {
   if (!result) return null;
 
@@ -537,125 +539,162 @@ function ResultDisplay({ result, imageUri, imageName, showDetails, setShowDetail
   const confidence = Math.round((result.overallConfidence || result.colorConfidence || 0) * 100);
   const catColor = getCategoryColor(result.category);
 
+  // ── shared stats content (used in both layouts) ──
+  const StatsContent = () => (
+    <>
+      {result.multiFruit ? (
+        <>
+          <View style={styles.resultStatMain}>
+            <Text style={[styles.resultStatYield, { color: colors.text }]}>{oilYield}%</Text>
+            <Text style={[styles.resultStatYieldLabel, { color: colors.textSecondary }]}>Avg. Oil Yield</Text>
+          </View>
+          <View style={[styles.resultStatBadge, { backgroundColor: '#7c3aed' }]}>
+            <Ionicons name="apps" size={14} color="#fff" />
+            <Text style={styles.resultStatBadgeText}>{result.fruitCount} Fruits</Text>
+          </View>
+          {result.colorDistribution && Object.keys(result.colorDistribution).length > 0 && (
+            <View style={styles.resultStatSection}>
+              {Object.entries(result.colorDistribution).map(([c, n]) => (
+                <View key={c} style={styles.colorDistItem}>
+                  <View style={[styles.colorDistDot, { backgroundColor: getCategoryColor(c.toUpperCase()) }]} />
+                  <Text style={[styles.colorDistText, { color: colors.text }]}>
+                    {c.charAt(0).toUpperCase() + c.slice(1)}: {n}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          )}
+          {result.oilYieldRange && (
+            <View style={[styles.resultStatRow, { borderTopColor: colors.borderLight }]}>
+              <Text style={[styles.resultStatRowLabel, { color: colors.textSecondary }]}>Range</Text>
+              <Text style={[styles.resultStatRowVal, { color: colors.text }]}>
+                {result.oilYieldRange[0].toFixed(1)}–{result.oilYieldRange[1].toFixed(1)}%
+              </Text>
+            </View>
+          )}
+          <View style={[styles.resultStatRow, { borderTopColor: colors.borderLight }]}>
+            <Text style={[styles.resultStatRowLabel, { color: colors.textSecondary }]}>Confidence</Text>
+            <Text style={[styles.resultStatRowVal, { color: colors.text }]}>{confidence}%</Text>
+          </View>
+        </>
+      ) : (
+        <>
+          <View style={styles.resultStatMain}>
+            <Text style={[styles.resultStatYield, { color: colors.text }]}>{oilYield}%</Text>
+            <Text style={[styles.resultStatYieldLabel, { color: colors.textSecondary }]}>Oil Yield</Text>
+          </View>
+          <View style={[styles.resultStatBadge, { backgroundColor: catColor }]}>
+            <Text style={styles.resultStatBadgeText}>{result.category || 'Unknown'}</Text>
+            <Text style={styles.resultStatBadgeConf}>
+              {result.colorConfidence ? Math.round(result.colorConfidence * 100) : 0}%
+            </Text>
+          </View>
+          <View style={[styles.resultStatRow, { borderTopColor: colors.borderLight }]}>
+            <Text style={[styles.resultStatRowLabel, { color: colors.textSecondary }]}>Maturity</Text>
+            <Text style={[styles.resultStatRowVal, { color: colors.text }]} numberOfLines={2}>
+              {result.maturityStage || getMaturityLabel(result.category)}
+            </Text>
+          </View>
+          <View style={[styles.resultStatRow, { borderTopColor: colors.borderLight }]}>
+            <Text style={[styles.resultStatRowLabel, { color: colors.textSecondary }]}>Confidence</Text>
+            <Text style={[styles.resultStatRowVal, { color: colors.text }]}>{confidence}%</Text>
+          </View>
+          <View style={[styles.resultRecBox, { backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : '#f0fdf4', borderColor: colors.borderLight }]}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+              <Ionicons name="checkmark-circle" size={13} color="#22c55e" />
+              <Text style={[styles.resultInfoCellLabel, { color: colors.textSecondary }]}>Recommendation</Text>
+            </View>
+            <Text style={[styles.resultRecText, { color: colors.text }]}>{getRecommendation(result.category)}</Text>
+          </View>
+        </>
+      )}
+    </>
+  );
+
+  // ── expand/details section (same for both layouts) ──
+  const DetailsSection = () => (
+    isComparison ? (
+      <Animated.View entering={FadeInUp.delay(120).duration(260)} style={[styles.resultDetailsWrap, { backgroundColor: colors.card, borderColor: colors.borderLight }]}>
+        <FullDetailsView result={result} colors={colors} isDark={isDark} compact />
+      </Animated.View>
+    ) : (
+      <>
+        <Pressable
+          onPress={() => setShowDetails(!showDetails)}
+          style={[styles.expandBtn, { borderColor: colors.borderLight, backgroundColor: colors.card }]}
+        >
+          <Ionicons name={showDetails ? 'chevron-up' : 'chevron-down'} size={16} color={colors.primary} />
+          <Text style={[styles.expandBtnText, { color: colors.primary }]}>
+            {showDetails ? 'Hide Details' : 'Show Details'}
+          </Text>
+        </Pressable>
+        {showDetails && (
+          <Animated.View entering={FadeInUp.duration(260)} style={[styles.resultDetailsWrap, { backgroundColor: colors.card, borderColor: colors.borderLight }]}>
+            <FullDetailsView result={result} colors={colors} isDark={isDark} />
+          </Animated.View>
+        )}
+      </>
+    )
+  );
+
+  // ════════════════════════════════════
+  // DESKTOP: side-by-side two-panel grid
+  // ════════════════════════════════════
+  if (isDesktop) {
+    return (
+      <Animated.View entering={FadeInUp.duration(280)} style={styles.resultWrapper}>
+        {label && (
+          <View style={[styles.resultLabelBadge, { backgroundColor: colors.primary + '12' }]}>
+            <Text style={[styles.resultLabelText, { color: colors.primary }]}>{label}</Text>
+          </View>
+        )}
+        <View style={styles.resultGridRow}>
+          {/* LEFT — photo panel */}
+          <Animated.View entering={FadeInLeft.delay(60).duration(260)} style={[styles.resultPhotoPanel, { backgroundColor: colors.card, borderColor: colors.borderLight }]}>
+            <Image source={{ uri: imageUri }} style={styles.resultImg} resizeMode="cover" />
+            <Text style={[styles.resultImgName, { color: colors.textTertiary }]} numberOfLines={1}>
+              {imageName || 'Image'}
+            </Text>
+          </Animated.View>
+          {/* RIGHT — stats panel */}
+          <Animated.View entering={FadeInRight.delay(60).duration(260)} style={[styles.resultStatsPanel, { backgroundColor: colors.card, borderColor: colors.borderLight }]}>
+            <View style={styles.resultStatsInner}>
+              <StatsContent />
+            </View>
+          </Animated.View>
+        </View>
+        <DetailsSection />
+        {result.timing && (
+          <Text style={[styles.timingText, { color: colors.textTertiary }]}>
+            Completed in {result.timing.totalSeconds}s
+          </Text>
+        )}
+      </Animated.View>
+    );
+  }
+
+  // ════════════════════════════════════
+  // MOBILE: single card — image top, results below
+  // ════════════════════════════════════
   return (
-    <Animated.View entering={FadeInUp.duration(280)} style={[styles.resultCard, { backgroundColor: colors.card, borderColor: colors.borderLight }]}>
-      {/* Label badge */}
+    <Animated.View entering={FadeInUp.duration(280)} style={styles.resultWrapper}>
       {label && (
         <View style={[styles.resultLabelBadge, { backgroundColor: colors.primary + '12' }]}>
           <Text style={[styles.resultLabelText, { color: colors.primary }]}>{label}</Text>
         </View>
       )}
-
-      {/* ── 2-Column: Image (left) | Stats (right) ── */}
-      <View style={styles.resultTwoCol}>
-        {/* LEFT — image */}
-        <View style={styles.resultImgWrap}>
-          <Image source={{ uri: imageUri }} style={styles.resultImg} resizeMode="cover" />
-          <Text style={[styles.resultImgName, { color: colors.textTertiary }]} numberOfLines={2}>
-            {imageName || 'Image'}
-          </Text>
-        </View>
-
-        {/* RIGHT — key stats */}
-        <View style={styles.resultStatsCol}>
-          {result.multiFruit ? (
-            <>
-              {/* ── Multi-fruit stats ── */}
-              <View style={styles.resultStatMain}>
-                <Text style={[styles.resultStatYield, { color: colors.text }]}>{oilYield}%</Text>
-                <Text style={[styles.resultStatYieldLabel, { color: colors.textSecondary }]}>Avg. Oil Yield</Text>
-              </View>
-              <View style={[styles.resultStatBadge, { backgroundColor: '#7c3aed' }]}>
-                <Ionicons name="apps" size={14} color="#fff" />
-                <Text style={styles.resultStatBadgeText}>{result.fruitCount} Fruits</Text>
-              </View>
-              {result.oilYieldRange && (
-                <View style={[styles.resultStatRow, { borderTopColor: colors.borderLight }]}>
-                  <Text style={[styles.resultStatRowLabel, { color: colors.textSecondary }]}>Range</Text>
-                  <Text style={[styles.resultStatRowVal, { color: colors.text }]}>
-                    {result.oilYieldRange[0].toFixed(1)}–{result.oilYieldRange[1].toFixed(1)}%
-                  </Text>
-                </View>
-              )}
-              <View style={[styles.resultStatRow, { borderTopColor: colors.borderLight }]}>
-                <Text style={[styles.resultStatRowLabel, { color: colors.textSecondary }]}>Confidence</Text>
-                <Text style={[styles.resultStatRowVal, { color: colors.text }]}>{confidence}%</Text>
-              </View>
-            </>
-          ) : (
-            <>
-              {/* ── Single-fruit stats ── */}
-              <View style={styles.resultStatMain}>
-                <Text style={[styles.resultStatYield, { color: colors.text }]}>{oilYield}%</Text>
-                <Text style={[styles.resultStatYieldLabel, { color: colors.textSecondary }]}>Oil Yield</Text>
-              </View>
-              <View style={[styles.resultStatBadge, { backgroundColor: catColor }]}>
-                <Text style={styles.resultStatBadgeText}>{result.category || 'Unknown'}</Text>
-                <Text style={styles.resultStatBadgeConf}>
-                  {result.colorConfidence ? Math.round(result.colorConfidence * 100) : 0}%
-                </Text>
-              </View>
-              <View style={[styles.resultStatRow, { borderTopColor: colors.borderLight }]}>
-                <Text style={[styles.resultStatRowLabel, { color: colors.textSecondary }]}>Maturity</Text>
-                <Text style={[styles.resultStatRowVal, { color: colors.text }]} numberOfLines={2}>
-                  {result.maturityStage || getMaturityLabel(result.category)}
-                </Text>
-              </View>
-              <View style={[styles.resultStatRow, { borderTopColor: colors.borderLight }]}>
-                <Text style={[styles.resultStatRowLabel, { color: colors.textSecondary }]}>Confidence</Text>
-                <Text style={[styles.resultStatRowVal, { color: colors.text }]}>{confidence}%</Text>
-              </View>
-            </>
-          )}
-        </View>
-      </View>
-
-      {/* ── Color distribution (multi-fruit, full width) ── */}
-      {result.multiFruit && result.colorDistribution && Object.keys(result.colorDistribution).length > 0 && (
-        <View style={[styles.resultColorDist, { backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : '#f8fafc', borderColor: colors.borderLight }]}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 5 }}>
-            <Ionicons name="color-palette" size={13} color={colors.primary} />
-            <Text style={[styles.resultInfoCellLabel, { color: colors.textSecondary }]}>Color Distribution</Text>
-          </View>
-          <View style={{ flexDirection: 'row', gap: 12, flexWrap: 'wrap' }}>
-            {Object.entries(result.colorDistribution).map(([c, n]) => (
-              <View key={c} style={styles.colorDistItem}>
-                <View style={[styles.colorDistDot, { backgroundColor: getCategoryColor(c.toUpperCase()) }]} />
-                <Text style={[styles.colorDistText, { color: colors.text }]}>
-                  {c.charAt(0).toUpperCase() + c.slice(1)}: {n}
-                </Text>
-              </View>
-            ))}
-          </View>
-        </View>
-      )}
-
-      {/* ── Recommendation (single, full width) ── */}
-      {!result.multiFruit && (
-        <View style={[styles.resultRecBox, { backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : '#f0fdf4', borderColor: colors.borderLight }]}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-            <Ionicons name="checkmark-circle" size={14} color="#22c55e" />
-            <Text style={[styles.resultInfoCellLabel, { color: colors.textSecondary, fontWeight: '600' }]}>Recommendation</Text>
-          </View>
-          <Text style={[styles.resultRecText, { color: colors.text }]}>{getRecommendation(result.category)}</Text>
-        </View>
-      )}
-
-      {/* ── Comparison: always show expanded details ── */}
-      {isComparison ? (
-        <FullDetailsView result={result} colors={colors} isDark={isDark} compact />
-      ) : (
-        <>
-          <Pressable onPress={() => setShowDetails(!showDetails)} style={[styles.expandBtn, { borderColor: colors.borderLight }]}>
-            <Ionicons name={showDetails ? 'chevron-up' : 'chevron-down'} size={16} color={colors.primary} />
-            <Text style={[styles.expandBtnText, { color: colors.primary }]}>
-              {showDetails ? 'Hide Details' : 'Show Details'}
-            </Text>
-          </Pressable>
-          {showDetails && <FullDetailsView result={result} colors={colors} isDark={isDark} />}
-        </>
-      )}
-
+      {/* Image card */}
+      <Animated.View entering={FadeInUp.delay(40).duration(260)} style={[styles.resultMobileImgCard, { backgroundColor: colors.card, borderColor: colors.borderLight }]}>
+        <Image source={{ uri: imageUri }} style={styles.resultMobileImg} resizeMode="cover" />
+        <Text style={[styles.resultImgName, { color: colors.textTertiary }]} numberOfLines={1}>
+          {imageName || 'Image'}
+        </Text>
+      </Animated.View>
+      {/* Stats card */}
+      <Animated.View entering={FadeInUp.delay(80).duration(260)} style={[styles.resultMobileStatsCard, { backgroundColor: colors.card, borderColor: colors.borderLight }]}>
+        <StatsContent />
+      </Animated.View>
+      <DetailsSection />
       {result.timing && (
         <Text style={[styles.timingText, { color: colors.textTertiary }]}>
           Completed in {result.timing.totalSeconds}s
@@ -697,8 +736,13 @@ function ComparisonSummary({ result1, result2, colors }) {
   );
 }
 
-// ─── Carousel Card ───
-function CarouselCard({ slides, index, setIndex, colors, isDark }) {
+// ─── Carousel Card (self-contained — owns its own index state and interval) ───
+function CarouselCard({ slides, colors, isDark }) {
+  const [index, setIndex] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setIndex((i) => (i + 1) % slides.length), CAROUSEL_INTERVAL_MS);
+    return () => clearInterval(id);
+  }, [slides.length]);
   const slide = slides[index];
   return (
     <Animated.View
@@ -771,7 +815,6 @@ export default function ScanPage() {
   const [progressMessage, setProgressMessage] = useState('');
   const [showDetails, setShowDetails] = useState(false);
   const [mlBackendAvailable, setMlBackendAvailable] = useState(false);
-  const [carouselIndex, setCarouselIndex] = useState(0);
 
   // Mode
   const [mode, setMode] = useState('single');
@@ -806,10 +849,7 @@ export default function ScanPage() {
     checkMLBackend();
   }, []);
 
-  useEffect(() => {
-    const id = setInterval(() => setCarouselIndex((i) => (i + 1) % CAROUSEL_SLIDES.length), CAROUSEL_INTERVAL_MS);
-    return () => clearInterval(id);
-  }, []);
+
 
   async function checkMLBackend() {
     const available = await mlService.isMLBackendAvailable();
@@ -1198,7 +1238,7 @@ export default function ScanPage() {
                 </View>
 
                 <View style={styles.inputCol}>
-                  <CarouselCard slides={CAROUSEL_SLIDES} index={carouselIndex} setIndex={setCarouselIndex} colors={colors} isDark={isDark} />
+                  <CarouselCard slides={CAROUSEL_SLIDES} colors={colors} isDark={isDark} />
                 </View>
               </View>
             ) : (
@@ -1446,47 +1486,96 @@ const styles = StyleSheet.create({
   },
   primaryBtnText: { color: '#fff', fontSize: 15, fontWeight: '700', letterSpacing: 0.3 },
 
-  /* Result Card */
-  resultCard: {
-    borderRadius: BorderRadius.lg, borderWidth: 1, padding: Spacing.lg,
-    gap: Spacing.md, ...Shadows.md,
+  /* Result: outer wrapper (grid row + details below) */
+  resultWrapper: {
+    gap: Spacing.sm,
   },
-  resultLabelBadge: {
-    alignSelf: 'flex-start', paddingHorizontal: Spacing.md, paddingVertical: 4,
-    borderRadius: BorderRadius.md, marginBottom: Spacing.xs,
-  },
-  resultLabelText: { fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
-
-  /* Result: 2-column layout (image left | stats right) */
-  resultTwoCol: {
+  resultGridRow: {
     flexDirection: 'row',
-    gap: Spacing.md,
+    gap: Spacing.sm,
     alignItems: 'stretch',
+    height: 360,
   },
-  resultImgWrap: {
-    flex: 1.1,
-    minWidth: 100,
-    maxWidth: 220,
+
+  /* LEFT photo panel */
+  resultPhotoPanel: {
+    flex: 1,
+    borderRadius: BorderRadius.lg,
+    borderWidth: 1,
+    overflow: 'hidden',
+    ...Shadows.md,
   },
   resultImg: {
+    flex: 1,
     width: '100%',
-    aspectRatio: 3 / 4,
-    borderRadius: BorderRadius.md,
+    borderRadius: 0,
     backgroundColor: '#111',
   },
   resultImgName: {
     fontSize: 10,
-    marginTop: 5,
+    paddingVertical: 6,
     textAlign: 'center',
     lineHeight: 14,
   },
-  resultStatsCol: {
+
+  /* RIGHT stats panel */
+  resultStatsPanel: {
     flex: 1,
-    gap: 10,
+    borderRadius: BorderRadius.lg,
+    borderWidth: 1,
+    padding: Spacing.lg,
+    alignItems: 'center',
     justifyContent: 'center',
-    paddingTop: 4,
-    paddingBottom: 4,
+    ...Shadows.md,
   },
+  resultStatsInner: {
+    width: '100%',
+    maxWidth: 320,
+    gap: 12,
+  },
+
+  /* Details wrap below the 2-panel row */
+  resultDetailsWrap: {
+    borderRadius: BorderRadius.lg,
+    borderWidth: 1,
+    padding: Spacing.md,
+    ...Shadows.sm,
+  },
+
+  resultStatSection: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+
+  /* ── Mobile-only: stacked image card + stats card ── */
+  resultMobileImgCard: {
+    borderRadius: BorderRadius.lg,
+    borderWidth: 1,
+    overflow: 'hidden',
+    alignItems: 'center',
+    paddingBottom: Spacing.xs,
+    ...Shadows.md,
+  },
+  resultMobileImg: {
+    width: '100%',
+    aspectRatio: 4 / 3,
+    borderRadius: 0,
+    backgroundColor: '#111',
+  },
+  resultMobileStatsCard: {
+    borderRadius: BorderRadius.lg,
+    borderWidth: 1,
+    padding: Spacing.lg,
+    gap: 10,
+    ...Shadows.md,
+  },
+  resultLabelBadge: {
+    alignSelf: 'flex-start', paddingHorizontal: Spacing.md, paddingVertical: 4,
+    borderRadius: BorderRadius.md,
+  },
+  resultLabelText: { fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
+
   resultStatMain: {
     marginBottom: 2,
   },
@@ -1572,7 +1661,7 @@ const styles = StyleSheet.create({
   /* Expand btn */
   expandBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
-    paddingVertical: Spacing.sm, borderTopWidth: 1, borderBottomWidth: 1,
+    paddingVertical: Spacing.md, borderRadius: BorderRadius.lg, borderWidth: 1,
     ...Platform.select({ web: { cursor: 'pointer' } }),
   },
   expandBtnText: { fontSize: 13, fontWeight: '600' },
