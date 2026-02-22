@@ -37,6 +37,7 @@ const CAT_LABELS = {
   GREEN: 'Green / Immature',
   YELLOW: 'Yellow / Mature',
   BROWN: 'Brown / Overripe',
+  MULTI_FRUIT: 'Multiple Fruit (Batch)',
 };
 
 const fmt = (v, d = 2) => (v != null && typeof v === 'number' ? v.toFixed(d) : 'N/A');
@@ -78,33 +79,54 @@ function buildCSV(headers, rows) {
  * Generate category-specific CSV report.
  */
 export function generateCategoryCSV(category, historyItems, analytics) {
-  const items = historyItems.filter(h => h.category === category);
+  const isMulti = category === 'MULTI_FRUIT';
+  const items = isMulti
+    ? historyItems.filter(h => h.analysisType === 'multi_fruit')
+    : historyItems.filter(h => h.category === category);
   const yieldStats = analytics?.avgYieldByCategory?.[category] || {};
   const dimStats = analytics?.dimensionStats?.[category] || {};
-  const sci = OIL_YIELD_DATA[category];
+  const sci = OIL_YIELD_DATA[category] || null;
+  const catLabel = CAT_LABELS[category] || category;
   const total = items.length;
 
   // Summary section
-  let csvContent = `TALISAY AI - ${CAT_LABELS[category]} FRUIT ANALYSIS REPORT\n`;
+  let csvContent = `TALISAY AI - ${catLabel} FRUIT ANALYSIS REPORT\n`;
   csvContent += `Generated: ${today()}\n`;
-  csvContent += `Category: ${CAT_LABELS[category]}\n`;
+  csvContent += `Category: ${catLabel}\n`;
   csvContent += `Total Scans: ${total}\n\n`;
   csvContent += `--- SUMMARY STATISTICS ---\n`;
-  csvContent += buildCSV(
-    ['Metric', 'Value'],
-    [
-      ['Research Oil Yield Range', `${sci.oilYieldRange[0]}-${sci.oilYieldRange[1]}%`],
-      ['Research Oil Yield Mean', `${sci.oilYieldMean}%`],
-      ['System Average Oil Yield', `${fmt(yieldStats.avg)}%`],
-      ['System Min Oil Yield', `${fmt(yieldStats.min)}%`],
-      ['System Max Oil Yield', `${fmt(yieldStats.max)}%`],
-      ['System Sample Size', yieldStats.count || 0],
-      ['Avg Length (cm)', fmt(dimStats.avgLength)],
-      ['Avg Width (cm)', fmt(dimStats.avgWidth)],
-      ['Avg Weight (g)', fmt(dimStats.avgWeight)],
-      ['Avg Kernel Weight (g)', fmt(dimStats.avgKernelWeight)],
-    ]
-  );
+
+  if (isMulti) {
+    const mfStats = analytics?.multiFruitStats || {};
+    csvContent += buildCSV(
+      ['Metric', 'Value'],
+      [
+        ['Total Batch Scans', mfStats.count || total],
+        ['Avg Fruits per Batch', fmt(mfStats.avgFruitCount)],
+        ['Max Fruits in a Batch', mfStats.maxFruitCount || 'N/A'],
+        ['Average Batch Oil Yield', `${fmt(mfStats.avgOilYield)}%`],
+        ['Min Batch Oil Yield', `${fmt(mfStats.minOilYield)}%`],
+        ['Max Batch Oil Yield', `${fmt(mfStats.maxOilYield)}%`],
+        ['Average Confidence', pct(mfStats.avgConfidence)],
+      ]
+    );
+  } else {
+    csvContent += buildCSV(
+      ['Metric', 'Value'],
+      [
+        ['Research Oil Yield Range', sci ? `${sci.oilYieldRange[0]}-${sci.oilYieldRange[1]}%` : 'N/A'],
+        ['Research Oil Yield Mean', sci ? `${sci.oilYieldMean}%` : 'N/A'],
+        ['System Average Oil Yield', `${fmt(yieldStats.avg)}%`],
+        ['System Min Oil Yield', `${fmt(yieldStats.min)}%`],
+        ['System Max Oil Yield', `${fmt(yieldStats.max)}%`],
+        ['System Sample Size', yieldStats.count || 0],
+        ['Avg Length (cm)', fmt(dimStats.avgLength)],
+        ['Avg Width (cm)', fmt(dimStats.avgWidth)],
+        ['Avg Weight (g)', fmt(dimStats.avgWeight)],
+        ['Avg Kernel Weight (g)', fmt(dimStats.avgKernelWeight)],
+      ]
+    );
+  }
 
   // Confidence breakdown
   const confItems = items.filter(h => h.confidence != null);
@@ -125,24 +147,43 @@ export function generateCategoryCSV(category, historyItems, analytics) {
 
   // Detail rows
   csvContent += `\n--- SCAN DETAIL RECORDS ---\n`;
-  csvContent += buildCSV(
-    ['#', 'Date', 'User', 'Category', 'Confidence', 'Color Conf.', 'Oil Conf.', 'Oil Yield %', 'Yield Category', 'Has Spots', 'Spot Coverage', 'Coin Detected', 'Analysis Type'],
-    items.map((h, i) => [
-      i + 1,
-      fmtDateTime(h.createdAt),
-      h.userName || h.userEmail || 'N/A',
-      h.category,
-      pct(h.confidence),
-      pct(h.colorConfidence),
-      pct(h.oilConfidence),
-      fmt(h.oilYieldPercent),
-      h.yieldCategory || 'N/A',
-      h.hasSpots ? 'Yes' : 'No',
-      h.spotCoverage != null ? pct(h.spotCoverage) : 'N/A',
-      h.referenceDetected ? 'Yes' : 'No',
-      h.analysisType || 'single',
-    ])
-  );
+  if (isMulti) {
+    csvContent += buildCSV(
+      ['#', 'Date', 'User', 'Fruits in Batch', 'Avg Oil Yield %', 'Yield Range', 'Confidence', 'Color Distribution', 'Analysis Type'],
+      items.map((h, i) => [
+        i + 1,
+        fmtDateTime(h.createdAt),
+        h.userName || h.userEmail || 'N/A',
+        h.fruitCount != null ? h.fruitCount : 'N/A',
+        fmt(h.averageOilYield),
+        h.oilYieldRange && h.oilYieldRange.length === 2
+          ? `${fmt(h.oilYieldRange[0])}-${fmt(h.oilYieldRange[1])}%`
+          : 'N/A',
+        pct(h.confidence),
+        h.colorDistribution ? Object.entries(h.colorDistribution).map(([k, v]) => `${k}:${v}`).join('; ') : 'N/A',
+        'multi_fruit',
+      ])
+    );
+  } else {
+    csvContent += buildCSV(
+      ['#', 'Date', 'User', 'Category', 'Confidence', 'Color Conf.', 'Oil Conf.', 'Oil Yield %', 'Yield Category', 'Has Spots', 'Spot Coverage', 'Coin Detected', 'Analysis Type'],
+      items.map((h, i) => [
+        i + 1,
+        fmtDateTime(h.createdAt),
+        h.userName || h.userEmail || 'N/A',
+        h.category,
+        pct(h.confidence),
+        pct(h.colorConfidence),
+        pct(h.oilConfidence),
+        fmt(h.oilYieldPercent),
+        h.yieldCategory || 'N/A',
+        h.hasSpots ? 'Yes' : 'No',
+        h.spotCoverage != null ? pct(h.spotCoverage) : 'N/A',
+        h.referenceDetected ? 'Yes' : 'No',
+        h.analysisType || 'single',
+      ])
+    );
+  }
 
   return csvContent;
 }
@@ -565,6 +606,130 @@ async function loadJsPDFLibs() {
 }
 
 export async function generateCategoryPDF(category, historyItems, analytics) {
+  /* ── MULTI_FRUIT — dedicated report path ── */
+  if (category === 'MULTI_FRUIT') {
+    const items = historyItems.filter(h => h.analysisType === 'multi_fruit');
+    const mfStats = analytics?.multiFruitStats || {};
+    const confItems = items.filter(h => h.confidence != null);
+    const avgConf = confItems.length > 0 ? confItems.reduce((s, h) => s + h.confidence, 0) / confItems.length : 0;
+
+    if (Platform.OS !== 'web') {
+      const sections = [
+        {
+          title: '1. Executive Summary',
+          content: `<p>Multiple Fruit (Batch) Analysis — ${items.length} batch scan(s). Average fruits per batch: ${fmt(mfStats.avgFruitCount)}. Average batch oil yield: ${fmt(mfStats.avgOilYield)}%.</p>`,
+        },
+        {
+          title: '2. Batch Statistics',
+          content: htmlKV([
+            ['Total Batch Scans', mfStats.count || items.length],
+            ['Average Fruits per Batch', fmt(mfStats.avgFruitCount)],
+            ['Max Fruits in a Batch', mfStats.maxFruitCount || 'N/A'],
+            ['Average Batch Oil Yield', `${fmt(mfStats.avgOilYield)}%`],
+            ['Minimum Batch Oil Yield', `${fmt(mfStats.minOilYield)}%`],
+            ['Maximum Batch Oil Yield', `${fmt(mfStats.maxOilYield)}%`],
+            ['Average Confidence', pct(avgConf)],
+          ]),
+        },
+        {
+          title: '3. Detailed Batch Records',
+          content: items.length > 0
+            ? htmlTable(
+                ['#', 'Date', 'User', 'Fruits', 'Avg Yield %', 'Yield Range', 'Confidence'],
+                items.map((h, i) => [
+                  i + 1,
+                  fmtDateTime(h.createdAt),
+                  h.userName || h.userEmail || 'N/A',
+                  h.fruitCount != null ? h.fruitCount : 'N/A',
+                  fmt(h.averageOilYield),
+                  h.oilYieldRange && h.oilYieldRange.length === 2
+                    ? `${fmt(h.oilYieldRange[0])}-${fmt(h.oilYieldRange[1])}%`
+                    : 'N/A',
+                  pct(h.confidence),
+                ])
+              )
+            : '<p>No batch scan records found.</p>',
+        },
+      ];
+      const html = buildNativeHTMLReport(
+        'Multiple Fruit (Batch) — Analysis Report',
+        `Report Date: ${today()} | Total Batch Scans: ${items.length}`,
+        sections
+      );
+      return { _nativeHtmlReport: true, content: html };
+    }
+
+    // Web jsPDF path for MULTI_FRUIT
+    const { JsPDF } = await loadJsPDFLibs();
+    const logoBase64 = await loadTUPLogo();
+    const doc = new JsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4', putOnlyUsedFonts: true, compress: true });
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+
+    let y = drawHeader(doc, pageWidth, logoBase64);
+    y += 4;
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(0, 0, 0);
+    doc.text('Multiple Fruit (Batch) — Analysis Report', pageWidth / 2, y, { align: 'center' });
+    y += 5;
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(100, 100, 100);
+    doc.text(`Report Date: ${today()}  |  Total Batch Scans: ${items.length}`, pageWidth / 2, y, { align: 'center' });
+    y += 8;
+
+    y = addSectionTitle(doc, '1. Executive Summary', y, pageWidth);
+    const summaryText = `This report presents an analysis of ${items.length} multi-fruit batch scan(s). Each batch captures multiple Talisay fruits simultaneously. ` +
+      `Average fruits per batch: ${fmt(mfStats.avgFruitCount)}. Average batch oil yield: ${fmt(mfStats.avgOilYield)}% (range: ${fmt(mfStats.minOilYield)}–${fmt(mfStats.maxOilYield)}%).`;
+    const splitSummary = doc.splitTextToSize(summaryText, pageWidth - 30);
+    doc.setFontSize(8.5);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(50, 50, 50);
+    doc.text(splitSummary, 15, y);
+    y += splitSummary.length * 4 + 4;
+
+    y = addSectionTitle(doc, '2. Batch Statistics', y, pageWidth);
+    y = addKVTable(doc, [
+      ['Total Batch Scans', String(mfStats.count || items.length)],
+      ['Average Fruits per Batch', fmt(mfStats.avgFruitCount)],
+      ['Max Fruits in a Batch', String(mfStats.maxFruitCount || 'N/A')],
+      ['Average Batch Oil Yield', `${fmt(mfStats.avgOilYield)}%`],
+      ['Minimum Batch Oil Yield', `${fmt(mfStats.minOilYield)}%`],
+      ['Maximum Batch Oil Yield', `${fmt(mfStats.maxOilYield)}%`],
+      ['Average Confidence', pct(avgConf)],
+    ], y);
+
+    y = checkPage(doc, y, 30, pageHeight, pageWidth, logoBase64);
+    y = addSectionTitle(doc, '3. Detailed Batch Records', y, pageWidth);
+    if (items.length > 0) {
+      y = addDataTable(doc,
+        ['#', 'Date', 'User', 'Fruits', 'Avg Yield %', 'Yield Range', 'Confidence'],
+        items.map((h, i) => [
+          i + 1,
+          fmtDateTime(h.createdAt),
+          sanitizeText(h.userName || h.userEmail || 'N/A'),
+          h.fruitCount != null ? String(h.fruitCount) : 'N/A',
+          fmt(h.averageOilYield),
+          h.oilYieldRange && h.oilYieldRange.length === 2
+            ? `${fmt(h.oilYieldRange[0])}-${fmt(h.oilYieldRange[1])}%`
+            : 'N/A',
+          pct(h.confidence),
+        ]),
+        y,
+        { headerColor: [124, 58, 237] }
+      );
+    }
+
+    const totalPages = doc.internal.getNumberOfPages();
+    for (let i = 1; i <= totalPages; i++) {
+      doc.setPage(i);
+      drawFooter(doc, i, totalPages, pageWidth, pageHeight);
+    }
+    return doc;
+  }
+
+  /* ── Standard single-category path ── */
   // Native: generate a styled HTML report shared via expo-sharing
   if (Platform.OS !== 'web') {
     const items = historyItems.filter(h => h.category === category);

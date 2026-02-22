@@ -92,6 +92,12 @@ function HistoryCard({ entry, onPress, delay = 0, colors, isDark }) {
               <Text style={[styles.typeBadgeText, { color: colors.primary }]}>Comparison</Text>
             </View>
           )}
+          {entry.analysisType === 'multi_fruit' && (
+            <View style={[styles.typeBadge, { backgroundColor: '#7c3aed' + '12' }]}>
+              <Ionicons name="apps" size={10} color="#7c3aed" />
+              <Text style={[styles.typeBadgeText, { color: '#7c3aed' }]}>Multiple ({entry.fruitCount || '?'})</Text>
+            </View>
+          )}
 
           {/* Category */}
           <View style={[styles.catBadge, { backgroundColor: getCategoryColor(entry.category) }]}>
@@ -100,7 +106,7 @@ function HistoryCard({ entry, onPress, delay = 0, colors, isDark }) {
 
           {/* Oil yield */}
           <Text style={[styles.oilYieldText, { color: colors.text }]}>
-            {entry.oilYieldPercent?.toFixed(1) ?? '—'}% oil
+            {(entry.oilYieldPercent || entry.averageOilYield)?.toFixed(1) ?? '—'}% oil
           </Text>
 
           {/* Comparison label */}
@@ -311,12 +317,168 @@ function DatasetPanel({ data, label, colors, isDark }) {
   );
 }
 
+// ─── Multi-Fruit Result View (exact mirror of Scan page ResultDisplay for multiFruit) ───
+function MultiFruitResultView({ entry, onDelete, colors, isDark }) {
+  const [showDetails, setShowDetails] = React.useState(false);
+  const oilYield = (entry.averageOilYield || entry.oilYieldPercent || 0).toFixed(1);
+  const confidence = Math.round(
+    (entry.overallConfidence || entry.colorConfidence || entry.confidence || 0) * 100
+  );
+
+  return (
+    <>
+      {/* Image */}
+      <View style={styles.modalImageSection}>
+        {entry.imageUri ? (
+          <Image source={{ uri: entry.imageUri }} style={styles.modalImage} resizeMode="contain" />
+        ) : (
+          <View style={[styles.modalImagePlaceholder, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#f1f5f9' }]}>
+            <Ionicons name="leaf" size={48} color={colors.textTertiary} />
+          </View>
+        )}
+      </View>
+
+      <View style={styles.modalDetails}>
+        {/* ── Stats card (mirrors scan StatsContent for multiFruit) ── */}
+        <View style={[{ borderRadius: 14, borderWidth: 1, padding: 16, marginBottom: 12, backgroundColor: colors.card, borderColor: colors.borderLight }]}>
+          {/* Big oil yield number */}
+          <View style={{ alignItems: 'center', paddingBottom: 14 }}>
+            <Text style={{ fontSize: 52, fontWeight: '800', color: colors.text, letterSpacing: -2 }}>{oilYield}%</Text>
+            <Text style={{ fontSize: 13, color: colors.textSecondary, marginTop: 2 }}>Avg. Oil Yield</Text>
+          </View>
+          {/* Fruit count badge */}
+          <View style={{ flexDirection: 'row', justifyContent: 'center', marginBottom: 14 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#7c3aed', borderRadius: 20, paddingHorizontal: 14, paddingVertical: 5 }}>
+              <Ionicons name="apps" size={14} color="#fff" />
+              <Text style={{ color: '#fff', fontWeight: '700', fontSize: 13 }}>{entry.fruitCount} Fruits</Text>
+            </View>
+          </View>
+          {/* Color distribution */}
+          {entry.colorDistribution && Object.keys(entry.colorDistribution).length > 0 && (
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 10, marginBottom: 14 }}>
+              {Object.entries(entry.colorDistribution).map(([c, n]) => (
+                <View key={c} style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                  <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: getCategoryColor(c.toUpperCase()) }} />
+                  <Text style={{ fontSize: 13, color: colors.text, fontWeight: '600' }}>
+                    {c.charAt(0).toUpperCase() + c.slice(1)}: {n}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          )}
+          {/* Range row */}
+          {entry.oilYieldRange && (
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8, borderTopWidth: 1, borderTopColor: colors.borderLight }}>
+              <Text style={{ fontSize: 13, color: colors.textSecondary }}>Range</Text>
+              <Text style={{ fontSize: 13, color: colors.text, fontWeight: '600' }}>
+                {entry.oilYieldRange[0]?.toFixed(1)}–{entry.oilYieldRange[1]?.toFixed(1)}%
+              </Text>
+            </View>
+          )}
+          {/* Confidence row */}
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8, borderTopWidth: 1, borderTopColor: colors.borderLight }}>
+            <Text style={{ fontSize: 13, color: colors.textSecondary }}>Confidence</Text>
+            <Text style={{ fontSize: 13, color: colors.text, fontWeight: '600' }}>{confidence}%</Text>
+          </View>
+        </View>
+
+        {/* Expand / collapse */}
+        <Pressable
+          onPress={() => setShowDetails(!showDetails)}
+          style={[{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 10, borderRadius: 10, borderWidth: 1, marginBottom: 12, borderColor: colors.borderLight, backgroundColor: colors.card }]}
+        >
+          <Ionicons name={showDetails ? 'chevron-up' : 'chevron-down'} size={16} color={colors.primary} />
+          <Text style={{ color: colors.primary, fontWeight: '600', fontSize: 14 }}>
+            {showDetails ? 'Hide Details' : 'Show Details'}
+          </Text>
+        </Pressable>
+
+        {showDetails && (
+          <>
+            {/* Per-fruit breakdown */}
+            {entry.fruits?.length > 0 && (
+              <View style={[styles.modalSection, { borderColor: colors.borderLight }]}>
+                <View style={styles.modalSectionHeader}>
+                  <Ionicons name="apps" size={16} color="#7c3aed" />
+                  <Text style={[styles.modalSectionTitle, { color: colors.text }]}>{entry.fruitCount} Fruits — Details</Text>
+                </View>
+                {entry.fruits.map((f, i) => (
+                  <View key={i} style={[{ borderRadius: 8, padding: 10, marginBottom: 6, backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)' }]}>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: getCategoryColor(f.color?.toUpperCase()), borderRadius: 12, paddingHorizontal: 10, paddingVertical: 3 }}>
+                        <Text style={{ color: '#fff', fontWeight: '700', fontSize: 11 }}>#{f.fruit_index ?? (i + 1)} {f.color?.toUpperCase()}</Text>
+                      </View>
+                      <Text style={{ fontSize: 15, fontWeight: '700', color: '#22c55e' }}>{f.oil_yield_percent?.toFixed(1)}% oil</Text>
+                    </View>
+                    {f.dimensions && (
+                      <Text style={{ fontSize: 11, color: colors.textTertiary, marginTop: 2 }}>
+                        L {f.dimensions.length_cm?.toFixed(1)} cm · W {f.dimensions.width_cm?.toFixed(1)} cm · {f.dimensions_source || 'estimated'}
+                      </Text>
+                    )}
+                    {f.confidence != null && (
+                      <Text style={{ fontSize: 11, color: colors.textTertiary }}>
+                        Conf: {Math.round((f.confidence || 0) * 100)}%
+                      </Text>
+                    )}
+                  </View>
+                ))}
+              </View>
+            )}
+
+            {/* Oil Yield detail card */}
+            <View style={[styles.modalSection, { borderColor: colors.borderLight }]}>
+              <View style={styles.modalSectionHeader}>
+                <Ionicons name="water" size={16} color="#22c55e" />
+                <Text style={[styles.modalSectionTitle, { color: colors.text }]}>Average Oil Yield</Text>
+              </View>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4 }}>
+                <Text style={{ color: colors.textSecondary, fontSize: 13 }}>Average</Text>
+                <Text style={{ color: colors.text, fontWeight: '800', fontSize: 18 }}>{oilYield}%</Text>
+              </View>
+              {entry.oilYieldRange && (
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4 }}>
+                  <Text style={{ color: colors.textSecondary, fontSize: 13 }}>Range</Text>
+                  <Text style={{ color: colors.text, fontWeight: '600', fontSize: 13 }}>
+                    {entry.oilYieldRange[0]?.toFixed(1)}% – {entry.oilYieldRange[1]?.toFixed(1)}%
+                  </Text>
+                </View>
+              )}
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4 }}>
+                <Text style={{ color: colors.textSecondary, fontSize: 13 }}>Confidence</Text>
+                <Text style={{ color: colors.text, fontWeight: '600', fontSize: 13 }}>{confidence}%</Text>
+              </View>
+            </View>
+
+            {/* Interpretation */}
+            {entry.interpretation && (
+              <View style={[styles.modalSection, { borderColor: colors.borderLight }]}>
+                <View style={styles.modalSectionHeader}>
+                  <Ionicons name="bulb" size={16} color="#f59e0b" />
+                  <Text style={[styles.modalSectionTitle, { color: colors.text }]}>Interpretation</Text>
+                </View>
+                <Text style={[styles.interpText, { color: colors.textSecondary }]}>{entry.interpretation}</Text>
+              </View>
+            )}
+          </>
+        )}
+
+        {/* Delete */}
+        <Pressable onPress={onDelete} style={[styles.deleteBtn, { borderColor: '#ef444440' }]}>
+          <Ionicons name="trash-outline" size={16} color="#ef4444" />
+          <Text style={styles.deleteBtnText}>Delete This Entry</Text>
+        </Pressable>
+      </View>
+    </>
+  );
+}
+
 // ─── Detail Modal ───
 function DetailModal({ entry, visible, onClose, onDelete, colors, isDark, allEntries }) {
   if (!entry) return null;
 
   // Check if this is a comparison entry
   const isComparison = entry.analysisType === 'comparison';
+  const isMultiFruit = entry.analysisType === 'multi_fruit' || entry.multiFruit;
 
   // Try to build baseline and own dataset data for comparison view
   let baselineData = null;
@@ -370,6 +532,12 @@ function DetailModal({ entry, visible, onClose, onDelete, colors, isDark, allEnt
                   <View style={[styles.modalTypeBadge, { backgroundColor: colors.primary + '12' }]}>
                     <Ionicons name="git-compare" size={11} color={colors.primary} />
                     <Text style={[styles.modalTypeText, { color: colors.primary }]}>Comparison</Text>
+                  </View>
+                )}
+                {isMultiFruit && (
+                  <View style={[styles.modalTypeBadge, { backgroundColor: '#7c3aed' + '12' }]}>
+                    <Ionicons name="apps" size={11} color="#7c3aed" />
+                    <Text style={[styles.modalTypeText, { color: '#7c3aed' }]}>Multiple ({entry.fruitCount || '?'})</Text>
                   </View>
                 )}
                 <Text style={[styles.modalDate, { color: colors.textTertiary }]}>
@@ -429,6 +597,8 @@ function DetailModal({ entry, visible, onClose, onDelete, colors, isDark, allEnt
                   <Text style={styles.deleteBtnText}>Delete This Entry</Text>
                 </Pressable>
               </View>
+            ) : isMultiFruit ? (
+              <MultiFruitResultView entry={entry} onDelete={onDelete} colors={colors} isDark={isDark} />
             ) : (
               /* ─── Single Analysis View ─── */
               <>
@@ -454,27 +624,74 @@ function DetailModal({ entry, visible, onClose, onDelete, colors, isDark, allEnt
                   <View style={styles.modalResultRow}>
                     <View style={[styles.modalResultCol, { backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : '#f0fdf4', borderColor: colors.borderLight }]}>
                       <Ionicons name="water" size={18} color="#22c55e" />
-                      <Text style={[styles.modalResultLabel, { color: colors.textSecondary }]}>Oil Yield</Text>
+                      <Text style={[styles.modalResultLabel, { color: colors.textSecondary }]}>{isMultiFruit ? 'Avg. Oil Yield' : 'Oil Yield'}</Text>
                       <Text style={[styles.modalResultValue, { color: colors.text }]}>
-                        {entry.oilYieldPercent?.toFixed(1) ?? '—'}%
+                        {(entry.oilYieldPercent || entry.averageOilYield)?.toFixed(1) ?? '—'}%
                       </Text>
                       {entry.yieldCategory && (
                         <Text style={[styles.modalResultSub, { color: colors.textTertiary }]}>{entry.yieldCategory}</Text>
                       )}
-                    </View>
-                    <View style={[styles.modalResultCol, { backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : '#fefce8', borderColor: colors.borderLight }]}>
-                      <Ionicons name="color-palette" size={18} color={getCategoryColor(entry.category)} />
-                      <Text style={[styles.modalResultLabel, { color: colors.textSecondary }]}>Color</Text>
-                      <View style={[styles.modalCatBadge, { backgroundColor: getCategoryColor(entry.category) }]}>
-                        <Text style={styles.modalCatText}>{entry.category || 'Unknown'}</Text>
-                      </View>
-                      {entry.colorConfidence != null && (
+                      {isMultiFruit && entry.oilYieldRange && (
                         <Text style={[styles.modalResultSub, { color: colors.textTertiary }]}>
-                          {Math.round(entry.colorConfidence * 100)}% confidence
+                          Range: {entry.oilYieldRange[0]?.toFixed(1)}–{entry.oilYieldRange[1]?.toFixed(1)}%
                         </Text>
                       )}
                     </View>
+                    <View style={[styles.modalResultCol, { backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : '#fefce8', borderColor: colors.borderLight }]}>
+                      {isMultiFruit ? (
+                        <>
+                          <Ionicons name="apps" size={18} color="#7c3aed" />
+                          <Text style={[styles.modalResultLabel, { color: colors.textSecondary }]}>Fruits</Text>
+                          <Text style={[styles.modalResultValue, { color: colors.text }]}>{entry.fruitCount || '?'}</Text>
+                          {entry.colorDistribution && (
+                            <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 4, marginTop: 4 }}>
+                              {Object.entries(entry.colorDistribution).map(([c, n]) => (
+                                <View key={c} style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+                                  <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: getCategoryColor(c.toUpperCase()) }} />
+                                  <Text style={{ fontSize: 10, color: colors.textSecondary, fontWeight: '600' }}>{c}: {n}</Text>
+                                </View>
+                              ))}
+                            </View>
+                          )}
+                        </>
+                      ) : (
+                        <>
+                          <Ionicons name="color-palette" size={18} color={getCategoryColor(entry.category)} />
+                          <Text style={[styles.modalResultLabel, { color: colors.textSecondary }]}>Color</Text>
+                          <View style={[styles.modalCatBadge, { backgroundColor: getCategoryColor(entry.category) }]}>
+                            <Text style={styles.modalCatText}>{entry.category || 'Unknown'}</Text>
+                          </View>
+                          {entry.colorConfidence != null && (
+                            <Text style={[styles.modalResultSub, { color: colors.textTertiary }]}>
+                              {Math.round(entry.colorConfidence * 100)}% confidence
+                            </Text>
+                          )}
+                        </>
+                      )}
+                    </View>
                   </View>
+
+                  {/* Multi-fruit per-fruit breakdown */}
+                  {isMultiFruit && entry.fruits?.length > 0 && (
+                    <View style={[styles.modalSection, { borderColor: colors.borderLight }]}>
+                      <View style={styles.modalSectionHeader}>
+                        <Ionicons name="list" size={16} color="#7c3aed" />
+                        <Text style={[styles.modalSectionTitle, { color: colors.text }]}>Per-Fruit Details</Text>
+                      </View>
+                      {entry.fruits.map((f, i) => (
+                        <View key={i} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 6, borderBottomWidth: i < entry.fruits.length - 1 ? 1 : 0, borderBottomColor: colors.borderLight }}>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                            <View style={[styles.modalCatBadge, { backgroundColor: getCategoryColor(f.color?.toUpperCase()), paddingHorizontal: 8, paddingVertical: 2 }]}>
+                              <Text style={{ color: '#fff', fontSize: 10, fontWeight: '700' }}>#{f.fruit_index ?? (i + 1)} {f.color?.toUpperCase()}</Text>
+                            </View>
+                          </View>
+                          <Text style={{ fontSize: 14, fontWeight: '700', color: '#22c55e' }}>
+                            {f.oil_yield_percent?.toFixed(1)}% oil
+                          </Text>
+                        </View>
+                      ))}
+                    </View>
+                  )}
 
                   {/* Dimensions */}
                   {dims && Object.keys(dims).length > 0 && (
@@ -638,10 +855,11 @@ export default function HistoryPage() {
 
   // ─── Filtered entries ───
   const filteredEntries = entries.filter(
-    (e) => filterType === 'all' || e.analysisType === filterType
+    (e) => filterType === 'all' || e.analysisType === filterType || (filterType === 'single' && !e.analysisType)
   );
-  const singleCount = entries.filter((e) => e.analysisType === 'single').length;
+  const singleCount = entries.filter((e) => e.analysisType === 'single' || !e.analysisType).length;
   const compCount = entries.filter((e) => e.analysisType === 'comparison').length;
+  const multiCount = entries.filter((e) => e.analysisType === 'multi_fruit').length;
 
   return (
     <ScrollView style={[styles.container, { backgroundColor: colors.background }]} showsVerticalScrollIndicator={false}>
@@ -700,6 +918,7 @@ export default function HistoryPage() {
                 { key: 'all', label: `All (${entries.length})`, icon: 'list' },
                 { key: 'single', label: `Single (${singleCount})`, icon: 'image' },
                 { key: 'comparison', label: `Compare (${compCount})`, icon: 'git-compare' },
+                { key: 'multi_fruit', label: `Multiple (${multiCount})`, icon: 'apps' },
               ].map((tab) => {
                 const active = filterType === tab.key;
                 return (
@@ -731,10 +950,10 @@ export default function HistoryPage() {
               <Animated.View entering={FadeInUp.duration(280)} style={[styles.emptyCard, { backgroundColor: colors.card, borderColor: colors.borderLight }]}>
                 <Ionicons name="filter-outline" size={48} color={colors.textTertiary} />
                 <Text style={[styles.emptyTitle, { color: colors.text }]}>
-                  No {filterType === 'single' ? 'Single Analysis' : 'Comparison'} Scans
+                  No {filterType === 'single' ? 'Single Analysis' : filterType === 'comparison' ? 'Comparison' : 'Multi-Fruit'} Scans
                 </Text>
                 <Text style={[styles.emptyDesc, { color: colors.textSecondary }]}>
-                  Try the {filterType === 'single' ? 'comparison' : 'single'} filter or scan a new Talisay fruit.
+                  Try a different filter or scan a new Talisay fruit.
                 </Text>
               </Animated.View>
             ) : (
@@ -783,9 +1002,9 @@ const styles = StyleSheet.create({
   },
   headerContent: { gap: Spacing.sm },
   headerContentDesktop: { maxWidth: LayoutConst.maxContentWidth, alignSelf: 'center', width: '100%' },
-  headerIcon: { width: 52, height: 52, borderRadius: BorderRadius.lg, alignItems: 'center', justifyContent: 'center', marginBottom: Spacing.xs },
-  pageTitle: { ...Typography.h1 },
-  pageSubtitle: { ...Typography.body, maxWidth: 500 },
+  headerIcon: { width: 56, height: 56, borderRadius: BorderRadius.xl, alignItems: 'center', justifyContent: 'center', marginBottom: Spacing.xs, ...Shadows.sm },
+  pageTitle: { ...Typography.h1, letterSpacing: -0.5 },
+  pageSubtitle: { ...Typography.body, maxWidth: 500, lineHeight: 22 },
 
   content: { padding: Spacing.lg, gap: Spacing.md },
   contentDesktop: { maxWidth: LayoutConst.maxContentWidth, alignSelf: 'center', width: '100%', paddingHorizontal: Spacing.xxl },
@@ -809,15 +1028,16 @@ const styles = StyleSheet.create({
 
   /* Filter Row */
   filterRow: {
-    flexDirection: 'row', gap: 4, padding: 4,
-    borderRadius: BorderRadius.lg, borderWidth: 1,
+    flexDirection: 'row', gap: 4, padding: 5,
+    borderRadius: BorderRadius.xl, borderWidth: 1,
+    ...Shadows.sm,
   },
   filterBtn: {
     flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    gap: 5, paddingVertical: 9, borderRadius: BorderRadius.md,
-    ...Platform.select({ web: { cursor: 'pointer' } }),
+    gap: 5, paddingVertical: 10, borderRadius: BorderRadius.lg,
+    ...Platform.select({ web: { cursor: 'pointer', transition: 'all 0.2s ease' } }),
   },
-  filterBtnText: { fontSize: 12, fontWeight: '600' },
+  filterBtnText: { fontSize: 11, fontWeight: '600' },
 
   /* Toolbar */
   toolbar: {
@@ -836,11 +1056,11 @@ const styles = StyleSheet.create({
 
   /* History Card */
   historyCard: {
-    width: 165, borderRadius: BorderRadius.lg, borderWidth: 1,
-    overflow: 'hidden', ...Shadows.sm,
-    ...Platform.select({ web: { cursor: 'pointer' } }),
+    width: 175, borderRadius: BorderRadius.xl, borderWidth: 1,
+    overflow: 'hidden', ...Shadows.md,
+    ...Platform.select({ web: { cursor: 'pointer', transition: 'all 0.2s ease' } }),
   },
-  cardThumb: { width: '100%', height: 120 },
+  cardThumb: { width: '100%', height: 130 },
   cardThumbPlaceholder: { alignItems: 'center', justifyContent: 'center' },
   cardBody: { padding: Spacing.sm, gap: 3 },
   typeBadge: {

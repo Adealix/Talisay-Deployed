@@ -44,6 +44,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useResponsive } from '../hooks/useResponsive';
 import { Spacing, Shadows, BorderRadius, Typography, Layout as LayoutConst } from '../constants/Layout';
 import { TALISAY_TYPES } from '../data/talisayTypes';
+import { TALISAY_IMAGES } from '../constants/images';
 import * as mlService from '../services/mlService';
 import { historyService } from '../services/historyService';
 import { uploadImageToCloudinary } from '../services/uploadService';
@@ -57,6 +58,13 @@ const CAROUSEL_SLIDES = TALISAY_TYPES.map((t) => ({
   placeholderColor: t.carousel[0]?.placeholderColor ?? '#1e3a5f',
 }));
 const CAROUSEL_INTERVAL_MS = 4000;
+
+// ─── Carousel data for multiple-fruit mode ───
+const MULTI_CAROUSEL_SLIDES = [
+  { name: 'Multiple Brown Talisay', image: TALISAY_IMAGES.multiple.slide1, placeholderColor: '#78350f' },
+  { name: 'Multi-Fruit Scene', image: TALISAY_IMAGES.multiple.slide2, placeholderColor: '#92400e' },
+  { name: 'Batch Arrangement', image: TALISAY_IMAGES.multiple.slide3, placeholderColor: '#a16207' },
+];
 
 // ─── Helpers ───
 const getCategoryColor = (cat) => {
@@ -237,6 +245,7 @@ function ModeToggle({ mode, setMode, reset, colors }) {
       {[
         { key: 'single', icon: 'image', label: 'Single Analysis' },
         { key: 'comparison', icon: 'git-compare', label: 'Side-by-Side' },
+        { key: 'multiple', icon: 'apps', label: 'Multiple Fruit' },
       ].map((item) => {
         const active = mode === item.key;
         return (
@@ -902,7 +911,7 @@ export default function ScanPage() {
 
   // ─── Analysis ───
   const handleAnalyze = async () => {
-    if (mode === 'single' && !capturedImageUri) return;
+    if ((mode === 'single' || mode === 'multiple') && !capturedImageUri) return;
     if (mode === 'comparison' && !image2Uri) { setError('Please select your own image to compare.'); return; }
 
     setLoading(true); setError(null);
@@ -914,7 +923,7 @@ export default function ScanPage() {
       let resolvedImage2CloudinaryUrl = image2CloudinaryUrl;
 
       if (isAuthenticated) {
-        if (mode === 'single' && capturedImageUri && !resolvedCloudinaryUrl) {
+        if ((mode === 'single' || mode === 'multiple') && capturedImageUri && !resolvedCloudinaryUrl) {
           setProgressMessage('Uploading image...');
           const uploadResult = await uploadImageToCloudinary(capturedImageUri);
           if (uploadResult.success) {
@@ -943,7 +952,7 @@ export default function ScanPage() {
             setAnalysisResult(res); setProgressMessage('');
             if (isAuthenticated) {
               historyService.saveHistoryItem({
-                analysisType: res.multiFruit ? 'multi_fruit' : 'single',
+                analysisType: 'single',
                 imageName: capturedImageName || 'image.jpg',
                 imageUri: resolvedCloudinaryUrl || capturedImageUri,
                 category: res.category || 'BROWN',
@@ -973,6 +982,40 @@ export default function ScanPage() {
           }
         } else {
           setError(res.error || 'Analysis failed. Is the ML backend running on port 5001?');
+        }
+      } else if (mode === 'multiple') {
+        const res = await mlService.analyzeMultiFruitImage(capturedImageUri, {
+          onProgress: (_, msg) => setProgressMessage(msg),
+        });
+        if (res.success) {
+          if (!res.fruitCount || res.fruitCount === 0) {
+            setError(res.raw?.user_message || res.raw?.error || 'No Talisay fruits detected in the image. Please try with a clearer photo.');
+          } else {
+            setAnalysisResult(res); setProgressMessage('');
+            if (isAuthenticated) {
+              const dominantColor = res.colorDistribution
+                ? (Object.entries(res.colorDistribution).sort((a, b) => b[1] - a[1])[0]?.[0]?.toUpperCase() ?? 'BROWN')
+                : 'BROWN';
+              historyService.saveHistoryItem({
+                analysisType: 'multi_fruit',
+                imageName: capturedImageName || 'image.jpg',
+                imageUri: resolvedCloudinaryUrl || capturedImageUri,
+                category: dominantColor,
+                confidence: res.overallConfidence || 0.9,
+                colorConfidence: res.colorConfidence || res.overallConfidence || 0.9,
+                oilYieldPercent: res.averageOilYield,
+                interpretation: res.interpretation,
+                multiFruit: true,
+                fruitCount: res.fruitCount,
+                colorDistribution: res.colorDistribution,
+                averageOilYield: res.averageOilYield,
+                oilYieldRange: res.oilYieldRange,
+                fruits: res.fruits,
+              }).catch(() => {});
+            }
+          }
+        } else {
+          setError(res.error || 'Multi-fruit analysis failed. Make sure the ML backend is running.');
         }
       } else {
         // Comparison mode
@@ -1059,7 +1102,7 @@ export default function ScanPage() {
   };
 
   // ─── Render ───
-  const hasResults = mode === 'single' ? !!analysisResult : !!(result1 || result2);
+  const hasResults = mode === 'comparison' ? !!(result1 || result2) : !!analysisResult;
   const hasBothComparisonResults = !!(result1 && result2);
 
   return (
@@ -1107,7 +1150,7 @@ export default function ScanPage() {
         {/* ═══ RESULTS ═══ */}
         {hasResults ? (
           <>
-            {mode === 'single' && analysisResult && (
+            {(mode === 'single' || mode === 'multiple') && analysisResult && (
               <>
                 <ResultDisplay
                   result={analysisResult}
@@ -1119,7 +1162,13 @@ export default function ScanPage() {
                   isDark={isDark}
                   isDesktop={isDesktop}
                 />
-                <AnimatedButton label="Scan Another" icon="refresh" onPress={reset} delay={200} colors={colors} />
+                <AnimatedButton
+                  label={mode === 'multiple' ? 'Scan Another Batch' : 'Scan Another'}
+                  icon="refresh"
+                  onPress={reset}
+                  delay={200}
+                  colors={colors}
+                />
               </>
             )}
 
@@ -1239,6 +1288,53 @@ export default function ScanPage() {
 
                 <View style={styles.inputCol}>
                   <CarouselCard slides={CAROUSEL_SLIDES} colors={colors} isDark={isDark} />
+                </View>
+              </View>
+            ) : mode === 'multiple' ? (
+              <View style={[styles.inputGrid, isDesktop && styles.inputGridRow]}>
+                <View style={styles.inputCol}>
+                  <ImagePickerCard
+                    title="Select Batch Image"
+                    subtitle="Choose a photo with multiple Talisay fruits"
+                    imageUri={capturedImageUri}
+                    onPickImage={pickImage}
+                    onTakePhoto={takePhoto}
+                    onClear={() => { setCapturedImageUri(null); setCapturedImageName(null); }}
+                    loading={loading}
+                    progressMessage={progressMessage}
+                    colors={colors}
+                    isDark={isDark}
+                  />
+
+                  {capturedImageUri && (
+                    <AnimatedButton
+                      label={loading ? (progressMessage || 'Analyzing…') : 'Analyze Multiple Fruits'}
+                      icon="apps"
+                      onPress={handleAnalyze}
+                      loading={loading}
+                      delay={100}
+                      colors={colors}
+                    />
+                  )}
+
+                  <Animated.View entering={FadeInUp.delay(250).duration(280)} style={[styles.tipsCard, { backgroundColor: colors.primary + '08', borderColor: colors.primary + '20' }]}>
+                    <View style={styles.tipsHeader}>
+                      <Ionicons name="bulb-outline" size={16} color={colors.primary} />
+                      <Text style={[styles.tipsTitle, { color: colors.text }]}>Tips for Multi-Fruit Photos</Text>
+                    </View>
+                    {[
+                      "Spread fruits so they don't overlap too much",
+                      'Good lighting helps detect each fruit clearly',
+                      'Place fruits on a plain, contrasting background',
+                      'Each fruit is analyzed individually for accuracy',
+                    ].map((tip, i) => (
+                      <Text key={i} style={[styles.tipItem, { color: colors.textSecondary }]}>• {tip}</Text>
+                    ))}
+                  </Animated.View>
+                </View>
+
+                <View style={styles.inputCol}>
+                  <CarouselCard slides={MULTI_CAROUSEL_SLIDES} colors={colors} isDark={isDark} />
                 </View>
               </View>
             ) : (

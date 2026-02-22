@@ -263,6 +263,90 @@ export async function analyzeImage(imageUri, options = {}) {
 }
 
 /**
+ * Analyze an image containing multiple Talisay fruits.
+ * Calls /api/predict/multi — per-fruit oil yield + averages.
+ * @param {string} imageUri – local image URI
+ * @param {object} [options]
+ * @param {function} [options.onProgress]
+ */
+export async function analyzeMultiFruitImage(imageUri, options = {}) {
+  const { onProgress } = options;
+  const startTime = Date.now();
+  try {
+    onProgress?.('optimizing', 'Compressing image...');
+    let optimizedUri = imageUri;
+    let finalSize = 0;
+    let compressionInfo = { iterations: 0 };
+    if (Platform.OS !== 'web') {
+      try {
+        compressionInfo = await compressImageToTargetSize(imageUri, IMAGE_CONFIG.targetSizeBytes);
+        optimizedUri = compressionInfo.uri;
+        finalSize = compressionInfo.sizeBytes;
+      } catch (e) {
+        console.warn('[mlService] Compression failed:', e.message);
+      }
+    }
+    onProgress?.('encoding', 'Preparing image...');
+    let base64Image;
+    try {
+      const response = await fetch(optimizedUri);
+      const blob = await response.blob();
+      if (!finalSize) finalSize = blob.size;
+      base64Image = await blobToBase64(blob);
+    } catch (fetchError) {
+      if (imageUri.startsWith('data:')) {
+        base64Image = imageUri.split(',')[1];
+      } else {
+        throw new Error('Failed to read image: ' + fetchError.message);
+      }
+    }
+    onProgress?.('analyzing', 'Detecting multiple fruits...');
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), IMAGE_CONFIG.timeout);
+    try {
+      const response = await fetch(`${getMLApiUrl()}/api/predict/multi`, {
+        method: 'POST',
+        headers: getApiHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify({ image: base64Image }),
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+      const data = await response.json();
+      const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+      if (!response.ok) throw new Error(data.error || `ML API error: ${response.status}`);
+      if (!data.success) throw new Error(data.error || 'Multi-fruit analysis failed');
+      const r = data.result;
+      const _fruits = r.fruits || [];
+      const overallConf = _fruits.length > 0
+        ? _fruits.reduce((sum, f) => sum + (f.detection_confidence || f.confidence || 0.85), 0) / _fruits.length
+        : 0.85;
+      return {
+        success: true,
+        multiFruit: true,
+        fruitCount: r.fruit_count || 0,
+        fruits: _fruits,
+        averageOilYield: r.average_oil_yield,
+        oilYieldRange: r.oil_yield_range,
+        colorDistribution: r.color_distribution || {},
+        interpretation: r.interpretation,
+        analysisComplete: r.analysis_complete,
+        overallConfidence: overallConf,
+        colorConfidence: overallConf,
+        timing: { totalSeconds: parseFloat(elapsed), imageSizeKB: (finalSize / 1024).toFixed(1) },
+        raw: r,
+      };
+    } catch (fetchErr) {
+      clearTimeout(timeoutId);
+      if (fetchErr.name === 'AbortError') throw new Error('Analysis timed out. Please try again.');
+      throw fetchErr;
+    }
+  } catch (error) {
+    console.error('[mlService.analyzeMultiFruitImage]', error);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
  * Predict from manual measurements (no image).
  */
 export async function predictFromMeasurements({ color, lengthCm, widthCm, kernelMassG }) {
@@ -371,6 +455,46 @@ export function getPhotoGuide() {
 // ════════════════════════════════════════════════
 
 function transformMLResult(result) {
+  // ── Multi-fruit result (from auto-routed /api/predict/image or /api/predict/multi) ──
+  if (result.multi_fruit || result.fruit_count != null) {
+    const fruits = result.fruits || [];
+    const dominant = fruits.length > 0
+      ? fruits.reduce((a, b) => (a.detection_confidence > b.detection_confidence ? a : b))
+      : null;
+    return {
+      // Multi-fruit specific
+      multiFruit: true,
+      fruitCount: result.fruit_count || 0,
+      fruits,
+      averageOilYield: result.average_oil_yield,
+      oilYieldRange: result.oil_yield_range,
+      colorDistribution: result.color_distribution || {},
+      // Mirror single-fruit fields from dominant fruit so existing UI doesn’t break
+      isTalisay: true,
+      category: dominant ? dominant.color.toUpperCase() : 'BROWN',
+      color: dominant?.color || 'brown',
+      maturityStage: null,
+      colorConfidence: dominant?.color_confidence || 0,
+      colorMethod: 'cnn_multi',
+      hasSpots: false,
+      spotCoverage: 0,
+      dimensions: dominant?.dimensions || {},
+      dimensionsSource: dominant?.dimensions_source || 'estimated',
+      dimensionsConfidence: dominant?.detection_confidence || 0.5,
+      referenceDetected: result.pipeline_info?.coin_reference || false,
+      measurementMode: result.pipeline_info?.coin_reference ? 'coin_reference' : 'smart_estimation',
+      coinInfo: { detected: result.pipeline_info?.coin_reference || false },
+      oilYieldPercent: result.average_oil_yield,
+      yieldCategory: null,
+      oilConfidence: null,
+      overallConfidence: dominant?.detection_confidence || 0.5,
+      interpretation: result.interpretation,
+      analysisComplete: result.analysis_complete,
+      segmentation: null,
+    };
+  }
+
+  // ── Single-fruit result ───────────────────────────────────────────
   const category = (result.color || 'brown').toUpperCase();
   return {
     isTalisay: result.is_talisay !== false,
@@ -447,6 +571,7 @@ export default {
   isMLBackendAvailable,
   getMLSystemInfo,
   analyzeImage,
+  analyzeMultiFruitImage,
   predictFromMeasurements,
   getExistingDatasetAnalysis,
   getPhotoGuide,

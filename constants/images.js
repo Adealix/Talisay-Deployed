@@ -43,6 +43,11 @@ export const TALISAY_IMAGES = {
     slide2: require('../assets/images/talisay/brown/slide2.jpg'),
     slide3: require('../assets/images/talisay/brown/slide3.jpg'),
   },
+  multiple: {
+    slide1: require('../assets/images/talisay/multiple/slide1.jpg'),
+    slide2: require('../assets/images/talisay/multiple/slide2.jpg'),
+    slide3: require('../assets/images/talisay/multiple/slide3.jpg'),
+  },
 };
 
 export const PAGE_HERO = {

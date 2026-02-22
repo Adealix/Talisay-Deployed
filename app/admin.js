@@ -69,11 +69,13 @@ const CAT_COLORS = {
   GREEN: '#22c55e',
   YELLOW: '#eab308',
   BROWN: '#a16207',
+  MULTI: '#7c3aed',
 };
 const CAT_LABELS = {
   GREEN: 'Green / Immature',
   YELLOW: 'Yellow / Mature',
   BROWN: 'Brown / Overripe',
+  MULTI: 'Multiple Fruit',
 };
 
 /* ═══════════════════════════════════════════════════
@@ -698,10 +700,11 @@ function SectionHeader({ icon, title, colors, delay = 0 }) {
    REPORTS TAB (Export CSV / PDF)
    ═══════════════════════════════════════════════════ */
 const REPORT_TYPES = [
-  { key: 'overall', label: 'Overall Report', icon: 'albums', desc: 'All categories combined — comprehensive system report', color: '#3b82f6' },
-  { key: 'GREEN', label: 'Green / Immature', icon: 'leaf', desc: 'Analysis of Green (immature) Talisay fruit scans', color: '#22c55e' },
-  { key: 'YELLOW', label: 'Yellow / Mature', icon: 'sunny', desc: 'Analysis of Yellow (mature) Talisay fruit scans', color: '#eab308' },
-  { key: 'BROWN', label: 'Brown / Overripe', icon: 'cafe', desc: 'Analysis of Brown (overripe) Talisay fruit scans', color: '#a16207' },
+  { key: 'overall',     label: 'Overall Report',      icon: 'albums',    desc: 'All categories combined — comprehensive system report', color: '#3b82f6' },
+  { key: 'GREEN',       label: 'Green / Immature',    icon: 'leaf',      desc: 'Analysis of Green (immature) Talisay fruit scans',      color: '#22c55e' },
+  { key: 'YELLOW',      label: 'Yellow / Mature',     icon: 'sunny',     desc: 'Analysis of Yellow (mature) Talisay fruit scans',        color: '#eab308' },
+  { key: 'BROWN',       label: 'Brown / Overripe',    icon: 'cafe',      desc: 'Analysis of Brown (overripe) Talisay fruit scans',       color: '#a16207' },
+  { key: 'MULTI_FRUIT', label: 'Multiple Fruit Scans', icon: 'apps',     desc: 'Multi-fruit batch scans — per-batch oil yield analysis',  color: '#7c3aed' },
 ];
 
 function ReportsTab({ historyItems, analytics, users, colors, isMobile }) {
@@ -710,6 +713,7 @@ function ReportsTab({ historyItems, analytics, users, colors, isMobile }) {
 
   const scanCount = (key) => {
     if (key === 'overall') return historyItems?.length || 0;
+    if (key === 'MULTI_FRUIT') return historyItems?.filter(h => h.analysisType === 'multi_fruit').length || 0;
     return historyItems?.filter(h => h.category === key).length || 0;
   };
 
@@ -1030,6 +1034,7 @@ export default function AdminPage() {
   const [selectedUser, setSelectedUser] = useState(null); // User Details modal on mobile
   const [mobileEditUserOpen, setMobileEditUserOpen] = useState(false); // Edit User modal on mobile
   const [selectedHistory, setSelectedHistory] = useState(null); // detail modal for history on mobile
+  const [historyTypeFilter, setHistoryTypeFilter] = useState('all'); // 'all' | 'single' | 'comparison' | 'multi_fruit'
 
   // Route protection: only admin users can access this page
   const isAdmin = isAuthenticated && user?.role === 'admin';
@@ -1207,6 +1212,11 @@ export default function AdminPage() {
   const detection = analytics?.detectionTrend || [];
   const recent = analytics?.recentActivity || [];
   const userAct = analytics?.userActivity || [];
+  const typeBrk = analytics?.analysisTypeBreakdown || {};
+  const multiCount = typeBrk.multi_fruit || 0;
+  const singleCount = typeBrk.single || 0;
+  const compCount = typeBrk.comparison || 0;
+  const mfStats = analytics?.multiFruitStats || null;
 
   const TABS = [
     { key: 'overview', label: 'Overview', icon: 'grid' },
@@ -1290,6 +1300,21 @@ export default function AdminPage() {
                     </Animated.View>
                   );
                 })}
+                {/* Multiple Fruit scans */}
+                {multiCount > 0 && (
+                  <Animated.View
+                    entering={FadeInUp.delay(540).duration(280)}
+                    style={[s.maturityItem, { borderColor: CAT_COLORS.MULTI + '30' }]}
+                  >
+                    <View style={[s.maturityDot, { backgroundColor: CAT_COLORS.MULTI }]} />
+                    <Text style={[s.maturityLabel, { color: colors.textSecondary }]}>Multiple Fruit Batches</Text>
+                    <Text style={[s.maturityCount, { color: colors.text }]}>{multiCount}</Text>
+                    <Text style={[s.maturityPct, { color: CAT_COLORS.MULTI }]}>{totalScans > 0 ? ((multiCount / totalScans) * 100).toFixed(1) : '0'}%</Text>
+                    <View style={[s.maturityBar, { backgroundColor: colors.borderLight }]}>
+                      <View style={[s.maturityBarFill, { width: `${totalScans > 0 ? ((multiCount / totalScans) * 100).toFixed(1) : 0}%`, backgroundColor: CAT_COLORS.MULTI }]} />
+                    </View>
+                  </Animated.View>
+                )}
               </View>
             </Card>
 
@@ -1329,7 +1354,39 @@ export default function AdminPage() {
               </Card>
             </View>
 
-            {/* ── Oil Yield by Category ── */}
+            {/* ── Scan Type Breakdown ── */}
+            <Card colors={colors} delay={480}>
+              <CardTitle icon="apps" title="Scan Type Breakdown" subtitle="Single analysis vs Comparison vs Multiple Fruit" colors={colors} />
+              <View style={[s.splitRow, isMobile && s.splitRowMobile, { marginTop: Spacing.sm }]}>
+                {[
+                  { label: 'Single Analysis', count: singleCount, color: colors.primary, icon: 'image' },
+                  { label: 'Comparison', count: compCount, color: '#3b82f6', icon: 'git-compare' },
+                  { label: 'Multiple Fruit', count: multiCount, color: '#7c3aed', icon: 'apps' },
+                ].map((item, idx) => (
+                  <Animated.View key={idx} entering={FadeInUp.delay(520 + idx * 60).duration(280)} style={{ flex: 1, alignItems: 'center', padding: Spacing.md, borderRadius: BorderRadius.md, backgroundColor: item.color + '08', borderWidth: 1, borderColor: item.color + '25' }}>
+                    <View style={{ width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: item.color + '20', marginBottom: 8 }}>
+                      <Ionicons name={item.icon} size={18} color={item.color} />
+                    </View>
+                    <Text style={{ fontSize: 26, fontWeight: '800', color: colors.text, letterSpacing: -1 }}>{item.count}</Text>
+                    <Text style={{ fontSize: 11, color: colors.textSecondary, textAlign: 'center', marginTop: 2 }}>{item.label}</Text>
+                    <Text style={{ fontSize: 10, color: item.color, fontWeight: '600', marginTop: 3 }}>
+                      {totalScans > 0 ? ((item.count / totalScans) * 100).toFixed(1) : '0'}%
+                    </Text>
+                  </Animated.View>
+                ))}
+              </View>
+              {mfStats && (
+                <View style={{ marginTop: Spacing.md, gap: Spacing.xs, borderTopWidth: 1, borderTopColor: colors.divider, paddingTop: Spacing.md }}>
+                  <Text style={{ fontSize: 11, fontWeight: '700', color: colors.textTertiary, letterSpacing: 0.5, marginBottom: 4 }}>MULTI-FRUIT STATS</Text>
+                  <StatRow icon="apps" label="Avg. Fruits per Batch" value={mfStats.avgFruitCount?.toFixed(1) || '—'} color="#7c3aed" colors={colors} />
+                  <StatRow icon="water" label="Avg. Batch Oil Yield" value={mfStats.avgOilYield != null ? `${mfStats.avgOilYield.toFixed(1)}%` : '—'} color="#22c55e" colors={colors} />
+                  <StatRow icon="arrow-up" label="Max Fruits in a Batch" value={mfStats.maxFruitCount || '—'} color="#f97316" colors={colors} />
+                  <StatRow icon="speedometer" label="Avg. Confidence" value={mfStats.avgConfidence != null ? `${(mfStats.avgConfidence * 100).toFixed(1)}%` : '—'} color="#3b82f6" colors={colors} />
+                </View>
+              )}
+            </Card>
+
+            {/* ── Oil Yield by Category ── */}}
             <Card colors={colors} delay={450}>
               <CardTitle icon="water" title="Oil Yield by Maturity Stage" subtitle="Average, min, and max oil yield percentage" colors={colors} />
               {['GREEN', 'YELLOW', 'BROWN'].map((cat, idx) => {
@@ -1372,9 +1429,17 @@ export default function AdminPage() {
                     <View style={s.activityContent}>
                       <Text style={[s.activityText, { color: colors.text }]}>
                         <Text style={{ fontWeight: '600' }}>{item.userName || item.userEmail}</Text>
-                        {' scanned '}
-                        <Text style={{ color: CAT_COLORS[item.category], fontWeight: '600' }}>{item.category}</Text>
-                        {' fruit'}
+                        {item.analysisType === 'multi_fruit' ? (
+                          <Text style={{ color: '#7c3aed' }}> ran a multi-fruit batch scan</Text>
+                        ) : item.analysisType === 'comparison' ? (
+                          <Text style={{ color: '#3b82f6' }}> ran a comparison scan</Text>
+                        ) : (
+                          <>
+                            {' scanned '}
+                            <Text style={{ color: CAT_COLORS[item.category], fontWeight: '600' }}>{item.category}</Text>
+                            {' fruit'}
+                          </>
+                        )}
                       </Text>
                       <View style={s.activityMeta}>
                         {item.confidence != null && (
@@ -1706,6 +1771,44 @@ export default function AdminPage() {
                 );
               })}
             </Card>
+
+            {/* ── Top Users by Scan Count ── */}
+            <Card colors={colors} delay={540}>
+              <CardTitle icon="pie-chart" title="Scan Type Breakdown" subtitle="Distribution across Single / Comparison / Multiple Fruit" colors={colors} />
+              <DonutChart
+                data={[
+                  { label: 'Single', value: singleCount, color: colors.primary },
+                  { label: 'Comparison', value: compCount, color: '#3b82f6' },
+                  { label: 'Multiple', value: multiCount, color: '#7c3aed' },
+                ]}
+                colors={colors}
+                height={160}
+              />
+              <View style={{ gap: Spacing.xs, marginTop: Spacing.sm }}>
+                <StatRow icon="image" label="Single Analysis" value={`${singleCount} scans`} color={colors.primary} colors={colors} />
+                <StatRow icon="git-compare" label="Side-by-Side Comparison" value={`${compCount} scans`} color="#3b82f6" colors={colors} />
+                <StatRow icon="apps" label="Multiple Fruit Batch" value={`${multiCount} scans`} color="#7c3aed" colors={colors} />
+              </View>
+            </Card>
+
+            {mfStats && (
+              <Card colors={colors} delay={570}>
+                <CardTitle icon="apps" title="Multiple Fruit Analytics" subtitle="Aggregated stats across all multi-fruit batch scans" colors={colors} />
+                <View style={{ gap: Spacing.xs }}>
+                  <StatRow icon="apps" label="Total Multi-Fruit Scans" value={mfStats.count || 0} color="#7c3aed" colors={colors} />
+                  <StatRow icon="fitness" label="Avg. Fruits per Batch" value={mfStats.avgFruitCount?.toFixed(1) || '—'} color="#7c3aed" colors={colors} />
+                  <StatRow icon="arrow-up" label="Max Fruits in a Batch" value={mfStats.maxFruitCount || '—'} color="#f97316" colors={colors} />
+                  <StatRow icon="water" label="Avg. Batch Oil Yield" value={mfStats.avgOilYield != null ? `${mfStats.avgOilYield.toFixed(1)}%` : '—'} color="#22c55e" colors={colors} />
+                  <StatRow icon="arrow-down-circle" label="Min Batch Yield" value={mfStats.minOilYield != null ? `${mfStats.minOilYield.toFixed(1)}%` : '—'} color="#ef4444" colors={colors} />
+                  <StatRow icon="arrow-up-circle" label="Max Batch Yield" value={mfStats.maxOilYield != null ? `${mfStats.maxOilYield.toFixed(1)}%` : '—'} color="#22c55e" colors={colors} />
+                  <StatRow icon="speedometer" label="Avg. Confidence" value={mfStats.avgConfidence != null ? `${(mfStats.avgConfidence * 100).toFixed(1)}%` : '—'} color="#3b82f6" colors={colors} />
+                </View>
+                <View style={{ marginTop: Spacing.md }}>
+                  <ProgressBar label="Avg Batch Oil Yield" value={mfStats.avgOilYield || 0} maxValue={100} color="#7c3aed" colors={colors} suffix="%" delay={100} />
+                  <ProgressBar label="Avg Confidence" value={(mfStats.avgConfidence || 0) * 100} maxValue={100} color="#3b82f6" colors={colors} suffix="%" delay={160} />
+                </View>
+              </Card>
+            )}
 
             {/* ── Top Users by Scan Count ── */}
             <Card colors={colors} delay={550}>
@@ -2128,19 +2231,54 @@ export default function AdminPage() {
                 </Pressable>
               </View>
 
+              {/* ── Type Filter Tabs ── */}
+              <View style={{ flexDirection: 'row', gap: 6, flexWrap: 'wrap', marginBottom: Spacing.sm }}>
+                {[
+                  { key: 'all',        label: `All (${historyItems.length})`,                                icon: 'list',        color: colors.primary },
+                  { key: 'single',     label: `Single (${historyItems.filter(h => !h.analysisType || h.analysisType === 'single').length})`, icon: 'image', color: colors.primary },
+                  { key: 'comparison', label: `Compare (${historyItems.filter(h => h.analysisType === 'comparison').length})`,               icon: 'git-compare', color: '#3b82f6' },
+                  { key: 'multi_fruit',label: `Multiple (${historyItems.filter(h => h.analysisType === 'multi_fruit').length})`,             icon: 'apps',        color: '#7c3aed' },
+                ].map(tab => {
+                  const active = historyTypeFilter === tab.key;
+                  return (
+                    <Pressable
+                      key={tab.key}
+                      onPress={() => setHistoryTypeFilter(tab.key)}
+                      style={[{
+                        flexDirection: 'row', alignItems: 'center', gap: 5,
+                        paddingHorizontal: 10, paddingVertical: 6, borderRadius: BorderRadius.full,
+                        borderWidth: 1,
+                        backgroundColor: active ? tab.color + '15' : 'transparent',
+                        borderColor: active ? tab.color : colors.borderLight,
+                      }]}
+                    >
+                      <Ionicons name={tab.icon} size={12} color={active ? tab.color : colors.textTertiary} />
+                      <Text style={{ fontSize: 11, fontWeight: active ? '700' : '500', color: active ? tab.color : colors.textSecondary }}>
+                        {tab.label}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+
               {historyLoading ? (
                 <ActivityIndicator size="small" color={colors.primary} style={{ paddingVertical: Spacing.xl }} />
               ) : isMobile ? (
-                /* ── Mobile: Compact history list (User + Category, tap for details) ── */
+                /* ── Mobile: Compact history list ── */
                 <>
                   {historyItems
                     .filter(h => {
+                      const typeMatch = historyTypeFilter === 'all'
+                        || (historyTypeFilter === 'single' && (!h.analysisType || h.analysisType === 'single'))
+                        || h.analysisType === historyTypeFilter;
+                      if (!typeMatch) return false;
                       if (!historySearch) return true;
                       const q = historySearch.toLowerCase();
                       return (h.userEmail || '').toLowerCase().includes(q) ||
                         (h.userName || '').toLowerCase().includes(q) ||
                         (h.category || '').toLowerCase().includes(q) ||
-                        (h.yieldCategory || '').toLowerCase().includes(q);
+                        (h.yieldCategory || '').toLowerCase().includes(q) ||
+                        (h.analysisType || '').toLowerCase().includes(q);
                     })
                     .map((h, idx) => (
                       <Animated.View key={h.id} entering={FadeInUp.delay(60 + idx * 20).duration(280)}>
@@ -2156,12 +2294,22 @@ export default function AdminPage() {
                           ]}
                         >
                           <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                            <View style={[s.categoryBadge, { backgroundColor: (CAT_COLORS[h.category] || colors.primary) + '18', paddingHorizontal: 8, paddingVertical: 4 }]}>
-                              <View style={[s.categoryDot, { backgroundColor: CAT_COLORS[h.category] || colors.primary }]} />
-                              <Text style={[s.categoryBadgeText, { color: CAT_COLORS[h.category] || colors.primary }]}>
-                                {h.category || '—'}
-                              </Text>
-                            </View>
+                            {h.analysisType === 'multi_fruit' ? (
+                              <View style={[s.categoryBadge, { backgroundColor: '#7c3aed18', paddingHorizontal: 8, paddingVertical: 4 }]}>
+                                <Ionicons name="apps" size={10} color="#7c3aed" />
+                                <Text style={[s.categoryBadgeText, { color: '#7c3aed' }]}>MULTI ({h.fruitCount || '?'})</Text>
+                              </View>
+                            ) : h.analysisType === 'comparison' ? (
+                              <View style={[s.categoryBadge, { backgroundColor: '#3b82f618', paddingHorizontal: 8, paddingVertical: 4 }]}>
+                                <Ionicons name="git-compare" size={10} color="#3b82f6" />
+                                <Text style={[s.categoryBadgeText, { color: '#3b82f6' }]}>COMPARE</Text>
+                              </View>
+                            ) : (
+                              <View style={[s.categoryBadge, { backgroundColor: (CAT_COLORS[h.category] || colors.primary) + '18', paddingHorizontal: 8, paddingVertical: 4 }]}>
+                                <View style={[s.categoryDot, { backgroundColor: CAT_COLORS[h.category] || colors.primary }]} />
+                                <Text style={[s.categoryBadgeText, { color: CAT_COLORS[h.category] || colors.primary }]}>{h.category || '—'}</Text>
+                              </View>
+                            )}
                             <View style={{ flex: 1 }}>
                               <Text style={{ ...Typography.captionMedium, color: colors.text, fontWeight: '500' }} numberOfLines={1}>
                                 {h.userName || h.userEmail || '—'}
@@ -2182,7 +2330,11 @@ export default function AdminPage() {
 
                   <View style={[s.dtFooter, { borderTopColor: colors.divider }]}>
                     <Text style={[s.dtFooterText, { color: colors.textTertiary }]}>
-                      {historyItems.filter(h => !historySearch || (h.userEmail || '').toLowerCase().includes(historySearch.toLowerCase()) || (h.category || '').toLowerCase().includes(historySearch.toLowerCase())).length} of {historyItems.length} records
+                      {historyItems.filter(h => {
+                        const typeMatch = historyTypeFilter === 'all' || (historyTypeFilter === 'single' && (!h.analysisType || h.analysisType === 'single')) || h.analysisType === historyTypeFilter;
+                        const textMatch = !historySearch || (h.userEmail || '').toLowerCase().includes(historySearch.toLowerCase()) || (h.category || '').toLowerCase().includes(historySearch.toLowerCase());
+                        return typeMatch && textMatch;
+                      }).length} of {historyItems.length} records
                     </Text>
                   </View>
                 </>
@@ -2190,62 +2342,88 @@ export default function AdminPage() {
                 <>
                   {/* Header Row */}
                   <View style={[s.dtHeaderRow, { borderBottomColor: colors.divider }]}>
-                    <Text style={[s.dtHeaderCell, s.dtCellUser, { color: colors.textTertiary }]}>User</Text>
-                    <Text style={[s.dtHeaderCell, s.dtCellCategory, { color: colors.textTertiary }]}>Category</Text>
+                    <Text style={[s.dtHeaderCell, { flex: 2, color: colors.textTertiary }]}>User</Text>
+                    <Text style={[s.dtHeaderCell, { flex: 1.4, color: colors.textTertiary }]}>Type / Category</Text>
                     <Text style={[s.dtHeaderCell, s.dtCellConf, { color: colors.textTertiary }]}>Confidence</Text>
                     <Text style={[s.dtHeaderCell, s.dtCellYield, { color: colors.textTertiary }]}>Oil Yield</Text>
                     <Text style={[s.dtHeaderCell, s.dtCellDate, { color: colors.textTertiary }]}>Date</Text>
-                    <Text style={[s.dtHeaderCell, s.dtCellDel, { color: colors.textTertiary }]}>Delete</Text>
+                    <Text style={[s.dtHeaderCell, s.dtCellDel, { color: colors.textTertiary }]}>Del</Text>
                   </View>
 
                   {/* Data Rows */}
                   {historyItems
                     .filter(h => {
+                      const typeMatch = historyTypeFilter === 'all'
+                        || (historyTypeFilter === 'single' && (!h.analysisType || h.analysisType === 'single'))
+                        || h.analysisType === historyTypeFilter;
+                      if (!typeMatch) return false;
                       if (!historySearch) return true;
                       const q = historySearch.toLowerCase();
                       return (h.userEmail || '').toLowerCase().includes(q) ||
                         (h.userName || '').toLowerCase().includes(q) ||
                         (h.category || '').toLowerCase().includes(q) ||
-                        (h.yieldCategory || '').toLowerCase().includes(q);
+                        (h.yieldCategory || '').toLowerCase().includes(q) ||
+                        (h.analysisType || '').toLowerCase().includes(q);
                     })
-                    .map((h, idx) => (
-                      <Animated.View
-                        key={h.id}
-                        entering={FadeInUp.delay(80 + idx * 20).duration(280)}
-                        style={[s.dtRow, { borderBottomColor: colors.divider }, idx % 2 === 0 && { backgroundColor: colors.background + '60' }]}
-                      >
-                        <View style={s.dtCellUser}>
-                          <Text style={[s.dtCell, { color: colors.text }]} numberOfLines={1}>
-                            {h.userName || h.userEmail || '—'}
-                          </Text>
-                        </View>
-                        <View style={s.dtCellCategory}>
-                          <View style={[s.categoryBadge, { backgroundColor: (CAT_COLORS[h.category] || colors.primary) + '18' }]}>
-                            <View style={[s.categoryDot, { backgroundColor: CAT_COLORS[h.category] || colors.primary }]} />
-                            <Text style={[s.categoryBadgeText, { color: CAT_COLORS[h.category] || colors.primary }]}>
-                              {h.category || '—'}
+                    .map((h, idx) => {
+                      const isMf = h.analysisType === 'multi_fruit';
+                      const isComp = h.analysisType === 'comparison';
+                      const typeColor = isMf ? '#7c3aed' : isComp ? '#3b82f6' : (CAT_COLORS[h.category] || colors.primary);
+                      const typeLabel = isMf ? 'Multi' : isComp ? 'Compare' : (h.category || '—');
+                      const typeIcon  = isMf ? 'apps' : isComp ? 'git-compare' : null;
+                      const yieldDisplay = isMf
+                        ? (h.averageOilYield != null ? `${Number(h.averageOilYield).toFixed(1)}%` : '—')
+                        : (h.oilYieldPercent != null ? `${Number(h.oilYieldPercent).toFixed(1)}%` : '—');
+                      return (
+                        <Animated.View
+                          key={h.id}
+                          entering={FadeInUp.delay(80 + idx * 20).duration(280)}
+                          style={[s.dtRow, { borderBottomColor: colors.divider }, idx % 2 === 0 && { backgroundColor: colors.background + '60' }]}
+                        >
+                          <View style={{ flex: 2, paddingHorizontal: 12, justifyContent: 'center' }}>
+                            <Text style={[s.dtCell, { color: colors.text }]} numberOfLines={1}>
+                              {h.userName || h.userEmail || '—'}
+                            </Text>
+                            <Text style={{ fontSize: 10, color: colors.textTertiary, marginTop: 1 }} numberOfLines={1}>
+                              {h.userEmail || '—'}
                             </Text>
                           </View>
-                        </View>
-                        <Text style={[s.dtCell, s.dtCellConf, { color: colors.text }]} numberOfLines={1}>
-                          {h.confidence != null ? `${(h.confidence * 100).toFixed(1)}%` : '—'}
-                        </Text>
-                        <Text style={[s.dtCell, s.dtCellYield, { color: colors.text }]} numberOfLines={1}>
-                          {h.oilYieldPercent != null ? `${Number(h.oilYieldPercent).toFixed(1)}%` : '—'}
-                        </Text>
-                        <Text style={[s.dtCell, s.dtCellDate, { color: colors.textTertiary }]} numberOfLines={1}>
-                          {h.createdAt ? new Date(h.createdAt).toLocaleDateString() : '—'}
-                        </Text>
-                        <View style={s.dtCellDel}>
-                          <Pressable
-                            onPress={() => setConfirmDelete({ type: 'history', id: h.id, label: `${h.category} scan by ${h.userEmail || 'unknown'}` })}
-                            style={[s.dtActionBtn, { backgroundColor: '#ef444415' }]}
-                          >
-                            <Ionicons name="trash-outline" size={14} color="#ef4444" />
-                          </Pressable>
-                        </View>
-                      </Animated.View>
-                    ))}
+                          <View style={{ flex: 1.4, paddingHorizontal: 8, justifyContent: 'center' }}>
+                            <View style={[s.categoryBadge, { backgroundColor: typeColor + '18', gap: 4 }]}>
+                              {typeIcon
+                                ? <Ionicons name={typeIcon} size={10} color={typeColor} />
+                                : <View style={[s.categoryDot, { backgroundColor: typeColor }]} />
+                              }
+                              <Text style={[s.categoryBadgeText, { color: typeColor }]} numberOfLines={1}>
+                                {typeLabel}
+                              </Text>
+                              {isMf && h.fruitCount > 0 && (
+                                <Text style={{ fontSize: 9, color: typeColor, fontWeight: '700', marginLeft: 2 }}>
+                                  ×{h.fruitCount}
+                                </Text>
+                              )}
+                            </View>
+                          </View>
+                          <Text style={[s.dtCell, s.dtCellConf, { color: colors.text }]} numberOfLines={1}>
+                            {h.confidence != null ? `${(h.confidence * 100).toFixed(1)}%` : '—'}
+                          </Text>
+                          <Text style={[s.dtCell, s.dtCellYield, { color: colors.text }]} numberOfLines={1}>
+                            {yieldDisplay}
+                          </Text>
+                          <Text style={[s.dtCell, s.dtCellDate, { color: colors.textTertiary }]} numberOfLines={1}>
+                            {h.createdAt ? new Date(h.createdAt).toLocaleDateString() : '—'}
+                          </Text>
+                          <View style={s.dtCellDel}>
+                            <Pressable
+                              onPress={() => setConfirmDelete({ type: 'history', id: h.id, label: `${h.analysisType || h.category} scan by ${h.userEmail || 'unknown'}` })}
+                              style={[s.dtActionBtn, { backgroundColor: '#ef444415' }]}
+                            >
+                              <Ionicons name="trash-outline" size={14} color="#ef4444" />
+                            </Pressable>
+                          </View>
+                        </Animated.View>
+                      );
+                    })}
 
                   {historyItems.length === 0 && (
                     <Text style={[s.emptyText, { color: colors.textTertiary }]}>No scan history found</Text>
@@ -2253,7 +2431,10 @@ export default function AdminPage() {
 
                   <View style={[s.dtFooter, { borderTopColor: colors.divider }]}>
                     <Text style={[s.dtFooterText, { color: colors.textTertiary }]}>
-                      {historyItems.filter(h => !historySearch || (h.userEmail || '').toLowerCase().includes(historySearch.toLowerCase()) || (h.category || '').toLowerCase().includes(historySearch.toLowerCase())).length} of {historyItems.length} records
+                      {historyItems.filter(h => {
+                        const t = historyTypeFilter === 'all' || (historyTypeFilter === 'single' && (!h.analysisType || h.analysisType === 'single')) || h.analysisType === historyTypeFilter;
+                        return t && (!historySearch || (h.userEmail || h.category || '').toLowerCase().includes(historySearch.toLowerCase()));
+                      }).length} of {historyItems.length} records
                     </Text>
                   </View>
                 </>
@@ -2268,12 +2449,24 @@ export default function AdminPage() {
                     <ScrollView showsVerticalScrollIndicator={false}>
                       {/* Header */}
                       <View style={{ alignItems: 'center', marginBottom: Spacing.md }}>
-                        <View style={[s.categoryBadge, { backgroundColor: (CAT_COLORS[selectedHistory.category] || colors.primary) + '18', paddingHorizontal: 14, paddingVertical: 6, marginBottom: 8 }]}>
-                          <View style={[s.categoryDot, { backgroundColor: CAT_COLORS[selectedHistory.category] || colors.primary, width: 8, height: 8, borderRadius: 4 }]} />
-                          <Text style={{ ...Typography.captionMedium, color: CAT_COLORS[selectedHistory.category] || colors.primary, fontWeight: '700' }}>
-                            {selectedHistory.category || '—'}
-                          </Text>
-                        </View>
+                        {selectedHistory.analysisType === 'multi_fruit' ? (
+                          <View style={[s.categoryBadge, { backgroundColor: '#7c3aed18', paddingHorizontal: 14, paddingVertical: 6, marginBottom: 8 }]}>
+                            <Ionicons name="apps" size={12} color="#7c3aed" />
+                            <Text style={{ ...Typography.captionMedium, color: '#7c3aed', fontWeight: '700' }}>Multiple Fruit</Text>
+                          </View>
+                        ) : selectedHistory.analysisType === 'comparison' ? (
+                          <View style={[s.categoryBadge, { backgroundColor: '#3b82f618', paddingHorizontal: 14, paddingVertical: 6, marginBottom: 8 }]}>
+                            <Ionicons name="git-compare" size={12} color="#3b82f6" />
+                            <Text style={{ ...Typography.captionMedium, color: '#3b82f6', fontWeight: '700' }}>Comparison</Text>
+                          </View>
+                        ) : (
+                          <View style={[s.categoryBadge, { backgroundColor: (CAT_COLORS[selectedHistory.category] || colors.primary) + '18', paddingHorizontal: 14, paddingVertical: 6, marginBottom: 8 }]}>
+                            <View style={[s.categoryDot, { backgroundColor: CAT_COLORS[selectedHistory.category] || colors.primary, width: 8, height: 8, borderRadius: 4 }]} />
+                            <Text style={{ ...Typography.captionMedium, color: CAT_COLORS[selectedHistory.category] || colors.primary, fontWeight: '700' }}>
+                              {selectedHistory.category || '—'}
+                            </Text>
+                          </View>
+                        )}
                         <Text style={[s.modalTitle, { color: colors.text }]}>Scan Details</Text>
                         <Text style={[s.modalSubtitle, { color: colors.textSecondary }]}>
                           {selectedHistory.userName || selectedHistory.userEmail || 'Unknown User'}
@@ -2286,28 +2479,87 @@ export default function AdminPage() {
                           <Text style={{ ...Typography.small, color: colors.textSecondary }}>User</Text>
                           <Text style={{ ...Typography.small, color: colors.text, fontWeight: '500' }} numberOfLines={1}>{selectedHistory.userName || selectedHistory.userEmail || '—'}</Text>
                         </View>
+                        {/* Scan type badge */}
                         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <Text style={{ ...Typography.small, color: colors.textSecondary }}>Category</Text>
-                          <Text style={{ ...Typography.small, color: CAT_COLORS[selectedHistory.category] || colors.text, fontWeight: '600' }}>{selectedHistory.category || '—'}</Text>
+                          <Text style={{ ...Typography.small, color: colors.textSecondary }}>Scan Type</Text>
+                          {selectedHistory.analysisType === 'multi_fruit' ? (
+                            <View style={[s.categoryBadge, { backgroundColor: '#7c3aed18' }]}>
+                              <Ionicons name="apps" size={10} color="#7c3aed" />
+                              <Text style={[s.categoryBadgeText, { color: '#7c3aed' }]}>Multiple Fruit</Text>
+                            </View>
+                          ) : selectedHistory.analysisType === 'comparison' ? (
+                            <View style={[s.categoryBadge, { backgroundColor: '#3b82f618' }]}>
+                              <Ionicons name="git-compare" size={10} color="#3b82f6" />
+                              <Text style={[s.categoryBadgeText, { color: '#3b82f6' }]}>Comparison</Text>
+                            </View>
+                          ) : (
+                            <View style={[s.categoryBadge, { backgroundColor: (CAT_COLORS[selectedHistory.category] || colors.primary) + '18' }]}>
+                              <View style={[s.categoryDot, { backgroundColor: CAT_COLORS[selectedHistory.category] || colors.primary }]} />
+                              <Text style={[s.categoryBadgeText, { color: CAT_COLORS[selectedHistory.category] || colors.primary }]}>{selectedHistory.category || 'Single'}</Text>
+                            </View>
+                          )}
                         </View>
+                        {/* Multi-fruit specific fields */}
+                        {selectedHistory.analysisType === 'multi_fruit' && (
+                          <>
+                            {selectedHistory.fruitCount != null && (
+                              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <Text style={{ ...Typography.small, color: colors.textSecondary }}>Fruits in Batch</Text>
+                                <Text style={{ ...Typography.small, color: '#7c3aed', fontWeight: '700' }}>{selectedHistory.fruitCount}</Text>
+                              </View>
+                            )}
+                            {selectedHistory.oilYieldRange && selectedHistory.oilYieldRange.length === 2 && (
+                              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <Text style={{ ...Typography.small, color: colors.textSecondary }}>Yield Range</Text>
+                                <Text style={{ ...Typography.small, color: colors.text, fontWeight: '500' }}>
+                                  {Number(selectedHistory.oilYieldRange[0]).toFixed(1)}–{Number(selectedHistory.oilYieldRange[1]).toFixed(1)}%
+                                </Text>
+                              </View>
+                            )}
+                            {selectedHistory.averageOilYield != null && (
+                              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <Text style={{ ...Typography.small, color: colors.textSecondary }}>Avg Oil Yield</Text>
+                                <Text style={{ ...Typography.small, color: colors.text, fontWeight: '600' }}>
+                                  {Number(selectedHistory.averageOilYield).toFixed(1)}%
+                                </Text>
+                              </View>
+                            )}
+                            {selectedHistory.colorDistribution && Object.keys(selectedHistory.colorDistribution).length > 0 && (
+                              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                <Text style={{ ...Typography.small, color: colors.textSecondary }}>Color Mix</Text>
+                                <View style={{ alignItems: 'flex-end', gap: 2 }}>
+                                  {Object.entries(selectedHistory.colorDistribution).map(([clr, cnt]) => (
+                                    <Text key={clr} style={{ fontSize: 11, color: CAT_COLORS[clr.toUpperCase()] || colors.textSecondary }}>
+                                      {clr}: {cnt}
+                                    </Text>
+                                  ))}
+                                </View>
+                              </View>
+                            )}
+                          </>
+                        )}
+                        {selectedHistory.analysisType !== 'multi_fruit' && (
+                          <>
+                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <Text style={{ ...Typography.small, color: colors.textSecondary }}>Oil Yield</Text>
+                              <Text style={{ ...Typography.small, color: colors.text, fontWeight: '500' }}>
+                                {selectedHistory.oilYieldPercent != null ? `${Number(selectedHistory.oilYieldPercent).toFixed(1)}%` : '—'}
+                              </Text>
+                            </View>
+                            {selectedHistory.yieldCategory && (
+                              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <Text style={{ ...Typography.small, color: colors.textSecondary }}>Yield Category</Text>
+                                <Text style={{ ...Typography.small, color: colors.text, fontWeight: '500' }}>{selectedHistory.yieldCategory}</Text>
+                              </View>
+                            )}
+                          </>
+                        )}
                         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                           <Text style={{ ...Typography.small, color: colors.textSecondary }}>Confidence</Text>
                           <Text style={{ ...Typography.small, color: colors.text, fontWeight: '500' }}>
                             {selectedHistory.confidence != null ? `${(selectedHistory.confidence * 100).toFixed(1)}%` : '—'}
                           </Text>
                         </View>
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <Text style={{ ...Typography.small, color: colors.textSecondary }}>Oil Yield</Text>
-                          <Text style={{ ...Typography.small, color: colors.text, fontWeight: '500' }}>
-                            {selectedHistory.oilYieldPercent != null ? `${Number(selectedHistory.oilYieldPercent).toFixed(1)}%` : '—'}
-                          </Text>
-                        </View>
-                        {selectedHistory.yieldCategory && (
-                          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <Text style={{ ...Typography.small, color: colors.textSecondary }}>Yield Category</Text>
-                            <Text style={{ ...Typography.small, color: colors.text, fontWeight: '500' }}>{selectedHistory.yieldCategory}</Text>
-                          </View>
-                        )}
                         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                           <Text style={{ ...Typography.small, color: colors.textSecondary }}>Date</Text>
                           <Text style={{ ...Typography.small, color: colors.text }}>
@@ -2685,8 +2937,8 @@ const s = StyleSheet.create({
   pageHeader: { paddingHorizontal: Spacing.lg, paddingVertical: Spacing.xxl, paddingTop: Spacing.xl },
   headerContent: { gap: Spacing.sm },
   headerContentDesktop: { maxWidth: LayoutConst.maxContentWidth, alignSelf: 'center', width: '100%' },
-  headerIcon: { width: 52, height: 52, borderRadius: BorderRadius.lg, alignItems: 'center', justifyContent: 'center', marginBottom: Spacing.xs },
-  pageTitle: { ...Typography.h1 },
+  headerIcon: { width: 56, height: 56, borderRadius: BorderRadius.xl, alignItems: 'center', justifyContent: 'center', marginBottom: Spacing.xs, ...Shadows.sm },
+  pageTitle: { ...Typography.h1, letterSpacing: -0.5 },
   pageSubtitle: { ...Typography.body, maxWidth: 600 },
   content: { padding: Spacing.lg },
   contentDesktop: { maxWidth: LayoutConst.maxContentWidth, alignSelf: 'center', width: '100%', paddingHorizontal: Spacing.xxl },

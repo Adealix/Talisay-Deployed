@@ -274,6 +274,7 @@ export async function getAnalyticsOverview(req, res) {
       colorProbabilityAvgs,
       weightedAccuracy,
       recentActivity,
+      multiFruitStats,
     ] = await Promise.all([
       /* 1  */ User.countDocuments({}),
       /* 2  */ History.countDocuments({}),
@@ -511,6 +512,22 @@ export async function getAnalyticsOverview(req, res) {
         .sort({ createdAt: -1 })
         .limit(20)
         .lean(),
+
+      /* 28 Multi-fruit specific stats */ History.aggregate([
+        { $match: { analysisType: 'multi_fruit' } },
+        {
+          $group: {
+            _id: null,
+            count:        { $sum: 1 },
+            avgFruitCount: { $avg: '$fruitCount' },
+            maxFruitCount: { $max: '$fruitCount' },
+            avgOilYield:  { $avg: '$averageOilYield' },
+            minOilYield:  { $min: '$averageOilYield' },
+            maxOilYield:  { $max: '$averageOilYield' },
+            avgConfidence: { $avg: '$confidence' },
+          },
+        },
+      ]),
     ]);
 
     /* ── Unpack the merged confidence stats ── */
@@ -582,6 +599,15 @@ export async function getAnalyticsOverview(req, res) {
           return acc;
         }, {}),
         analysisTypeBreakdown: analysisTypeBreakdown.reduce((acc, i) => { acc[i._id || 'single'] = i.count; return acc; }, {}),
+        multiFruitStats: multiFruitStats[0] ? {
+          count:         multiFruitStats[0].count         || 0,
+          avgFruitCount: +((multiFruitStats[0].avgFruitCount || 0).toFixed(1)),
+          maxFruitCount: multiFruitStats[0].maxFruitCount  || 0,
+          avgOilYield:   +((multiFruitStats[0].avgOilYield  || 0).toFixed(2)),
+          minOilYield:   +((multiFruitStats[0].minOilYield  || 0).toFixed(2)),
+          maxOilYield:   +((multiFruitStats[0].maxOilYield  || 0).toFixed(2)),
+          avgConfidence: +((multiFruitStats[0].avgConfidence || 0).toFixed(3)),
+        } : null,
         colorProbabilityAvgs: colorProbabilityAvgs[0] || { avgGreenProb: 0, avgYellowProb: 0, avgBrownProb: 0 },
         recentActivity: recentActivity.map(item => ({
           id: String(item._id),
