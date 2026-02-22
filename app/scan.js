@@ -1,6 +1,7 @@
 /**
  * Talisay AI — Scan Page (ML-Powered)
  * Full image analysis with single & side-by-side comparison modes.
+ * Optimized for Mobile Phone Expo Go first.
  * Comparison mode: left = existing dataset baseline, right = user's own image.
  */
 import React, { useState, useEffect } from 'react';
@@ -64,6 +65,24 @@ const getCategoryColor = (cat) => {
     case 'YELLOW': return '#eab308';
     case 'BROWN': return '#92400e';
     default: return '#6b7280';
+  }
+};
+
+const getMaturityLabel = (cat) => {
+  switch (cat?.toUpperCase()) {
+    case 'GREEN': return 'Immature';
+    case 'YELLOW': return 'Semi-ripe (Optimal)';
+    case 'BROWN': return 'Fully Ripe';
+    default: return 'Unknown';
+  }
+};
+
+const getRecommendation = (cat) => {
+  switch (cat?.toUpperCase()) {
+    case 'GREEN': return 'Wait for maturity to increase oil yield.';
+    case 'YELLOW': return 'Best time to harvest for maximum oil!';
+    case 'BROWN': return 'Still extractable, but yellow stage is optimal.';
+    default: return 'Upload a clearer image for better results.';
   }
 };
 
@@ -161,7 +180,6 @@ function MLStatusBadge({ available, onRefresh, colors, isDark }) {
               </Pressable>
             </View>
 
-            {/* Current URL display */}
             <View style={[styles.ngrokCurrentUrl, { backgroundColor: colors.backgroundSecondary, borderColor: colors.borderLight }]}>
               <Text style={[styles.ngrokLabel, { color: colors.textSecondary }]}>Active URL</Text>
               <Text style={[styles.ngrokActiveUrl, { color: available ? '#22c55e' : '#ef4444' }]} numberOfLines={1}>
@@ -175,7 +193,6 @@ function MLStatusBadge({ available, onRefresh, colors, isDark }) {
               </View>
             </View>
 
-            {/* Ngrok URL input */}
             <Text style={[styles.ngrokLabel, { color: colors.textSecondary, marginTop: 12 }]}>
               Ngrok Public URL  <Text style={{ color: colors.textTertiary }}>(from start-ngrok.ps1)</Text>
             </Text>
@@ -191,15 +208,14 @@ function MLStatusBadge({ available, onRefresh, colors, isDark }) {
             />
 
             <Text style={[styles.ngrokHint, { color: colors.textTertiary }]}>
-              💡 Run <Text style={{ fontFamily: 'monospace', color: colors.primary }}>.\start-ngrok.ps1</Text> on your laptop, then paste the URL above. Leave empty to use localhost.
+              Run start-ngrok.ps1 on your laptop, then paste the URL above. Leave empty to use localhost.
             </Text>
 
-            {/* Buttons */}
             <View style={styles.ngrokBtnRow}>
               {currentUrl ? (
                 <Pressable onPress={handleClear} style={[styles.ngrokBtn, { backgroundColor: '#ef444415', borderColor: '#ef444440' }]}>
                   <Ionicons name="trash-outline" size={14} color="#ef4444" />
-                  <Text style={{ color: '#ef4444', fontSize: 13, fontWeight: '600' }}>Clear (use localhost)</Text>
+                  <Text style={{ color: '#ef4444', fontSize: 13, fontWeight: '600' }}>Clear</Text>
                 </Pressable>
               ) : null}
               <Pressable onPress={handleSave} style={[styles.ngrokBtn, styles.ngrokSaveBtn, { backgroundColor: colors.primary }]}>
@@ -245,7 +261,6 @@ function ImagePickerCard({ title, subtitle, imageUri, onPickImage, onTakePhoto, 
 
   return (
     <Animated.View entering={FadeInUp.delay(delay).duration(280)} style={[cardStyle, styles.pickerCard, { backgroundColor: colors.card, borderColor: colors.borderLight }]}>
-      {/* Header */}
       <View style={styles.pickerHeader}>
         <View style={[styles.pickerIconWrap, { backgroundColor: colors.primary + '15' }]}>
           <Ionicons name="image" size={18} color={colors.primary} />
@@ -256,7 +271,6 @@ function ImagePickerCard({ title, subtitle, imageUri, onPickImage, onTakePhoto, 
         </View>
       </View>
 
-      {/* Buttons */}
       <View style={styles.pickerBtnRow}>
         <Pressable onPress={onPickImage} style={[styles.pickerBtn, { borderColor: colors.borderLight }]}>
           <Ionicons name="cloud-upload-outline" size={16} color={colors.primary} />
@@ -268,7 +282,6 @@ function ImagePickerCard({ title, subtitle, imageUri, onPickImage, onTakePhoto, 
         </Pressable>
       </View>
 
-      {/* Preview */}
       {imageUri ? (
         <View style={styles.previewArea}>
           <Image source={{ uri: imageUri }} style={styles.previewImage} resizeMode="contain" />
@@ -297,20 +310,16 @@ function ImagePickerCard({ title, subtitle, imageUri, onPickImage, onTakePhoto, 
 function ExistingDatasetCard({ imageUri, imageName, totalImages, loading, selectedColor, onColorChange, delay = 0, colors, isDark, error }) {
   return (
     <Animated.View entering={FadeInUp.delay(delay).duration(280)} style={[styles.pickerCard, { backgroundColor: colors.card, borderColor: colors.borderLight }]}>
-      {/* Header */}
       <View style={styles.pickerHeader}>
         <View style={[styles.pickerIconWrap, { backgroundColor: '#3b82f6' + '15' }]}>
           <Ionicons name="server" size={18} color="#3b82f6" />
         </View>
         <View style={{ flex: 1 }}>
           <Text style={[styles.pickerTitle, { color: colors.text }]}>Averaged Baseline</Text>
-          <Text style={[styles.pickerSubtitle, { color: colors.textTertiary }]}>
-            Statistical average from training dataset
-          </Text>
+          <Text style={[styles.pickerSubtitle, { color: colors.textTertiary }]}>Statistical average from training dataset</Text>
         </View>
       </View>
 
-      {/* Color selector */}
       <View style={styles.colorSelectorRow}>
         {['green', 'yellow', 'brown'].map((c) => {
           const active = selectedColor === c;
@@ -333,7 +342,6 @@ function ExistingDatasetCard({ imageUri, imageName, totalImages, loading, select
         })}
       </View>
 
-      {/* Preview */}
       {error ? (
         <View style={[styles.emptyPreview, { borderColor: '#ef4444', backgroundColor: isDark ? 'rgba(239,68,68,0.1)' : 'rgba(239,68,68,0.05)' }]}>
           <Ionicons name="alert-circle" size={40} color="#ef4444" />
@@ -350,12 +358,8 @@ function ExistingDatasetCard({ imageUri, imageName, totalImages, loading, select
           <Image source={{ uri: imageUri }} style={styles.previewImage} resizeMode="contain" />
           <View style={[styles.datasetInfoBadge, { backgroundColor: isDark ? 'rgba(0,0,0,0.6)' : 'rgba(0,0,0,0.55)' }]}>
             <Ionicons name="stats-chart" size={12} color="#fff" />
-            <Text style={styles.datasetInfoText} numberOfLines={1}>
-              {imageName || 'Averaged baseline'}
-            </Text>
-            {totalImages > 0 && (
-              <Text style={styles.datasetCountText}>{totalImages} images</Text>
-            )}
+            <Text style={styles.datasetInfoText} numberOfLines={1}>{imageName || 'Averaged baseline'}</Text>
+            {totalImages > 0 && <Text style={styles.datasetCountText}>{totalImages} images</Text>}
           </View>
         </View>
       ) : (
@@ -368,7 +372,7 @@ function ExistingDatasetCard({ imageUri, imageName, totalImages, loading, select
   );
 }
 
-// ─── Detail Card (expandable result section) ───
+// ─── Detail Card (section wrapper) ───
 function DetailCard({ icon, iconColor, title, children, delay = 0, colors }) {
   return (
     <Animated.View
@@ -386,160 +390,272 @@ function DetailCard({ icon, iconColor, title, children, delay = 0, colors }) {
   );
 }
 
-// ─── Single Result Display ───
-function ResultDisplay({ result, imageUri, imageName, showDetails, setShowDetails, colors, isDark, isDesktop, label }) {
+// ─── Full Details View (shown in expanded single + always in comparison) ───
+function FullDetailsView({ result, colors, isDark, compact = false }) {
   if (!result) return null;
+  const delayBase = compact ? 0 : 50;
+
+  return (
+    <View style={styles.detailsWrap}>
+      {/* ── Multi-fruit detailed breakdown ── */}
+      {result.multiFruit && result.fruits?.length > 0 && (
+        <DetailCard icon="apps" iconColor="#7c3aed" title={`${result.fruitCount} Fruits — Details`} colors={colors}>
+          {/* Per-fruit rows */}
+          {result.fruits.map((f, i) => (
+            <View key={i} style={[styles.fruitRow, { backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)' }]}>
+              <View style={styles.fruitRowTop}>
+                <View style={[styles.catBadgeSm, { backgroundColor: getCategoryColor(f.color?.toUpperCase()) }]}>
+                  <Text style={styles.catBadgeSmText}>#{f.fruit_index ?? (i + 1)} {f.color?.toUpperCase()}</Text>
+                </View>
+                <Text style={styles.fruitOilText}>{f.oil_yield_percent?.toFixed(1)}% oil</Text>
+              </View>
+              {f.dimensions && (
+                <Text style={[styles.fruitDimText, { color: colors.textTertiary }]}>
+                  L {f.dimensions.length_cm?.toFixed(1)} cm · W {f.dimensions.width_cm?.toFixed(1)} cm · {f.dimensions_source || 'estimated'}
+                </Text>
+              )}
+              {f.confidence != null && (
+                <Text style={[styles.fruitDimText, { color: colors.textTertiary }]}>
+                  Conf: {Math.round((f.confidence || 0) * 100)}%
+                </Text>
+              )}
+            </View>
+          ))}
+        </DetailCard>
+      )}
+
+      {/* ── Single fruit: Color, Maturity, Recommendation ── */}
+      {!result.multiFruit && (
+        <DetailCard icon="color-palette" iconColor={colors.primary} title="Color Classification" delay={delayBase} colors={colors}>
+          <View style={styles.detailRow}>
+            <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>Detected</Text>
+            <Text style={[styles.detailValue, { color: getCategoryColor(result.category) }]}>{result.category}</Text>
+          </View>
+          <View style={styles.detailRow}>
+            <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>Confidence</Text>
+            <Text style={[styles.detailValue, { color: colors.text }]}>{result.colorConfidence ? Math.round(result.colorConfidence * 100) : 0}%</Text>
+          </View>
+          <View style={styles.detailRow}>
+            <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>Maturity</Text>
+            <Text style={[styles.detailValue, { color: colors.text }]}>{result.maturityStage || getMaturityLabel(result.category)}</Text>
+          </View>
+          <View style={styles.detailRow}>
+            <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>Recommendation</Text>
+            <Text style={[styles.detailValue, { color: colors.text, fontSize: 12, maxWidth: '60%', textAlign: 'right' }]}>{getRecommendation(result.category)}</Text>
+          </View>
+          {result.hasSpots && (
+            <View style={[styles.spotBadge, { backgroundColor: '#f97316' + '15' }]}>
+              <Ionicons name="alert-circle" size={14} color="#f97316" />
+              <Text style={{ color: '#f97316', fontSize: 12, fontWeight: '600' }}>
+                Spots detected ({result.spotCoverage?.toFixed(1) || 0}% coverage)
+              </Text>
+            </View>
+          )}
+        </DetailCard>
+      )}
+
+      {/* ── Dimensions (single fruit only) ── */}
+      {!result.multiFruit && result.dimensions && Object.keys(result.dimensions).length > 0 && (
+        <DetailCard icon="resize" iconColor="#3b82f6" title="Dimensions" delay={delayBase + 50} colors={colors}>
+          <View style={styles.dimGrid}>
+            {result.dimensions.length_cm != null && (
+              <View style={[styles.dimCell, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#fff' }]}>
+                <Text style={[styles.dimCellLabel, { color: colors.textTertiary }]}>Length</Text>
+                <Text style={[styles.dimCellValue, { color: colors.text }]}>{result.dimensions.length_cm.toFixed(2)} cm</Text>
+              </View>
+            )}
+            {result.dimensions.width_cm != null && (
+              <View style={[styles.dimCell, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#fff' }]}>
+                <Text style={[styles.dimCellLabel, { color: colors.textTertiary }]}>Width</Text>
+                <Text style={[styles.dimCellValue, { color: colors.text }]}>{result.dimensions.width_cm.toFixed(2)} cm</Text>
+              </View>
+            )}
+            {result.dimensions.kernel_mass_g != null && (
+              <View style={[styles.dimCell, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#fff' }]}>
+                <Text style={[styles.dimCellLabel, { color: colors.textTertiary }]}>Kernel Mass</Text>
+                <Text style={[styles.dimCellValue, { color: colors.text }]}>{result.dimensions.kernel_mass_g.toFixed(3)} g</Text>
+              </View>
+            )}
+            {result.dimensions.whole_fruit_weight_g != null && (
+              <View style={[styles.dimCell, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#fff' }]}>
+                <Text style={[styles.dimCellLabel, { color: colors.textTertiary }]}>Fruit Weight</Text>
+                <Text style={[styles.dimCellValue, { color: colors.text }]}>{result.dimensions.whole_fruit_weight_g.toFixed(1)} g</Text>
+              </View>
+            )}
+          </View>
+          {result.dimensionsSource && (
+            <Text style={[styles.dimSourceText, { color: colors.textTertiary }]}>
+              Source: {result.dimensionsSource === 'coin_reference' ? '5-Peso Coin Reference' : 'Smart Estimation'}
+            </Text>
+          )}
+        </DetailCard>
+      )}
+
+      {/* ── Oil Yield ── */}
+      <DetailCard icon="water" iconColor="#22c55e" title={result.multiFruit ? 'Average Oil Yield' : 'Oil Yield Prediction'} delay={delayBase + 100} colors={colors}>
+        <View style={styles.detailRow}>
+          <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>{result.multiFruit ? 'Average' : 'Predicted'}</Text>
+          <Text style={[styles.oilYieldBig, { color: colors.text }]}>
+            {(result.oilYieldPercent || result.averageOilYield || 0).toFixed(1)}%
+          </Text>
+        </View>
+        {result.multiFruit && result.oilYieldRange && (
+          <View style={styles.detailRow}>
+            <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>Range</Text>
+            <Text style={[styles.detailValue, { color: colors.text }]}>
+              {result.oilYieldRange[0].toFixed(1)}% – {result.oilYieldRange[1].toFixed(1)}%
+            </Text>
+          </View>
+        )}
+        {!result.multiFruit && (
+          <View style={styles.detailRow}>
+            <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>Category</Text>
+            <Text style={[styles.detailValue, { color: colors.text }]}>{result.yieldCategory || 'Unknown'}</Text>
+          </View>
+        )}
+        <View style={styles.detailRow}>
+          <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>Confidence</Text>
+          <Text style={[styles.detailValue, { color: colors.text }]}>{Math.round((result.oilConfidence || result.overallConfidence || 0) * 100)}%</Text>
+        </View>
+      </DetailCard>
+
+      {/* ── Interpretation ── */}
+      {result.interpretation && (
+        <DetailCard icon="bulb" iconColor="#f59e0b" title="Interpretation" delay={delayBase + 150} colors={colors}>
+          <Text style={[styles.interpText, { color: colors.textSecondary }]}>{result.interpretation}</Text>
+        </DetailCard>
+      )}
+    </View>
+  );
+}
+
+// ─── Single Result Display (2-column: image left, stats right, details below) ───
+function ResultDisplay({ result, imageUri, imageName, showDetails, setShowDetails, colors, isDark, isDesktop, label, isComparison = false }) {
+  if (!result) return null;
+
+  const oilYield = (result.oilYieldPercent || result.averageOilYield || 0).toFixed(1);
+  const confidence = Math.round((result.overallConfidence || result.colorConfidence || 0) * 100);
+  const catColor = getCategoryColor(result.category);
 
   return (
     <Animated.View entering={FadeInUp.duration(280)} style={[styles.resultCard, { backgroundColor: colors.card, borderColor: colors.borderLight }]}>
-      {/* Label badge (for comparison) */}
+      {/* Label badge */}
       {label && (
         <View style={[styles.resultLabelBadge, { backgroundColor: colors.primary + '12' }]}>
           <Text style={[styles.resultLabelText, { color: colors.primary }]}>{label}</Text>
         </View>
       )}
 
-      {/* Header */}
-      <View style={[styles.resultHeader, isDesktop && styles.resultHeaderDesktop]}>
-        {/* Image Column */}
-        <View style={styles.resultImageCol}>
-          <Image source={{ uri: imageUri }} style={styles.resultImg} resizeMode="contain" />
-          <Text style={[styles.fileName, { color: colors.textTertiary }]} numberOfLines={1}>{imageName || 'Image'}</Text>
+      {/* ── 2-Column: Image (left) | Stats (right) ── */}
+      <View style={styles.resultTwoCol}>
+        {/* LEFT — image */}
+        <View style={styles.resultImgWrap}>
+          <Image source={{ uri: imageUri }} style={styles.resultImg} resizeMode="cover" />
+          <Text style={[styles.resultImgName, { color: colors.textTertiary }]} numberOfLines={2}>
+            {imageName || 'Image'}
+          </Text>
         </View>
 
-        {/* Main Info Column */}
-        <View style={styles.resultInfoCol}>
-          {/* Oil Yield */}
-          <View style={styles.yieldDisplay}>
-            <Text style={[styles.yieldPercent, { color: colors.text }]}>
-              {Math.round(result.oilYieldPercent || 0)}%
-            </Text>
-            <Text style={[styles.yieldLabel, { color: colors.textSecondary }]}>Oil Yield</Text>
-          </View>
-
-          {/* Category Badge */}
-          <View style={[styles.catBadge, { backgroundColor: getCategoryColor(result.category) }]}>
-            <Text style={styles.catBadgeText}>{result.category || 'Unknown'}</Text>
-            <Text style={styles.catBadgeConf}>
-              {result.colorConfidence ? Math.round(result.colorConfidence * 100) : 0}%
-            </Text>
-          </View>
+        {/* RIGHT — key stats */}
+        <View style={styles.resultStatsCol}>
+          {result.multiFruit ? (
+            <>
+              {/* ── Multi-fruit stats ── */}
+              <View style={styles.resultStatMain}>
+                <Text style={[styles.resultStatYield, { color: colors.text }]}>{oilYield}%</Text>
+                <Text style={[styles.resultStatYieldLabel, { color: colors.textSecondary }]}>Avg. Oil Yield</Text>
+              </View>
+              <View style={[styles.resultStatBadge, { backgroundColor: '#7c3aed' }]}>
+                <Ionicons name="apps" size={14} color="#fff" />
+                <Text style={styles.resultStatBadgeText}>{result.fruitCount} Fruits</Text>
+              </View>
+              {result.oilYieldRange && (
+                <View style={[styles.resultStatRow, { borderTopColor: colors.borderLight }]}>
+                  <Text style={[styles.resultStatRowLabel, { color: colors.textSecondary }]}>Range</Text>
+                  <Text style={[styles.resultStatRowVal, { color: colors.text }]}>
+                    {result.oilYieldRange[0].toFixed(1)}–{result.oilYieldRange[1].toFixed(1)}%
+                  </Text>
+                </View>
+              )}
+              <View style={[styles.resultStatRow, { borderTopColor: colors.borderLight }]}>
+                <Text style={[styles.resultStatRowLabel, { color: colors.textSecondary }]}>Confidence</Text>
+                <Text style={[styles.resultStatRowVal, { color: colors.text }]}>{confidence}%</Text>
+              </View>
+            </>
+          ) : (
+            <>
+              {/* ── Single-fruit stats ── */}
+              <View style={styles.resultStatMain}>
+                <Text style={[styles.resultStatYield, { color: colors.text }]}>{oilYield}%</Text>
+                <Text style={[styles.resultStatYieldLabel, { color: colors.textSecondary }]}>Oil Yield</Text>
+              </View>
+              <View style={[styles.resultStatBadge, { backgroundColor: catColor }]}>
+                <Text style={styles.resultStatBadgeText}>{result.category || 'Unknown'}</Text>
+                <Text style={styles.resultStatBadgeConf}>
+                  {result.colorConfidence ? Math.round(result.colorConfidence * 100) : 0}%
+                </Text>
+              </View>
+              <View style={[styles.resultStatRow, { borderTopColor: colors.borderLight }]}>
+                <Text style={[styles.resultStatRowLabel, { color: colors.textSecondary }]}>Maturity</Text>
+                <Text style={[styles.resultStatRowVal, { color: colors.text }]} numberOfLines={2}>
+                  {result.maturityStage || getMaturityLabel(result.category)}
+                </Text>
+              </View>
+              <View style={[styles.resultStatRow, { borderTopColor: colors.borderLight }]}>
+                <Text style={[styles.resultStatRowLabel, { color: colors.textSecondary }]}>Confidence</Text>
+                <Text style={[styles.resultStatRowVal, { color: colors.text }]}>{confidence}%</Text>
+              </View>
+            </>
+          )}
         </View>
       </View>
 
-      {/* Toggle Details */}
-      <Pressable onPress={() => setShowDetails(!showDetails)} style={[styles.expandBtn, { borderColor: colors.borderLight }]}>
-        <Ionicons name={showDetails ? 'chevron-up' : 'chevron-down'} size={16} color={colors.primary} />
-        <Text style={[styles.expandBtnText, { color: colors.primary }]}>{showDetails ? 'Hide Details' : 'Show Details'}</Text>
-      </Pressable>
-
-      {showDetails ? (
-        <View style={styles.detailsWrap}>
-          {/* Color Classification */}
-          <DetailCard icon="color-palette" iconColor={colors.primary} title="Color Classification" colors={colors}>
-            <View style={styles.detailRow}>
-              <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>Detected</Text>
-              <Text style={[styles.detailValue, { color: getCategoryColor(result.category) }]}>{result.category}</Text>
-            </View>
-            <View style={styles.detailRow}>
-              <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>Confidence</Text>
-              <Text style={[styles.detailValue, { color: colors.text }]}>{result.colorConfidence ? Math.round(result.colorConfidence * 100) : 0}%</Text>
-            </View>
-            <View style={styles.detailRow}>
-              <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>Maturity</Text>
-              <Text style={[styles.detailValue, { color: colors.text }]}>{result.maturityStage || 'Unknown'}</Text>
-            </View>
-            {result.hasSpots && (
-              <View style={[styles.spotBadge, { backgroundColor: '#f97316' + '15' }]}>
-                <Ionicons name="alert-circle" size={14} color="#f97316" />
-                <Text style={{ color: '#f97316', fontSize: 12, fontWeight: '600' }}>
-                  Spots detected ({result.spotCoverage?.toFixed(1) || 0}% coverage)
+      {/* ── Color distribution (multi-fruit, full width) ── */}
+      {result.multiFruit && result.colorDistribution && Object.keys(result.colorDistribution).length > 0 && (
+        <View style={[styles.resultColorDist, { backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : '#f8fafc', borderColor: colors.borderLight }]}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 5 }}>
+            <Ionicons name="color-palette" size={13} color={colors.primary} />
+            <Text style={[styles.resultInfoCellLabel, { color: colors.textSecondary }]}>Color Distribution</Text>
+          </View>
+          <View style={{ flexDirection: 'row', gap: 12, flexWrap: 'wrap' }}>
+            {Object.entries(result.colorDistribution).map(([c, n]) => (
+              <View key={c} style={styles.colorDistItem}>
+                <View style={[styles.colorDistDot, { backgroundColor: getCategoryColor(c.toUpperCase()) }]} />
+                <Text style={[styles.colorDistText, { color: colors.text }]}>
+                  {c.charAt(0).toUpperCase() + c.slice(1)}: {n}
                 </Text>
               </View>
-            )}
-          </DetailCard>
-
-          {/* Dimensions */}
-          {result.dimensions && Object.keys(result.dimensions).length > 0 && (
-            <DetailCard icon="resize" iconColor="#3b82f6" title="Dimensions" delay={100} colors={colors}>
-              <View style={styles.dimGrid}>
-                {result.dimensions.length_cm != null && (
-                  <View style={[styles.dimCell, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#fff' }]}>
-                    <Text style={[styles.dimCellLabel, { color: colors.textTertiary }]}>Length</Text>
-                    <Text style={[styles.dimCellValue, { color: colors.text }]}>{result.dimensions.length_cm.toFixed(2)} cm</Text>
-                  </View>
-                )}
-                {result.dimensions.width_cm != null && (
-                  <View style={[styles.dimCell, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#fff' }]}>
-                    <Text style={[styles.dimCellLabel, { color: colors.textTertiary }]}>Width</Text>
-                    <Text style={[styles.dimCellValue, { color: colors.text }]}>{result.dimensions.width_cm.toFixed(2)} cm</Text>
-                  </View>
-                )}
-                {result.dimensions.kernel_mass_g != null && (
-                  <View style={[styles.dimCell, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#fff' }]}>
-                    <Text style={[styles.dimCellLabel, { color: colors.textTertiary }]}>Kernel Mass</Text>
-                    <Text style={[styles.dimCellValue, { color: colors.text }]}>{result.dimensions.kernel_mass_g.toFixed(3)} g</Text>
-                  </View>
-                )}
-                {result.dimensions.whole_fruit_weight_g != null && (
-                  <View style={[styles.dimCell, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#fff' }]}>
-                    <Text style={[styles.dimCellLabel, { color: colors.textTertiary }]}>Fruit Weight</Text>
-                    <Text style={[styles.dimCellValue, { color: colors.text }]}>{result.dimensions.whole_fruit_weight_g.toFixed(1)} g</Text>
-                  </View>
-                )}
-              </View>
-            </DetailCard>
-          )}
-
-          {/* Oil Yield */}
-          <DetailCard icon="water" iconColor="#22c55e" title="Oil Yield Prediction" delay={150} colors={colors}>
-            <View style={styles.detailRow}>
-              <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>Predicted</Text>
-              <Text style={[styles.detailValue, { color: colors.text, fontSize: 18, fontWeight: '800' }]}>{result.oilYieldPercent?.toFixed(1) || 0}%</Text>
-            </View>
-            <View style={styles.detailRow}>
-              <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>Category</Text>
-              <Text style={[styles.detailValue, { color: colors.text }]}>{result.yieldCategory || 'Unknown'}</Text>
-            </View>
-            <View style={styles.detailRow}>
-              <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>Confidence</Text>
-              <Text style={[styles.detailValue, { color: colors.text }]}>{Math.round((result.oilConfidence || result.overallConfidence || 0) * 100)}%</Text>
-            </View>
-          </DetailCard>
-
-          {/* Interpretation */}
-          {result.interpretation && (
-            <DetailCard icon="bulb" iconColor="#f59e0b" title="Interpretation" delay={200} colors={colors}>
-              <Text style={[styles.interpText, { color: colors.textSecondary }]}>{result.interpretation}</Text>
-            </DetailCard>
-          )}
-        </View>
-      ) : (
-        /* Compact view */
-        <View style={styles.compactView}>
-          {result.dimensions && (
-            <View style={styles.compactDims}>
-              <View style={[styles.compactDimItem, { backgroundColor: colors.backgroundSecondary }]}>
-                <Text style={[styles.compactDimVal, { color: colors.text }]}>{result.dimensions.length_cm?.toFixed(1) || '—'}</Text>
-                <Text style={[styles.compactDimLbl, { color: colors.textTertiary }]}>L(cm)</Text>
-              </View>
-              <View style={[styles.compactDimItem, { backgroundColor: colors.backgroundSecondary }]}>
-                <Text style={[styles.compactDimVal, { color: colors.text }]}>{result.dimensions.width_cm?.toFixed(1) || '—'}</Text>
-                <Text style={[styles.compactDimLbl, { color: colors.textTertiary }]}>W(cm)</Text>
-              </View>
-              <View style={[styles.compactDimItem, { backgroundColor: colors.backgroundSecondary }]}>
-                <Text style={[styles.compactDimVal, { color: colors.text }]}>{result.dimensions.whole_fruit_weight_g?.toFixed(0) || '—'}</Text>
-                <Text style={[styles.compactDimLbl, { color: colors.textTertiary }]}>Wt(g)</Text>
-              </View>
-            </View>
-          )}
-          {result.interpretation && (
-            <Text style={[styles.compactInterp, { color: colors.textSecondary, backgroundColor: colors.backgroundSecondary }]} numberOfLines={3}>{result.interpretation}</Text>
-          )}
+            ))}
+          </View>
         </View>
       )}
 
-      {/* Timing */}
+      {/* ── Recommendation (single, full width) ── */}
+      {!result.multiFruit && (
+        <View style={[styles.resultRecBox, { backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : '#f0fdf4', borderColor: colors.borderLight }]}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+            <Ionicons name="checkmark-circle" size={14} color="#22c55e" />
+            <Text style={[styles.resultInfoCellLabel, { color: colors.textSecondary, fontWeight: '600' }]}>Recommendation</Text>
+          </View>
+          <Text style={[styles.resultRecText, { color: colors.text }]}>{getRecommendation(result.category)}</Text>
+        </View>
+      )}
+
+      {/* ── Comparison: always show expanded details ── */}
+      {isComparison ? (
+        <FullDetailsView result={result} colors={colors} isDark={isDark} compact />
+      ) : (
+        <>
+          <Pressable onPress={() => setShowDetails(!showDetails)} style={[styles.expandBtn, { borderColor: colors.borderLight }]}>
+            <Ionicons name={showDetails ? 'chevron-up' : 'chevron-down'} size={16} color={colors.primary} />
+            <Text style={[styles.expandBtnText, { color: colors.primary }]}>
+              {showDetails ? 'Hide Full Details' : 'Show Full Details'}
+            </Text>
+          </Pressable>
+          {showDetails && <FullDetailsView result={result} colors={colors} isDark={isDark} />}
+        </>
+      )}
+
       {result.timing && (
         <Text style={[styles.timingText, { color: colors.textTertiary }]}>
           Completed in {result.timing.totalSeconds}s
@@ -567,9 +683,9 @@ function ComparisonSummary({ result1, result2, colors }) {
       </View>
       {[
         { label: 'Oil Yield Difference', value: `${yieldDiff > 0 ? '+' : ''}${yieldDiff.toFixed(1)}%`, color: Math.abs(yieldDiff) > 5 ? '#ef4444' : '#22c55e' },
-        { label: 'Category Match', value: catMatch ? '✅ Same' : '❌ Different', color: colors.text },
+        { label: 'Category Match', value: catMatch ? 'Same' : 'Different', color: colors.text },
         { label: 'Avg Confidence', value: `${avgConf}%`, color: colors.text },
-        { label: 'Baseline (Averaged)', value: `${(result1.oilYieldPercent || 0).toFixed(1)}% oil`, color: '#3b82f6' },
+        { label: 'Baseline (Avg)', value: `${(result1.oilYieldPercent || 0).toFixed(1)}% oil`, color: '#3b82f6' },
         { label: 'Your Image', value: `${(result2.oilYieldPercent || 0).toFixed(1)}% oil`, color: colors.primary },
       ].map((row, i) => (
         <View key={i} style={[styles.summaryRow, { borderBottomColor: colors.borderLight }]}>
@@ -612,6 +728,31 @@ function CarouselCard({ slides, index, setIndex, colors, isDark }) {
   );
 }
 
+// ─── Animated Button ───
+function AnimatedButton({ label, icon, onPress, loading, delay = 0, colors }) {
+  const scale = useSharedValue(1);
+  const btnAnim = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+
+  return (
+    <Animated.View entering={FadeInUp.delay(delay).duration(280)}>
+      <AnimatedPressable
+        onPress={loading ? undefined : onPress}
+        onPressIn={() => { scale.value = withSpring(0.96); }}
+        onPressOut={() => { scale.value = withSpring(1); }}
+        style={[btnAnim, styles.primaryBtn, { backgroundColor: colors.primary }]}
+      >
+        {loading ? (
+          <ActivityIndicator color="#fff" size="small" />
+        ) : (
+          <Ionicons name={icon} size={18} color="#fff" />
+        )}
+        <Text style={styles.primaryBtnText}>{label}</Text>
+      </AnimatedPressable>
+    </Animated.View>
+  );
+}
+
+
 // ════════════════════════════════════════════════
 // ─── MAIN SCAN PAGE ───
 // ════════════════════════════════════════════════
@@ -649,13 +790,12 @@ export default function ScanPage() {
   const [showDetails1, setShowDetails1] = useState(false);
   const [showDetails2, setShowDetails2] = useState(false);
   const [progressMessage2, setProgressMessage2] = useState('');
-  
+
   // Cloudinary URLs for uploaded images
   const [capturedCloudinaryUrl, setCapturedCloudinaryUrl] = useState(null);
   const [image2CloudinaryUrl, setImage2CloudinaryUrl] = useState(null);
 
   // ─── Effects ───
-  // Redirect unauthenticated users to account/login page
   useEffect(() => {
     if (!isAuthenticated) {
       router.replace('/account');
@@ -685,7 +825,7 @@ export default function ScanPage() {
     setShowDetails1(false); setShowDetails2(false);
   };
 
-  // ─── Image Picking (only for single mode and comparison right side) ───
+  // ─── Image Picking ───
   const pickImage = async () => {
     setError(null);
     const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: false, quality: 0.9 });
@@ -694,10 +834,10 @@ export default function ScanPage() {
       const fileName = asset.fileName || asset.uri.split('/').pop().split('?')[0] || 'image.jpg';
       if (mode === 'comparison') {
         setImage2Uri(asset.uri); setImage2Name(fileName);
-        setImage2CloudinaryUrl(null); // Reset cloudinary URL
+        setImage2CloudinaryUrl(null);
       } else {
         setCapturedImageUri(asset.uri); setCapturedImageName(fileName);
-        setCapturedCloudinaryUrl(null); // Reset cloudinary URL
+        setCapturedCloudinaryUrl(null);
       }
     }
   };
@@ -712,10 +852,10 @@ export default function ScanPage() {
       const fileName = asset.fileName || 'photo.jpg';
       if (mode === 'comparison') {
         setImage2Uri(asset.uri); setImage2Name(fileName);
-        setImage2CloudinaryUrl(null); // Reset cloudinary URL
+        setImage2CloudinaryUrl(null);
       } else {
         setCapturedImageUri(asset.uri); setCapturedImageName(fileName);
-        setCapturedCloudinaryUrl(null); // Reset cloudinary URL
+        setCapturedCloudinaryUrl(null);
       }
     }
   };
@@ -730,8 +870,6 @@ export default function ScanPage() {
     setProgressMessage('Starting analysis...');
 
     try {
-      // Upload images to Cloudinary if authenticated and not already uploaded
-      // Use local variables to avoid React state timing issues
       let resolvedCloudinaryUrl = capturedCloudinaryUrl;
       let resolvedImage2CloudinaryUrl = image2CloudinaryUrl;
 
@@ -758,7 +896,6 @@ export default function ScanPage() {
           onProgress: (_, msg) => setProgressMessage(msg),
         });
         if (res.success) {
-          // Check if the image was rejected as "not a Talisay fruit"
           if (res.isTalisay === false) {
             setError('Not a Talisay fruit. Please upload an image with a Talisay fruit in it.');
             setAnalysisResult(null);
@@ -766,16 +903,31 @@ export default function ScanPage() {
             setAnalysisResult(res); setProgressMessage('');
             if (isAuthenticated) {
               historyService.saveHistoryItem({
-                analysisType: 'single', imageName: capturedImageName || 'image.jpg',
-                imageUri: resolvedCloudinaryUrl || capturedImageUri, category: res.category || 'BROWN',
-                maturityStage: res.maturityStage, confidence: res.overallConfidence ?? res.colorConfidence,
-                colorConfidence: res.colorConfidence, fruitConfidence: res.fruitConfidence,
-                oilConfidence: res.oilConfidence, oilYieldPercent: res.oilYieldPercent,
-                yieldCategory: res.yieldCategory, dimensions: res.dimensions,
-                dimensionsSource: res.dimensionsSource, referenceDetected: res.referenceDetected,
-                coinInfo: res.coinInfo, interpretation: res.interpretation,
-                hasSpots: res.hasSpots, spotCoverage: res.spotCoverage,
+                analysisType: res.multiFruit ? 'multi_fruit' : 'single',
+                imageName: capturedImageName || 'image.jpg',
+                imageUri: resolvedCloudinaryUrl || capturedImageUri,
+                category: res.category || 'BROWN',
+                maturityStage: res.maturityStage,
+                confidence: res.overallConfidence ?? res.colorConfidence,
+                colorConfidence: res.colorConfidence,
+                fruitConfidence: res.fruitConfidence,
+                oilConfidence: res.oilConfidence,
+                oilYieldPercent: res.oilYieldPercent || res.averageOilYield,
+                yieldCategory: res.yieldCategory,
+                dimensions: res.dimensions,
+                dimensionsSource: res.dimensionsSource,
+                referenceDetected: res.referenceDetected,
+                coinInfo: res.coinInfo,
+                interpretation: res.interpretation,
+                hasSpots: res.hasSpots,
+                spotCoverage: res.spotCoverage,
                 colorProbabilities: res.raw?.color_probabilities,
+                multiFruit: res.multiFruit || false,
+                fruitCount: res.fruitCount,
+                colorDistribution: res.colorDistribution,
+                averageOilYield: res.averageOilYield,
+                oilYieldRange: res.oilYieldRange,
+                fruits: res.fruits,
               }).catch(() => {});
             }
           }
@@ -783,7 +935,7 @@ export default function ScanPage() {
           setError(res.error || 'Analysis failed. Is the ML backend running on port 5001?');
         }
       } else {
-        // Comparison: Load existing dataset + analyze user's image in parallel
+        // Comparison mode
         setExistingLoading(true);
         setProgressMessage2('Starting...');
 
@@ -804,11 +956,9 @@ export default function ScanPage() {
         } else {
           setExistingError(res1.error || 'Failed to load baseline');
         }
-        
-        // Check if user's image was rejected as "not a Talisay fruit"
+
         if (res2.success) {
           if (res2.isTalisay === false) {
-            // Don't set result2, and add the rejection message to errors
             setResult2(null);
             const errors = [];
             if (!res1.success) errors.push(`Existing Dataset: ${res1.error}`);
@@ -822,24 +972,7 @@ export default function ScanPage() {
         setExistingLoading(false);
 
         if (isAuthenticated) {
-          // Save comparison items to history with a shared comparisonId
           const comparisonId = `comp_${Date.now()}`;
-          
-          // Build baseline data object for embedding in own dataset entry
-          const baselineEntry = res1.success ? {
-            imageName: res1.imageName || 'existing_dataset.jpg',
-            imageUri: res1.cloudinaryUrl || res1.imageUri,
-            category: res1.category || 'GREEN',
-            maturityStage: res1.maturityStage,
-            confidence: res1.overallConfidence ?? res1.colorConfidence,
-            colorConfidence: res1.colorConfidence,
-            oilYieldPercent: res1.oilYieldPercent,
-            yieldCategory: res1.yieldCategory,
-            dimensions: res1.dimensions,
-            referenceDetected: res1.referenceDetected,
-            interpretation: res1.interpretation,
-            totalImages: res1.totalImages || res1.analyzedImages || 0,
-          } : null;
 
           if (res1.success) {
             historyService.saveHistoryItem({
@@ -866,13 +999,10 @@ export default function ScanPage() {
               yieldCategory: res2.yieldCategory, dimensions: res2.dimensions,
               referenceDetected: res2.referenceDetected, coinInfo: res2.coinInfo,
               interpretation: res2.interpretation,
-              // Embed baseline data so History can show both sides
-              baselineData: baselineEntry,
             }).catch(() => {});
           }
         }
 
-        // Collect errors (if comparison didn't already set error for rejected image)
         if (!error) {
           const errors = [];
           if (!res1.success) errors.push(`Existing Dataset: ${res1.error}`);
@@ -888,7 +1018,7 @@ export default function ScanPage() {
     }
   };
 
-  // ─── Render helpers ───
+  // ─── Render ───
   const hasResults = mode === 'single' ? !!analysisResult : !!(result1 || result2);
   const hasBothComparisonResults = !!(result1 && result2);
 
@@ -934,7 +1064,7 @@ export default function ScanPage() {
           </Animated.View>
         )}
 
-        {/* ═══ RESULTS VIEW ═══ */}
+        {/* ═══ RESULTS ═══ */}
         {hasResults ? (
           <>
             {mode === 'single' && analysisResult && (
@@ -955,8 +1085,9 @@ export default function ScanPage() {
 
             {mode === 'comparison' && (
               <>
-                <View style={[styles.comparisonGrid, isDesktop && styles.comparisonGridRow]}>
-                  <View style={isDesktop ? styles.comparisonCol : undefined}>
+                {/* Side-by-side cards, each with FULL details shown directly */}
+                <View style={[styles.comparisonGrid, isDesktop && styles.comparisonGridDesktop]}>
+                  <View style={{ flex: 1 }}>
                     {result1 ? (
                       <ResultDisplay
                         result={result1}
@@ -968,6 +1099,7 @@ export default function ScanPage() {
                         isDark={isDark}
                         isDesktop={false}
                         label="Existing Dataset (Baseline)"
+                        isComparison
                       />
                     ) : (
                       <View style={[styles.resultCard, { backgroundColor: colors.card, borderColor: colors.borderLight, alignItems: 'center', justifyContent: 'center', paddingVertical: Spacing.xxl }]}>
@@ -989,7 +1121,7 @@ export default function ScanPage() {
                       </View>
                     )}
                   </View>
-                  <View style={isDesktop ? styles.comparisonCol : undefined}>
+                  <View style={{ flex: 1 }}>
                     {result2 ? (
                       <ResultDisplay
                         result={result2}
@@ -1001,6 +1133,7 @@ export default function ScanPage() {
                         isDark={isDark}
                         isDesktop={false}
                         label="Your Own Dataset"
+                        isComparison
                       />
                     ) : (
                       <View style={[styles.resultCard, { backgroundColor: colors.card, borderColor: colors.borderLight, alignItems: 'center', justifyContent: 'center', paddingVertical: Spacing.xxl }]}>
@@ -1023,7 +1156,6 @@ export default function ScanPage() {
           <>
             {mode === 'single' ? (
               <View style={[styles.inputGrid, isDesktop && styles.inputGridRow]}>
-                {/* Left: Image picker */}
                 <View style={styles.inputCol}>
                   <ImagePickerCard
                     title="Select Image"
@@ -1049,7 +1181,6 @@ export default function ScanPage() {
                     />
                   )}
 
-                  {/* Tips */}
                   <Animated.View entering={FadeInUp.delay(250).duration(280)} style={[styles.tipsCard, { backgroundColor: colors.primary + '08', borderColor: colors.primary + '20' }]}>
                     <View style={styles.tipsHeader}>
                       <Ionicons name="bulb-outline" size={16} color={colors.primary} />
@@ -1059,24 +1190,20 @@ export default function ScanPage() {
                       'Use good lighting (avoid shadows)',
                       'Place fruit on a plain, contrasting background',
                       'Capture the whole fruit/seed in frame',
+                      'Multiple fruits in one image are supported!',
                     ].map((tip, i) => (
-                      <Text key={i} style={[styles.tipItem, { color: colors.textSecondary }]}>
-                        • {tip}
-                      </Text>
+                      <Text key={i} style={[styles.tipItem, { color: colors.textSecondary }]}>• {tip}</Text>
                     ))}
                   </Animated.View>
                 </View>
 
-                {/* Right: Carousel */}
                 <View style={styles.inputCol}>
                   <CarouselCard slides={CAROUSEL_SLIDES} index={carouselIndex} setIndex={setCarouselIndex} colors={colors} isDark={isDark} />
                 </View>
               </View>
             ) : (
-              /* Comparison Mode Input */
               <>
                 <View style={[styles.inputGrid, isDesktop && styles.inputGridRow]}>
-                  {/* LEFT: Existing Dataset (read-only) */}
                   <View style={styles.inputCol}>
                     <ExistingDatasetCard
                       imageUri={existingImageUri}
@@ -1092,7 +1219,6 @@ export default function ScanPage() {
                     />
                   </View>
 
-                  {/* RIGHT: User Image (interactive) */}
                   <View style={styles.inputCol}>
                     <ImagePickerCard
                       title="Your Image (Own Dataset)"
@@ -1127,10 +1253,10 @@ export default function ScanPage() {
                     <Text style={[styles.tipsTitle, { color: colors.text }]}>Comparison Info</Text>
                   </View>
                   {[
-                    'Left side shows averaged baseline computed from multiple training images',
-                    'Right side is your own image to compare against the statistical average',
-                    'Use the color selector to pick which baseline category to compare',
-                    'Baseline provides more reliable comparison than a single image',
+                    'Left side shows averaged baseline from training images',
+                    'Right side is your own image to compare',
+                    'Use the color selector to pick which baseline',
+                    'All details shown directly — no dropdowns!',
                   ].map((tip, i) => (
                     <Text key={i} style={[styles.tipItem, { color: colors.textSecondary }]}>• {tip}</Text>
                   ))}
@@ -1146,29 +1272,6 @@ export default function ScanPage() {
   );
 }
 
-// ─── Animated Button (inline) ───
-function AnimatedButton({ label, icon, onPress, loading, delay = 0, colors }) {
-  const scale = useSharedValue(1);
-  const btnAnim = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
-
-  return (
-    <Animated.View entering={FadeInUp.delay(delay).duration(280)}>
-      <AnimatedPressable
-        onPress={loading ? undefined : onPress}
-        onPressIn={() => { scale.value = withSpring(0.96); }}
-        onPressOut={() => { scale.value = withSpring(1); }}
-        style={[btnAnim, styles.primaryBtn, { backgroundColor: colors.primary }]}
-      >
-        {loading ? (
-          <ActivityIndicator color="#fff" size="small" />
-        ) : (
-          <Ionicons name={icon} size={18} color="#fff" />
-        )}
-        <Text style={styles.primaryBtnText}>{label}</Text>
-      </AnimatedPressable>
-    </Animated.View>
-  );
-}
 
 // ─── Styles ───
 const styles = StyleSheet.create({
@@ -1184,9 +1287,9 @@ const styles = StyleSheet.create({
   },
   headerContent: { gap: Spacing.sm, zIndex: 1 },
   headerContentDesktop: { maxWidth: LayoutConst.maxContentWidth, alignSelf: 'center', width: '100%' },
-  headerIcon: { width: 52, height: 52, borderRadius: BorderRadius.lg, alignItems: 'center', justifyContent: 'center', marginBottom: Spacing.xs },
-  pageTitle: { ...Typography.h1 },
-  pageSubtitle: { ...Typography.body, maxWidth: 500 },
+  headerIcon: { width: 56, height: 56, borderRadius: BorderRadius.xl, alignItems: 'center', justifyContent: 'center', marginBottom: Spacing.xs, ...Shadows.sm },
+  pageTitle: { ...Typography.h1, letterSpacing: -0.5 },
+  pageSubtitle: { ...Typography.body, maxWidth: 500, lineHeight: 22 },
 
   content: { padding: Spacing.lg, gap: Spacing.md },
   contentDesktop: { maxWidth: LayoutConst.maxContentWidth, alignSelf: 'center', width: '100%', paddingHorizontal: Spacing.xxl },
@@ -1218,13 +1321,9 @@ const styles = StyleSheet.create({
     width: '100%', maxWidth: 440, borderRadius: BorderRadius.xl,
     padding: Spacing.lg, gap: Spacing.sm, ...Shadows.lg,
   },
-  ngrokModalHeader: {
-    flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, marginBottom: 4,
-  },
+  ngrokModalHeader: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, marginBottom: 4 },
   ngrokModalTitle: { flex: 1, fontSize: 16, fontWeight: '700' },
-  ngrokCurrentUrl: {
-    padding: Spacing.md, borderRadius: BorderRadius.md, borderWidth: 1, gap: 2,
-  },
+  ngrokCurrentUrl: { padding: Spacing.md, borderRadius: BorderRadius.md, borderWidth: 1, gap: 2 },
   ngrokLabel: { fontSize: 11, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5 },
   ngrokActiveUrl: { fontSize: 13, fontWeight: '600', fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace' },
   ngrokStatusText: { fontSize: 11, fontWeight: '600' },
@@ -1243,13 +1342,14 @@ const styles = StyleSheet.create({
 
   /* Mode Toggle */
   modeRow: {
-    flexDirection: 'row', gap: 4, padding: 4,
-    borderRadius: BorderRadius.lg, borderWidth: 1,
+    flexDirection: 'row', gap: 4, padding: 5,
+    borderRadius: BorderRadius.xl, borderWidth: 1,
+    ...Shadows.sm,
   },
   modeBtn: {
     flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    gap: 6, paddingVertical: 10, borderRadius: BorderRadius.md,
-    ...Platform.select({ web: { cursor: 'pointer' } }),
+    gap: 6, paddingVertical: 11, borderRadius: BorderRadius.lg,
+    ...Platform.select({ web: { cursor: 'pointer', transition: 'all 0.2s ease' } }),
   },
   modeBtnText: { fontSize: 13, fontWeight: '600' },
 
@@ -1267,8 +1367,8 @@ const styles = StyleSheet.create({
 
   /* Picker Card */
   pickerCard: {
-    borderRadius: BorderRadius.lg, borderWidth: 1, padding: Spacing.lg,
-    gap: Spacing.md, ...Shadows.sm,
+    borderRadius: BorderRadius.xl, borderWidth: 1, padding: Spacing.lg,
+    gap: Spacing.md, ...Shadows.md,
   },
   pickerHeader: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
   pickerIconWrap: { width: 36, height: 36, borderRadius: BorderRadius.md, alignItems: 'center', justifyContent: 'center' },
@@ -1302,7 +1402,7 @@ const styles = StyleSheet.create({
   },
   emptyText: { fontSize: 13 },
 
-  /* Color selector (for existing dataset) */
+  /* Color selector */
   colorSelectorRow: { flexDirection: 'row', gap: Spacing.sm },
   colorSelectorBtn: {
     flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
@@ -1341,42 +1441,134 @@ const styles = StyleSheet.create({
   /* Primary Button */
   primaryBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    gap: Spacing.sm, paddingVertical: 14, borderRadius: BorderRadius.md,
-    ...Shadows.md, ...Platform.select({ web: { cursor: 'pointer' } }),
+    gap: Spacing.sm, paddingVertical: 15, borderRadius: BorderRadius.lg,
+    ...Shadows.lg, ...Platform.select({ web: { cursor: 'pointer', transition: 'all 0.2s ease' } }),
   },
-  primaryBtnText: { color: '#fff', fontSize: 15, fontWeight: '700' },
+  primaryBtnText: { color: '#fff', fontSize: 15, fontWeight: '700', letterSpacing: 0.3 },
 
   /* Result Card */
   resultCard: {
-    borderRadius: BorderRadius.lg, borderWidth: 1, padding: Spacing.lg,
-    gap: Spacing.md, ...Shadows.md,
+    borderRadius: BorderRadius.lg, borderWidth: 1, padding: Spacing.md,
+    gap: Spacing.sm, ...Shadows.md,
   },
   resultLabelBadge: {
     alignSelf: 'flex-start', paddingHorizontal: Spacing.md, paddingVertical: 4,
     borderRadius: BorderRadius.md, marginBottom: Spacing.xs,
   },
   resultLabelText: { fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
-  resultHeader: { gap: Spacing.md },
-  resultHeaderDesktop: { flexDirection: 'row' },
-  resultImageCol: { flex: 1, gap: Spacing.xs },
-  resultImg: { width: '100%', aspectRatio: 4 / 3, borderRadius: BorderRadius.md },
-  fileName: { ...Typography.small, textAlign: 'center' },
-  resultInfoCol: { flex: 1, gap: Spacing.md, justifyContent: 'center' },
 
-  /* Yield Display */
-  yieldDisplay: { alignItems: 'center', paddingVertical: Spacing.md },
-  yieldPercent: { fontSize: 52, fontWeight: '800', lineHeight: 60 },
-  yieldLabel: { fontSize: 15, fontWeight: '600', marginTop: 2 },
+  /* Result: 2-column layout (image left | stats right) */
+  resultTwoCol: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+    alignItems: 'flex-start',
+  },
+  resultImgWrap: {
+    width: 130,
+    flexShrink: 0,
+  },
+  resultImg: {
+    width: 130,
+    height: 165,
+    borderRadius: BorderRadius.md,
+    backgroundColor: '#000',
+  },
+  resultImgName: {
+    fontSize: 10,
+    marginTop: 4,
+    textAlign: 'center',
+    lineHeight: 13,
+  },
+  resultStatsCol: {
+    flex: 1,
+    gap: Spacing.sm,
+    justifyContent: 'center',
+  },
+  resultStatMain: {
+    marginBottom: 4,
+  },
+  resultStatYield: {
+    fontSize: 52,
+    fontWeight: '800',
+    lineHeight: 56,
+    letterSpacing: -1,
+  },
+  resultStatYieldLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+  },
+  resultStatBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    alignSelf: 'flex-start',
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: BorderRadius.md,
+    marginBottom: 2,
+  },
+  resultStatBadgeText: { color: '#fff', fontSize: 15, fontWeight: '700' },
+  resultStatBadgeConf: { color: 'rgba(255,255,255,0.85)', fontSize: 12, fontWeight: '600' },
+  resultStatRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    paddingTop: 8,
+    borderTopWidth: 1,
+    gap: 6,
+  },
+  resultStatRowLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.3,
+    flexShrink: 0,
+  },
+  resultStatRowVal: {
+    fontSize: 14,
+    fontWeight: '700',
+    textAlign: 'right',
+    flex: 1,
+  },
+  resultColorDist: {
+    padding: Spacing.sm,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+  },
+  /* shared small label used in dist header + rec header */
+  resultInfoCellLabel: { fontSize: 12, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.3 },
+  resultInfoCellValue: { fontSize: 15, fontWeight: '700' },
+
+  /* Recommendation box */
+  resultRecBox: { padding: Spacing.sm, borderRadius: BorderRadius.md, borderWidth: 1 },
+  resultRecText: { fontSize: 14, lineHeight: 21, fontWeight: '500' },
+
+  /* File name */
+  fileName: { ...Typography.small, textAlign: 'center' },
+
+  /* Color distribution items */
+  colorDistItem: { flexDirection: 'row', alignItems: 'center', gap: 5, marginRight: 10, marginBottom: 3 },
+  colorDistDot: { width: 10, height: 10, borderRadius: 5 },
+  colorDistText: { fontSize: 13, fontWeight: '600' },
 
   /* Category Badge */
   catBadge: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    padding: Spacing.md, borderRadius: BorderRadius.md,
+    paddingVertical: 4, paddingHorizontal: 10, borderRadius: BorderRadius.md,
   },
-  catBadgeText: { color: '#fff', fontSize: 17, fontWeight: '700' },
-  catBadgeConf: { color: 'rgba(255,255,255,0.9)', fontSize: 13, fontWeight: '600' },
+  catBadgeText: { color: '#fff', fontSize: 13, fontWeight: '700' },
+  catBadgeConf: { color: 'rgba(255,255,255,0.9)', fontSize: 11, fontWeight: '600' },
+  catBadgeSm: {
+    paddingHorizontal: 8, paddingVertical: 2, borderRadius: BorderRadius.sm,
+  },
+  catBadgeSmText: { color: '#fff', fontSize: 11, fontWeight: '700' },
 
-  /* Expand */
+  /* Quick recommendation */
+  /* (moved to resultRecBox above) */
+
+  /* Expand btn */
   expandBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
     paddingVertical: Spacing.sm, borderTopWidth: 1, borderBottomWidth: 1,
@@ -1390,35 +1582,35 @@ const styles = StyleSheet.create({
   detailCardHeader: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, marginBottom: Spacing.xs, paddingBottom: Spacing.xs, borderBottomWidth: 1, borderBottomColor: 'rgba(0,0,0,0.05)' },
   detailIconWrap: { width: 28, height: 28, borderRadius: BorderRadius.sm, alignItems: 'center', justifyContent: 'center' },
   detailCardTitle: { ...Typography.captionMedium },
-  detailRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 4 },
-  detailLabel: { fontSize: 13, fontWeight: '500' },
-  detailValue: { fontSize: 14, fontWeight: '700' },
+  detailRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 3 },
+  detailLabel: { fontSize: 12, fontWeight: '500' },
+  detailValue: { fontSize: 13, fontWeight: '700' },
+  oilYieldBig: { fontSize: 18, fontWeight: '800' },
   spotBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, padding: 8, borderRadius: BorderRadius.sm, marginTop: 4 },
   dimGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm },
   dimCell: { flex: 1, minWidth: '40%', padding: Spacing.sm, borderRadius: BorderRadius.sm, alignItems: 'center', gap: 2 },
   dimCellLabel: { fontSize: 11, fontWeight: '500' },
-  dimCellValue: { fontSize: 15, fontWeight: '700' },
+  dimCellValue: { fontSize: 14, fontWeight: '700' },
+  dimSourceText: { fontSize: 11, textAlign: 'center', marginTop: 4 },
   interpText: { fontSize: 13, lineHeight: 20 },
 
-  /* Compact */
-  compactView: { gap: Spacing.sm },
-  compactDims: { flexDirection: 'row', gap: Spacing.sm },
-  compactDimItem: { flex: 1, paddingVertical: Spacing.sm, borderRadius: BorderRadius.md, alignItems: 'center', gap: 2 },
-  compactDimVal: { fontSize: 16, fontWeight: '700' },
-  compactDimLbl: { fontSize: 10, fontWeight: '500' },
-  compactInterp: { fontSize: 12, lineHeight: 18, padding: Spacing.sm, borderRadius: BorderRadius.sm },
-  timingText: { textAlign: 'center', fontSize: 12, marginTop: Spacing.xs },
+  /* Multi-fruit per-fruit row */
+  fruitRow: { borderRadius: 8, marginTop: 6, padding: 8 },
+  fruitRowTop: { flexDirection: 'row', alignItems: 'center', marginBottom: 4, gap: 8 },
+  fruitOilText: { color: '#22c55e', fontWeight: '700', fontSize: 14 },
+  fruitDimText: { fontSize: 11 },
+
+  timingText: { textAlign: 'center', fontSize: 11, marginTop: Spacing.xs },
 
   /* Comparison */
   comparisonGrid: { gap: Spacing.md },
-  comparisonGridRow: { flexDirection: 'row', gap: Spacing.md },
-  comparisonCol: { flex: 1 },
+  comparisonGridDesktop: { flexDirection: 'row', gap: Spacing.md },
 
-  /* Summary */
+  /* Comparison Summary */
   summaryCard: { borderRadius: BorderRadius.lg, borderWidth: 1, padding: Spacing.lg, gap: Spacing.sm, ...Shadows.sm },
   summaryHeader: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, paddingBottom: Spacing.sm, borderBottomWidth: 1, borderBottomColor: 'rgba(0,0,0,0.05)' },
   summaryTitle: { ...Typography.bodyMedium },
-  summaryRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 8, borderBottomWidth: 1 },
+  summaryRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 6, borderBottomWidth: 1 },
   summaryLabel: { fontSize: 13, fontWeight: '500' },
-  summaryValue: { fontSize: 15, fontWeight: '700' },
+  summaryValue: { fontSize: 14, fontWeight: '700' },
 });
