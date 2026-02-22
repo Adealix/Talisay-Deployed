@@ -1,17 +1,3 @@
-/**
- * Email Service — Brevo SMTP via Nodemailer
- * Sends OTP verification emails for registration and password change.
- *
- * Required Render env vars:
- *   SMTP_HOST       = smtp-relay.brevo.com
- *   SMTP_PORT       = 587
- *   SMTP_USER       = a2cf49001@smtp-brevo.com   ← Brevo SMTP login (NOT your Gmail)
- *   SMTP_PASSWORD   = xsmtpsib-...               ← Brevo SMTP key
- *   SMTP_FROM_EMAIL = adealixmaranan123@gmail.com ← verified sender shown to recipients
- *   SMTP_FROM_NAME  = TalisayOil
- *
- * SMTP_USER (Brevo login) is different from SMTP_FROM_EMAIL (displayed sender).
- */
 import nodemailer from 'nodemailer';
 
 const smtpHost = process.env.SMTP_HOST || 'smtp-relay.brevo.com';
