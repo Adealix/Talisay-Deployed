@@ -1296,7 +1296,7 @@ function ProfileView() {
 // ════════════════════════════════════════════════
 export default function AccountPage() {
   const { colors, isDark } = useTheme();
-  const { isAuthenticated, isLoading, pendingVerification, clearPendingVerification } = useAuth();
+  const { isAuthenticated, isLoading, isInitializing, pendingVerification, clearPendingVerification } = useAuth();
   const { isDesktop } = useResponsive();
   const [authMode, setAuthMode] = useState('login');
 
@@ -1313,8 +1313,8 @@ export default function AccountPage() {
     );
   }
 
-  // Loading state on boot
-  if (isLoading && !isAuthenticated) {
+  // Loading state on boot only — does NOT trigger during login/register actions
+  if (isInitializing) {
     return (
       <View style={[styles.container, styles.loadingCenter, { backgroundColor: colors.background }]}>
         <ActivityIndicator size="large" color={colors.primary} />

@@ -9,7 +9,8 @@ const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
-  const [isLoading, setIsLoading] = useState(true); // true on boot to check token
+  const [isLoading, setIsLoading] = useState(false); // true only during login/register actions
+  const [isInitializing, setIsInitializing] = useState(true); // true only on boot while checking token
   const [pendingVerification, setPendingVerification] = useState(null); // { email } awaiting OTP
   const [profileImage, setProfileImageState] = useState(null); // URI of locally stored profile image
 
@@ -35,10 +36,10 @@ export function AuthProvider({ children }) {
       } catch {
         await authService.setToken(null);
       } finally {
-        setIsLoading(false);
+        setIsInitializing(false); // boot check done — never set back to true
       }
     })();
-  }, []);
+  }, []);;
 
   const login = useCallback(async (email, password) => {
     setIsLoading(true);
@@ -192,6 +193,7 @@ export function AuthProvider({ children }) {
     user,
     isAuthenticated,
     isLoading,
+    isInitializing,
     pendingVerification,
     profileImage,
     setProfileImage,
@@ -205,7 +207,7 @@ export function AuthProvider({ children }) {
     getUserStats,
     logout,
     clearPendingVerification,
-  }), [user, isAuthenticated, isLoading, pendingVerification, profileImage, setProfileImage, login, register, verifyEmail, resendOtp, updateProfile, requestPasswordOtp, changePassword, getUserStats, logout, clearPendingVerification]);
+  }), [user, isAuthenticated, isLoading, isInitializing, pendingVerification, profileImage, setProfileImage, login, register, verifyEmail, resendOtp, updateProfile, requestPasswordOtp, changePassword, getUserStats, logout, clearPendingVerification]);
 
   return (
     <AuthContext.Provider value={value}>
