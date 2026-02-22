@@ -57,12 +57,16 @@ export async function register(req, res) {
 
     // Send OTP email — await so failures are clearly logged in Render logs
     try {
-      await sendOtpEmail(user.email, otp, 'verify');
+      const info = await sendOtpEmail(user.email, otp, 'verify');
+      console.log('[authController.register] OTP email sent to', user.email, '| messageId:', info?.messageId);
     } catch (emailErr) {
-      // Don't block registration, but log the full error for Render debugging
-      console.error('[authController.register] OTP email failed — user still created:');
+      // Don't block registration, but log every detail for Render debugging
+      console.error('[authController.register] ❌ OTP email FAILED — user still created');
       console.error('  To:', user.email);
-      console.error('  Error:', emailErr);
+      console.error('  Message:', emailErr?.message);
+      console.error('  SMTP response code:', emailErr?.responseCode);
+      console.error('  SMTP response:', emailErr?.response);
+      console.error('  Full error:', emailErr);
     }
 
     return res.json({
@@ -399,5 +403,47 @@ export async function uploadAvatar(req, res) {
   } catch (e) {
     console.error('[authController.uploadAvatar]', e);
     return res.status(500).json({ ok: false, error: 'upload_failed', message: e.message });
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// GET /api/auth/test-email?to=you@example.com
+// Debug endpoint — sends a test email and returns full result or error.
+// Remove or restrict this after debugging.
+// ═══════════════════════════════════════════════════════════════════════════
+export async function testEmail(req, res) {
+  const to = req.query.to;
+  if (!to) {
+    return res.status(400).json({ ok: false, error: 'Provide ?to=your@email.com' });
+  }
+
+  // Report current SMTP config (no password)
+  const smtpConfig = {
+    host: process.env.SMTP_HOST || 'smtp-relay.brevo.com',
+    port: process.env.SMTP_PORT || '587',
+    user: process.env.SMTP_USER || '(NOT SET)',
+    from: process.env.SMTP_FROM_EMAIL || process.env.SMTP_EMAIL || '(NOT SET)',
+    passwordSet: !!process.env.SMTP_PASSWORD,
+  };
+
+  try {
+    const info = await sendOtpEmail(to, '123456', 'verify');
+    console.log('[testEmail] SUCCESS — sent to', to, '| messageId:', info?.messageId);
+    return res.json({
+      ok: true,
+      message: 'Test email sent successfully',
+      messageId: info?.messageId,
+      smtpConfig,
+    });
+  } catch (err) {
+    console.error('[testEmail] FAILED:', err?.message, '| code:', err?.responseCode, '| response:', err?.response);
+    return res.status(500).json({
+      ok: false,
+      error: 'Email send failed',
+      message: err?.message,
+      responseCode: err?.responseCode,
+      smtpResponse: err?.response,
+      smtpConfig,
+    });
   }
 }

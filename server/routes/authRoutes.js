@@ -10,6 +10,7 @@ router.post('/register', authController.register);
 router.post('/login', authController.login);
 router.post('/verify-email', authController.verifyEmail);
 router.post('/resend-otp', authController.resendOtp);
+router.get('/test-email', authController.testEmail); // debug only — remove after confirming email works
 
 // Protected
 router.get('/me', requireAuth, authController.me);
