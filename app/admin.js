@@ -1863,11 +1863,7 @@ export default function AdminPage() {
                         </Text>
                         <View style={[s.dtCellActions, s.dtActionsRow]}>
                           <Pressable
-                            onPress={() => {
-                              setEditingUser(u);
-                              setEditForm({ role: u.role, firstName: u.firstName, lastName: u.lastName });
-                              setMobileEditUserOpen(true);
-                            }}
+                            onPress={() => setSelectedUser(u)}
                             style={[s.dtActionBtn, { backgroundColor: '#3b82f615' }]}
                           >
                             <Ionicons name="create-outline" size={14} color="#3b82f6" />
