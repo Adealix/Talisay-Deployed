@@ -417,13 +417,12 @@ export async function testEmail(req, res) {
     return res.status(400).json({ ok: false, error: 'Provide ?to=your@email.com' });
   }
 
-  // Report current SMTP config (no password)
-  const smtpConfig = {
-    host: process.env.SMTP_HOST || 'smtp-relay.brevo.com',
-    port: process.env.SMTP_PORT || '587',
-    user: process.env.SMTP_USER || '(NOT SET)',
+  // Report current config (no secrets)
+  const emailConfig = {
+    method: 'Brevo HTTP API',
+    apiKeySet: !!process.env.BREVO_API_KEY,
     from: process.env.SMTP_FROM_EMAIL || process.env.SMTP_EMAIL || '(NOT SET)',
-    passwordSet: !!process.env.SMTP_PASSWORD,
+    fromName: process.env.SMTP_FROM_NAME || 'Talisay AI',
   };
 
   try {
@@ -433,17 +432,17 @@ export async function testEmail(req, res) {
       ok: true,
       message: 'Test email sent successfully',
       messageId: info?.messageId,
-      smtpConfig,
+      emailConfig,
     });
   } catch (err) {
-    console.error('[testEmail] FAILED:', err?.message, '| code:', err?.responseCode, '| response:', err?.response);
+    console.error('[testEmail] FAILED:', err?.message, '| statusCode:', err?.statusCode, '| brevoResponse:', JSON.stringify(err?.brevoResponse));
     return res.status(500).json({
       ok: false,
       error: 'Email send failed',
       message: err?.message,
-      responseCode: err?.responseCode,
-      smtpResponse: err?.response,
-      smtpConfig,
+      statusCode: err?.statusCode,
+      brevoResponse: err?.brevoResponse,
+      emailConfig,
     });
   }
 }

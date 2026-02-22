@@ -1,54 +1,84 @@
-import nodemailer from 'nodemailer';
+﻿/**
+ * Email Service  Brevo Transactional Email REST API
+ *
+ * Uses Brevo's HTTPS API (port 443) instead of SMTP.
+ * Render and most cloud hosts block outbound SMTP (port 587/465),
+ * but HTTPS is always open.
+ *
+ * Required Render env var:
+ *   BREVO_API_KEY   = your Brevo v3 API key
+ *                     Brevo dashboard -> Account (top-right) -> SMTP & API -> API Keys -> Generate
+ *                     Looks like: xkeysib-abc123...
+ *
+ * Optional (already set):
+ *   SMTP_FROM_EMAIL = adealixmaranan123@gmail.com  (must be a verified sender in Brevo)
+ *   SMTP_FROM_NAME  = TalisayOil
+ */
 
-const smtpHost = process.env.SMTP_HOST || 'smtp-relay.brevo.com';
-const smtpPort = Number(process.env.SMTP_PORT || 587);
-const smtpUser = process.env.SMTP_USER; // must be Brevo login: a2cf49001@smtp-brevo.com
-const smtpPass = process.env.SMTP_PASSWORD;
+const BREVO_API_URL = 'https://api.brevo.com/v3/smtp/email';
 
-if (!smtpUser) console.error('[email] MISSING: SMTP_USER env var. Set it to your Brevo SMTP login (e.g. a2cf49001@smtp-brevo.com)');
-if (!smtpPass) console.error('[email] MISSING: SMTP_PASSWORD env var. Set it to your Brevo SMTP key (xsmtpsib-...)');
+function getConfig() {
+  return {
+    apiKey: process.env.BREVO_API_KEY,
+    fromEmail: process.env.SMTP_FROM_EMAIL || process.env.SMTP_EMAIL || '',
+    fromName: process.env.SMTP_FROM_NAME || 'Talisay AI',
+  };
+}
 
-const transporter = nodemailer.createTransport({
-  host: smtpHost,
-  port: smtpPort,
-  secure: false,       // use STARTTLS (port 587)
-  requireTLS: true,    // enforce STARTTLS
-  auth: {
-    user: smtpUser,    // Brevo SMTP login — NOT your Gmail
-    pass: smtpPass,    // Brevo SMTP key
-  },
-  tls: { rejectUnauthorized: false },
-});
+// Check at startup
+const _cfg = getConfig();
+if (!_cfg.apiKey) {
+  console.error('[email] MISSING: BREVO_API_KEY  add it in Render env vars (Brevo -> Account -> SMTP & API -> API Keys)');
+} else {
+  console.log(`[email] Brevo HTTP API ready | from="${_cfg.fromName}" <${_cfg.fromEmail}>`);
+}
 
-// Log and verify SMTP at startup
-const fromEmail = process.env.SMTP_FROM_EMAIL || '(not set)';
-console.log(`[email] SMTP config: host=${smtpHost}:${smtpPort}, user=${smtpUser || '(MISSING)'}, from=${fromEmail}`);
+/**
+ * Low-level send via Brevo REST API.
+ */
+async function sendViaBrevo({ to, subject, html }) {
+  const cfg = getConfig();
 
-transporter.verify((err) => {
-  if (err) {
-    console.error('[email] SMTP connection FAILED:', err.message);
-    console.error('[email] Fix: set SMTP_USER=a2cf49001@smtp-brevo.com and SMTP_PASSWORD=<brevo-key> in Render env vars');
-  } else {
-    console.log('[email] SMTP ready — connected to', smtpHost);
+  if (!cfg.apiKey) throw new Error('BREVO_API_KEY is not set. Add it in Render env vars.');
+  if (!cfg.fromEmail) throw new Error('SMTP_FROM_EMAIL is not set. Add your verified Brevo sender email in Render env vars.');
+
+  const res = await fetch(BREVO_API_URL, {
+    method: 'POST',
+    headers: {
+      'accept': 'application/json',
+      'api-key': cfg.apiKey,
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify({
+      sender: { name: cfg.fromName, email: cfg.fromEmail },
+      to: [{ email: to }],
+      subject,
+      htmlContent: html,
+    }),
+  });
+
+  const data = await res.json().catch(() => ({}));
+
+  if (!res.ok) {
+    const msg = data?.message || data?.error || `HTTP ${res.status}`;
+    const err = new Error(`Brevo API error: ${msg}`);
+    err.statusCode = res.status;
+    err.brevoResponse = data;
+    throw err;
   }
-});
+
+  console.log(`[email] Sent to ${to} | messageId=${data.messageId || '(none)'}`);
+  return data;
+}
 
 /**
  * Send an OTP verification email.
- * @param {string} to - Recipient email
- * @param {string} otp - 6-digit OTP code
- * @param {'verify' | 'password'} type - Purpose of the OTP
  */
 export async function sendOtpEmail(to, otp, type = 'verify') {
-  const fromName = process.env.SMTP_FROM_NAME || 'Talisay AI';
-  const fromEmail = process.env.SMTP_FROM_EMAIL || process.env.SMTP_EMAIL;
-
+  const { fromName } = getConfig();
   const isVerify = type === 'verify';
 
-  const subject = isVerify
-    ? `${fromName} — Verify Your Email`
-    : `${fromName} — Password Change OTP`;
-
+  const subject = isVerify ? `${fromName}  Verify Your Email` : `${fromName}  Password Change OTP`;
   const heading = isVerify ? 'Welcome to Talisay AI!' : 'Password Change Request';
   const message = isVerify
     ? 'Please use the code below to verify your email address and activate your account.'
@@ -57,7 +87,7 @@ export async function sendOtpEmail(to, otp, type = 'verify') {
   const html = `
     <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 480px; margin: 0 auto; background: #f8faf9; border-radius: 16px; overflow: hidden; border: 1px solid #e5e7eb;">
       <div style="background: linear-gradient(135deg, #1b4332, #2d6a4f); padding: 32px 24px; text-align: center;">
-        <h1 style="color: #fff; margin: 0; font-size: 24px; font-weight: 800; letter-spacing: -0.5px;">🌿 ${fromName}</h1>
+        <h1 style="color: #fff; margin: 0; font-size: 24px; font-weight: 800; letter-spacing: -0.5px;">Talisay AI</h1>
         <p style="color: #a7f3d0; margin: 8px 0 0; font-size: 14px;">${heading}</p>
       </div>
       <div style="padding: 32px 24px; text-align: center;">
@@ -73,15 +103,7 @@ export async function sendOtpEmail(to, otp, type = 'verify') {
     </div>
   `;
 
-  const info = await transporter.sendMail({
-    from: `"${fromName}" <${fromEmail}>`,
-    to,
-    subject,
-    html,
-  });
-
-  console.log(`[email] OTP sent to ${to} (type=${type}, messageId=${info.messageId})`);
-  return info;
+  return sendViaBrevo({ to, subject, html });
 }
 
 /** Generate a 6-digit OTP code */
@@ -91,30 +113,25 @@ export function generateOtp() {
 
 /**
  * Send account deactivation notification email.
- * @param {string} to - Recipient email
- * @param {string} reason - Deactivation reason
  */
 export async function sendDeactivationEmail(to, reason) {
-  const fromName = process.env.SMTP_FROM_NAME || 'Talisay AI';
-  const fromEmail = process.env.SMTP_FROM_EMAIL || process.env.SMTP_EMAIL;
+  const { fromName } = getConfig();
   const contactEmail = 'talisayfruit@gmail.com';
 
   const html = `
     <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 480px; margin: 0 auto; background: #f8faf9; border-radius: 16px; overflow: hidden; border: 1px solid #e5e7eb;">
       <div style="background: linear-gradient(135deg, #1b4332, #2d6a4f); padding: 32px 24px; text-align: center;">
-        <h1 style="color: #fff; margin: 0; font-size: 24px; font-weight: 800; letter-spacing: -0.5px;">🌿 ${fromName}</h1>
+        <h1 style="color: #fff; margin: 0; font-size: 24px; font-weight: 800; letter-spacing: -0.5px;">Talisay AI</h1>
         <p style="color: #fca5a5; margin: 8px 0 0; font-size: 14px;">Account Deactivated</p>
       </div>
       <div style="padding: 32px 24px; text-align: center;">
-        <p style="color: #374151; font-size: 15px; line-height: 1.6; margin: 0 0 16px;">
-          Your account has been deactivated by an administrator.
-        </p>
+        <p style="color: #374151; font-size: 15px; line-height: 1.6; margin: 0 0 16px;">Your account has been deactivated by an administrator.</p>
         <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 12px; padding: 16px; margin: 0 0 20px; text-align: left;">
           <p style="color: #991b1b; font-size: 13px; font-weight: 600; margin: 0 0 4px;">Reason:</p>
           <p style="color: #b91c1c; font-size: 14px; margin: 0; line-height: 1.5;">${reason || 'No reason provided'}</p>
         </div>
         <p style="color: #6b7280; font-size: 13px; line-height: 1.6;">
-          If you believe this was a mistake or have questions, please contact us at
+          If you believe this was a mistake, contact us at
           <a href="mailto:${contactEmail}" style="color: #2d6a4f; font-weight: 600;">${contactEmail}</a>.
         </p>
       </div>
@@ -124,13 +141,5 @@ export async function sendDeactivationEmail(to, reason) {
     </div>
   `;
 
-  const info = await transporter.sendMail({
-    from: `"${fromName}" <${fromEmail}>`,
-    to,
-    subject: `${fromName} — Account Deactivated`,
-    html,
-  });
-
-  console.log(`[email] Deactivation email sent to ${to} (messageId=${info.messageId})`);
-  return info;
+  return sendViaBrevo({ to, subject: `${fromName}  Account Deactivated`, html });
 }
