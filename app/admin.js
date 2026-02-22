@@ -1834,15 +1834,10 @@ export default function AdminPage() {
                         (u.role || '').toLowerCase().includes(q);
                     })
                     .map((u, idx) => (
-                      <Pressable
+                      <Animated.View
                         key={u.id}
-                        onPress={() => setSelectedUser(u)}
-                        style={({ pressed }) => [
-                          s.dtRow,
-                          { borderBottomColor: colors.divider },
-                          idx % 2 === 0 && { backgroundColor: colors.background + '60' },
-                          pressed && { backgroundColor: colors.primary + '10' },
-                        ]}
+                        entering={FadeInUp.delay(100 + idx * 30).duration(280)}
+                        style={[s.dtRow, { borderBottomColor: colors.divider }, idx % 2 === 0 && { backgroundColor: colors.background + '60' }]}
                       >
                         <Text style={[s.dtCell, s.dtCellName, { color: colors.text }]} numberOfLines={1}>
                           {[u.firstName, u.lastName].filter(Boolean).join(' ') || '—'}
@@ -1867,9 +1862,30 @@ export default function AdminPage() {
                           {u.createdAt ? new Date(u.createdAt).toLocaleDateString() : '—'}
                         </Text>
                         <View style={[s.dtCellActions, s.dtActionsRow]}>
-                          <Ionicons name="chevron-forward" size={16} color={colors.textTertiary} />
+                          <Pressable
+                            onPress={() => {
+                              setEditingUser(u);
+                              setEditForm({ role: u.role, firstName: u.firstName, lastName: u.lastName });
+                              setMobileEditUserOpen(true);
+                            }}
+                            style={[s.dtActionBtn, { backgroundColor: '#3b82f615' }]}
+                          >
+                            <Ionicons name="create-outline" size={14} color="#3b82f6" />
+                          </Pressable>
+                          <Pressable
+                            onPress={() => {
+                              if (u.isActive !== false) {
+                                setConfirmDelete({ type: 'user', id: u.id, label: u.email, isActive: true });
+                              } else {
+                                handleToggleUserStatus(u.id, true);
+                              }
+                            }}
+                            style={[s.dtActionBtn, { backgroundColor: u.isActive !== false ? '#ef444415' : '#22c55e15' }]}
+                          >
+                            <Ionicons name={u.isActive !== false ? 'ban-outline' : 'checkmark-circle-outline'} size={14} color={u.isActive !== false ? '#ef4444' : '#22c55e'} />
+                          </Pressable>
                         </View>
-                      </Pressable>
+                      </Animated.View>
                     ))}
 
                   {users.length === 0 && (

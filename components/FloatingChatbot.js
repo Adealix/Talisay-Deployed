@@ -15,6 +15,7 @@ import {
   Platform,
   ActivityIndicator,
   Dimensions,
+  Keyboard,
 } from 'react-native';
 import Animated, {
   FadeIn,
@@ -35,7 +36,7 @@ import { geminiService } from '../services/geminiService';
 
 // ─── Constants ───
 const FAB_SIZE = 52;
-const CHAT_H = 460;
+const CHAT_H = 540;
 const CHAT_HEADER_H = 50;
 const CHAT_INPUT_H = 62;
 const MSG_LIST_H = CHAT_H - CHAT_HEADER_H - CHAT_INPUT_H;
@@ -156,6 +157,7 @@ export default function FloatingChatbot() {
   const chatOpacity = useSharedValue(0);
   const chatTranslateY = useSharedValue(20);
   const fabScale = useSharedValue(1);
+  const keyboardOffset = useSharedValue(0);
 
   // ── Draggable FAB ──
   const tx = useSharedValue(0);
@@ -179,7 +181,7 @@ export default function FloatingChatbot() {
   const chatStyle = useAnimatedStyle(() => ({
     opacity: chatOpacity.value,
     transform: [{ translateY: chatTranslateY.value }],
-    pointerEvents: chatOpacity.value > 0.1 ? 'auto' : 'none',
+    bottom: FAB_SIZE + 20 + keyboardOffset.value,
   }));
 
   // ── Open/close with smooth timing ──
@@ -199,6 +201,20 @@ export default function FloatingChatbot() {
   const toggleChat = useCallback(() => {
     if (open) closeChat(); else openChat();
   }, [open, openChat, closeChat]);
+
+  // ── Keyboard avoidance: push chat window up when keyboard appears ──
+  useEffect(() => {
+    if (Platform.OS === 'web') return;
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    const show = Keyboard.addListener(showEvent, e => {
+      keyboardOffset.value = withTiming(e.endCoordinates.height, { duration: 220 });
+    });
+    const hide = Keyboard.addListener(hideEvent, () => {
+      keyboardOffset.value = withTiming(0, { duration: 220 });
+    });
+    return () => { show.remove(); hide.remove(); };
+  }, []);
 
   // ── Auto-scroll when messages change ──
   useEffect(() => {
@@ -251,7 +267,6 @@ export default function FloatingChatbot() {
             backgroundColor: colors.card,
             borderColor: colors.borderLight,
             right: 14,
-            bottom: FAB_SIZE + 20,
             ...Shadows.xl,
           },
         ]}
